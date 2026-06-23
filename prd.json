@@ -130,8 +130,8 @@
         "Tests pass"
       ],
       "priority": 8,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Aggiunto assert lines[0].label == 'Bicicletta / e-bike' in TestBicycle::test_flat_rate (test_cantonal_engine.py). Aggiunta classe TestFederalBicycle::test_flat_rate in test_federal_engine.py: verifica net_deduction_chf == 700.0, gross == 700.0, label == 'Bicicletta / e-bike'. 42/42 test passano."
     },
     {
       "id": "US-205",

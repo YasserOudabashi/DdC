@@ -50,3 +50,13 @@ class TestFederalPublicTransport:
         )
         assert result.net_deduction_chf == 5000.0
         assert not result.lines[0].capped
+
+
+class TestFederalBicycle:
+    def test_flat_rate(self, rules_2026, schedule_full):
+        result = federal_engine.calculate_transport(
+            TransportMode.BICYCLE, None, schedule_full, rules_2026,
+        )
+        assert result.net_deduction_chf == 700.0
+        assert result.gross_deduction_chf == 700.0
+        assert result.lines[0].label == "Bicicletta / e-bike"

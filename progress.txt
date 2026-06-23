@@ -63,3 +63,12 @@
 - 41/41 test passano
 - Prossima storia: US-204 (fase 2 — Test bicicletta, priority 8)
 
+## 2026-06-23 — US-204 completata (fase 2, priority 8)
+- Aggiunto assert `result.lines[0].label == "Bicicletta / e-bike"` in `TestBicycle::test_flat_rate` (tests/unit/test_cantonal_engine.py):
+  il test esistente già verificava net/gross == 700.0, ora verifica anche l'etichetta
+- Aggiunta classe `TestFederalBicycle` con `test_flat_rate` in `tests/unit/test_federal_engine.py`:
+  verifica TransportMode.BICYCLE → net_deduction_chf == 700.0, gross == 700.0, lines[0].label == 'Bicicletta / e-bike' (IFD)
+- Nessuna modifica al codice di produzione necessaria (cantonal_engine._bicycle() e federal_engine BICYCLE già implementati)
+- 42/42 test passano
+- Prossima storia: US-205 (fase 2 — Test anno fiscale 2025, priority 9)
+

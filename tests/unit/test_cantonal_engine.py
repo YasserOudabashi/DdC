@@ -81,6 +81,7 @@ class TestBicycle:
         )
         assert result.net_deduction_chf == 700.0
         assert result.gross_deduction_chf == 700.0
+        assert result.lines[0].label == "Bicicletta / e-bike"
 
 
 class TestMixed:
