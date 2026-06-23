@@ -146,8 +146,8 @@
         "Tests pass"
       ],
       "priority": 9,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Creato tests/unit/test_fiscal_year_2025.py con TestCantonal2025 (test_private_car_rate_and_no_cap: 0.60×20×2×220=5280, nessun cap; test_rules_version: version=='2025') e TestFederal2025 (test_private_car_over_cap: 0.70×20×2×220=6160→cappato a 3300). Aggiunti test integrazione test_fiscal_year_2025_rules_version (rules_version=='2025' nella risposta POST) e test_get_rules_2025 (GET /v1/deduction/rules/2025: IC 0.60, IFD 0.70) in tests/integration/test_api_deduction.py. 47/47 test passano."
     },
     {
       "id": "US-301",

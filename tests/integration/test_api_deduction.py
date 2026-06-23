@@ -112,3 +112,25 @@ async def test_other_expenses_without_salary_returns_422():
     payload["include_other_expenses"] = True
     status, _ = await _post(payload)
     assert status == 422
+
+
+@pytest.mark.asyncio
+async def test_fiscal_year_2025_rules_version():
+    # fiscal_year: 2025 → rules_version == '2025' nella risposta
+    payload = json.loads((FIXTURES / "request_base.json").read_text())
+    payload["fiscal_year"] = 2025
+    status, body = await _post(payload)
+    assert status == 200
+    assert body["rules_version"] == "2025"
+
+
+@pytest.mark.asyncio
+async def test_get_rules_2025():
+    # GET /v1/deduction/rules/2025 → tariffe IC 0.60/km, IFD 0.70/km
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        resp = await client.get("/v1/deduction/rules/2025")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["version"] == "2025"
+    assert data["cantonal_TI"]["transport"]["private_car"]["rate_chf_per_km"] == pytest.approx(0.60)
+    assert data["federal_IFD"]["transport"]["private_car"]["rate_chf_per_km"] == pytest.approx(0.70)

@@ -72,3 +72,15 @@
 - 42/42 test passano
 - Prossima storia: US-205 (fase 2 — Test anno fiscale 2025, priority 9)
 
+## 2026-06-23 — US-205 completata (fase 2, priority 9)
+- Creato `tests/unit/test_fiscal_year_2025.py` con 3 test unitari:
+  - TestCantonal2025::test_private_car_rate_and_no_cap: verifica tasso IC 0.60/km; 20×0.60×2×220=5280, nessun cap
+  - TestCantonal2025::test_rules_version: verifica rules.version == '2025'
+  - TestFederal2025::test_private_car_over_cap: verifica tasso IFD 0.70/km; 20×0.70×2×220=6160→cappato a 3300
+- Aggiunti 2 test di integrazione in `tests/integration/test_api_deduction.py`:
+  - test_fiscal_year_2025_rules_version: POST con fiscal_year: 2025 → rules_version == '2025' nella risposta
+  - test_get_rules_2025: GET /v1/deduction/rules/2025 → IC rate == 0.60, IFD rate == 0.70
+- Nessuna modifica al codice di produzione necessaria (2025.yaml e loader.py già corretti)
+- 47/47 test passano
+- FASE 2 COMPLETATA: tutte le storie US-201..US-205 hanno passes: true
+
