@@ -17,8 +17,8 @@
         "Typecheck passes"
       ],
       "priority": 1,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Implementato @model_validator(mode='after') in DeductionRequest. Test in tests/unit/test_request_validation.py. 25/25 test passano."
     },
     {
       "id": "US-102",

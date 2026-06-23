@@ -82,3 +82,11 @@ class DeductionRequest(BaseModel):
 
     include_meals: bool = Field(default=False)
     include_other_expenses: bool = Field(default=False)
+
+    @model_validator(mode="after")
+    def validate_other_expenses_requires_salary(self) -> DeductionRequest:
+        if self.include_other_expenses and self.annual_net_salary_chf is None:
+            raise ValueError(
+                "annual_net_salary_chf è obbligatorio quando include_other_expenses è true"
+            )
+        return self

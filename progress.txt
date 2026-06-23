@@ -1,3 +1,10 @@
 # Ralph Progress Log — Trasferta TI Web Service
 # Avviato: 2026-06-23
 
+## 2026-06-23 — US-101 completata (fase 1, priority 1)
+- Aggiunto `@model_validator(mode='after')` in `DeductionRequest` (app/schemas/request.py)
+- Valida: se `include_other_expenses: true` e `annual_net_salary_chf` è None → ValidationError
+- Nuovo file di test: `tests/unit/test_request_validation.py` (3 test: 422 senza salario, accettato con salario, nessun errore senza flag)
+- 25/25 test passano
+- Prossima storia: US-102 (validazione mixed transport senza dati, priority 2)
+
