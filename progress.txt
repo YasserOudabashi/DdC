@@ -23,3 +23,12 @@
 - 30/30 test passano (test_frontaliero_warning verifica solo presenza di 'FRONTALIERE' nella stringa)
 - Prossima storia: US-104 (fix deprecation warning pyproject.toml, priority 4)
 
+## 2026-06-23 — US-104 completata (fase 1, priority 4)
+- Rimossa sezione `[tool.uv] dev-dependencies` da `pyproject.toml` (deprecata in uv >= 0.4)
+- Rimossa sezione `[project.optional-dependencies] dev` (ridondante)
+- Dipendenze dev migrate a `[dependency-groups] dev` (formato corretto)
+- `uv run pytest tests/unit/ -v` non mostra più il warning 'The tool.uv.dev-dependencies field is deprecated'
+- 30/30 test passano
+- Tutte le storie di fase 1 sono ora completate (US-101, US-102, US-103, US-104 — passes: true)
+- Prossima storia: US-201 (fase 2 — Test trasporto misto Park & Ride, priority 5)
+

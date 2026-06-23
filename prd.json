@@ -65,8 +65,8 @@
         "Typecheck passes"
       ],
       "priority": 4,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Rimossa sezione [tool.uv] dev-dependencies da pyproject.toml. Dipendenze dev migrate a [dependency-groups] dev (formato corretto per uv >= 0.4). Rimosso anche [project.optional-dependencies] dev (ridondante). 30/30 test passano senza il warning di deprecazione."
     },
     {
       "id": "US-201",
