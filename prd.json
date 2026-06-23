@@ -162,8 +162,8 @@
         "Typecheck passes"
       ],
       "priority": 10,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Aggiunto MOTORCYCLE = 'motorcycle' alla classe TransportMode (str, Enum) in app/schemas/request.py. Nessuna logica di calcolo aggiunta in questa storia (prerequisito per US-302/303). 47/47 test passano."
     },
     {
       "id": "US-304",

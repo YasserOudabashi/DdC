@@ -84,3 +84,10 @@
 - 47/47 test passano
 - FASE 2 COMPLETATA: tutte le storie US-201..US-205 hanno passes: true
 
+## 2026-06-23 — US-301 completata (fase 3, priority 10)
+- Aggiunto `MOTORCYCLE = 'motorcycle'` all'enum `TransportMode` in `app/schemas/request.py`
+- Il valore viene accettato da Pydantic e compare automaticamente in Swagger /docs
+- Nessuna logica di calcolo aggiunta in questa storia (prerequisito per US-302 e US-303)
+- 47/47 test passano
+- Prossima storia: US-304 (fase 3 — motorcycle_white_plate nei YAML 2025/2026 e models.py, priority 11)
+

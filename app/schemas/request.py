@@ -9,6 +9,7 @@ class TransportMode(str, Enum):
     PRIVATE_CAR      = "private_car"
     BICYCLE          = "bicycle"
     MIXED            = "mixed"
+    MOTORCYCLE       = "motorcycle"
 
 
 class ResidencyType(str, Enum):
