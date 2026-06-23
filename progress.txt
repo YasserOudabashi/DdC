@@ -8,3 +8,10 @@
 - 25/25 test passano
 - Prossima storia: US-102 (validazione mixed transport senza dati, priority 2)
 
+## 2026-06-23 — US-102 completata (fase 1, priority 2)
+- Aggiunto `@model_validator(mode='after')` `validate_mixed_transport_requires_data` in `DeductionRequest` (app/schemas/request.py)
+- Valida: se `transport_mode == MIXED` e sia `car_distance_km_mixed` che `public_transport_cost_mixed_chf` sono None → ValidationError
+- 5 nuovi test in classe `TestMixedTransportValidation` in `tests/unit/test_request_validation.py`
+- 30/30 test passano
+- Prossima storia: US-103 (fix testo warning frontaliero, priority 3)
+

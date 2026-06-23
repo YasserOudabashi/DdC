@@ -34,8 +34,8 @@
         "Typecheck passes"
       ],
       "priority": 2,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Implementato @model_validator(mode='after') validate_mixed_transport_requires_data in DeductionRequest. 5 test aggiunti in TestMixedTransportValidation (test_request_validation.py). 30/30 test passano."
     },
     {
       "id": "US-103",

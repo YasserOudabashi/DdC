@@ -90,3 +90,15 @@ class DeductionRequest(BaseModel):
                 "annual_net_salary_chf è obbligatorio quando include_other_expenses è true"
             )
         return self
+
+    @model_validator(mode="after")
+    def validate_mixed_transport_requires_data(self) -> DeductionRequest:
+        if (
+            self.transport_mode == TransportMode.MIXED
+            and self.car_distance_km_mixed is None
+            and self.public_transport_cost_mixed_chf is None
+        ):
+            raise ValueError(
+                "Per transport_mode mixed è necessario fornire almeno car_distance_km_mixed o public_transport_cost_mixed_chf"
+            )
+        return self
