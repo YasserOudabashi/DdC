@@ -267,8 +267,8 @@
         "Typecheck passes"
       ],
       "priority": 16,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Campo employer_has_cafeteria: bool = Field(default=False) già presente in app/schemas/request.py. Funzione _resolve_meal_situation() in app/core/calculator.py: WITHOUT_CAFETERIA → WITH_CAFETERIA, WEEKLY_RESIDENT → WEEKLY_RESIDENT_WITH_CAFETERIA, altrimenti invariato. Warning 'CAMPO F: ...' generato solo se il campo forza un cambio. Classe TestEmployerHasCafeteria (4 test) in tests/unit/test_fase4_lohnausweis.py. 68/68 test passano."
     },
     {
       "id": "US-403",

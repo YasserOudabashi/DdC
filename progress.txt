@@ -146,3 +146,12 @@
 - NOTA per chi continua: il file `tests/unit/test_fase4_lohnausweis.py` copre anche US-402 (TestEmployerHasCafeteria) e US-403 (TestCompanyCar) — tutto il codice è già implementato, basta marcare i prossimi PRD e committare
 - Prossima storia: US-402 (fase 4 — Campo F Lohnausweis mensa aziendale, priority 16)
 
+## 2026-06-23 — US-402 completata (fase 4, priority 16)
+- Campo `employer_has_cafeteria: bool = Field(default=False)` già presente in `app/schemas/request.py` (linea 85)
+- Funzione `_resolve_meal_situation(req, warnings)` in `app/core/calculator.py`: WITHOUT_CAFETERIA → WITH_CAFETERIA (CHF 7.50/gg), WEEKLY_RESIDENT → WEEKLY_RESIDENT_WITH_CAFETERIA (CHF 22.50/gg), altri invariati
+- Warning generato solo se il campo F forza effettivamente un cambio: 'CAMPO F: Mensa aziendale disponibile — applicata tariffa ridotta pasti (CHF 7.50/giorno invece di CHF 15.00/giorno)'
+- Classe `TestEmployerHasCafeteria` (4 test) in `tests/unit/test_fase4_lohnausweis.py`: without_cafeteria→with_cafeteria, weekly_resident→weekly_resident_with_cafeteria, already_with_cafeteria_unchanged, home_unchanged
+- Tutto il codice era già implementato dal ciclo precedente (US-401); solo il PRD non era marcato
+- 68/68 test passano
+- Prossima storia: US-403 (fase 4 — Cifra 13.2.2 Lohnausweis auto aziendale, priority 17)
+
