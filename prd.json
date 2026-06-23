@@ -49,8 +49,8 @@
         "Typecheck passes"
       ],
       "priority": 3,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Aggiornato testo warning in app/core/special_cases.py: 'accordo CH-IT firmato il 23.12.2020 (in vigore dal 17.07.2023, RS 0.642.045.43)'. Test test_frontaliero_warning passa (30/30 test totali)."
     },
     {
       "id": "US-104",

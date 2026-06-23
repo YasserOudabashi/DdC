@@ -15,3 +15,11 @@
 - 30/30 test passano
 - Prossima storia: US-103 (fix testo warning frontaliero, priority 3)
 
+## 2026-06-23 — US-103 completata (fase 1, priority 3)
+- Aggiornato testo warning frontaliero in `app/core/special_cases.py`
+- Vecchio: 'accordo Italia-Svizzera 2024 (in vigore dal 2024)'
+- Nuovo: 'accordo CH-IT firmato il 23.12.2020 (in vigore dal 17.07.2023, RS 0.642.045.43)'
+- Nessuna logica di calcolo modificata; solo testo informativo corretto
+- 30/30 test passano (test_frontaliero_warning verifica solo presenza di 'FRONTALIERE' nella stringa)
+- Prossima storia: US-104 (fix deprecation warning pyproject.toml, priority 4)
+

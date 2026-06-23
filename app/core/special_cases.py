@@ -12,9 +12,10 @@ def collect_warnings(req: DeductionRequest) -> list[str]:
     if req.residency_type == ResidencyType.FRONTALIERE:
         warnings.append(
             "FRONTALIERE: Le regole fiscali per i frontalieri italiani sono cambiate con il nuovo "
-            "accordo Italia-Svizzera 2024 (in vigore dal 2024). Verificare con il superiore quale "
-            "normativa si applica al caso specifico. Il calcolo mostrato è basato sulle regole "
-            "standard LT/LIFD e potrebbe non essere corretto per questo contribuente."
+            "accordo CH-IT firmato il 23.12.2020 (in vigore dal 17.07.2023, RS 0.642.045.43). "
+            "Verificare con il superiore quale normativa si applica al caso specifico. Il calcolo "
+            "mostrato è basato sulle regole standard LT/LIFD e potrebbe non essere corretto per "
+            "questo contribuente."
         )
 
     if req.residency_type == ResidencyType.WEEKLY_RESIDENT:
