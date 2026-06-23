@@ -108,3 +108,15 @@
 - 47/47 test passano
 - Prossima storia: US-303 (fase 3 — Calcolo moto in federal_engine, priority 13)
 
+## 2026-06-23 — US-303 completata (fase 3, priority 13)
+- Aggiunta funzione `_motorcycle_federal(r, effective_days, one_way_km, rules)` in `app/core/federal_engine.py`
+- Rate letto da `federal_IFD.transport.motorcycle_white_plate.rate_chf_per_km` (già presente nel YAML 2025/2026 — US-304)
+- Formula: `rate × one_way_km × 2 × effective_days`
+- Cap IFD CHF 3'300 applicato (stessa cap di `private_car.cap_chf` — la moto è veicolo privato ai sensi Art. 26 LIFD)
+- label: 'Motocicletta targa bianca (IFD — soggetta a tetto massimo)', capped: true se lordo > cap
+- Se `one_way_km` è None → `ValueError`
+- Ramo `if transport_mode == TransportMode.MOTORCYCLE` aggiunto in `calculate_transport()`
+- Importato `MotorcycleRule` da `..rules.models`
+- 47/47 test passano
+- Prossima storia: US-305 (fase 3 — Test moto targa bianca, priority 14)
+

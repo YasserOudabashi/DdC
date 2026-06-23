@@ -212,8 +212,8 @@
         "Typecheck passes"
       ],
       "priority": 13,
-      "passes": false,
-      "notes": "Dipende da US-301 (enum) e US-304 (YAML)"
+      "passes": true,
+      "notes": "Aggiunta funzione _motorcycle_federal() in app/core/federal_engine.py: rate da federal_IFD.transport.motorcycle_white_plate.rate_chf_per_km, formula rate×km×2×giorni, cap CHF 3300 (stesso di private_car, Art. 26 LIFD). label: 'Motocicletta targa bianca (IFD — soggetta a tetto massimo)', capped: true se lordo supera il cap. Ramo MOTORCYCLE aggiunto in calculate_transport(). 47/47 test passano."
     },
     {
       "id": "US-305",
