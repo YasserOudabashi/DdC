@@ -1,0 +1,100 @@
+# rules/2026.yaml
+# FONTE UNICA DI VERITÀ per tutti i valori CHF dell'anno fiscale 2026.
+# Nessun importo CHF va nel codice Python — solo qui.
+# Aggiornare questo file quando cambiano le regole fiscali.
+
+version: "2026"
+
+authority_reference:
+  cantonal: >
+    Art. 25 LT (stato 1.1.2026, RS-TI 640.100).
+    Art. 25 cpv. 2 LT modificato da iniziativa parlamentare votata il 10.06.2026:
+    forfait CHF 3'500 fissato direttamente nella legge (non più delega CdS).
+    Verificare data di entrata in vigore con superiore.
+  federal: "RS 642.118.1 — Ordinanza DFF sulle deduzioni delle spese professionali (stato 2026)"
+  federal_act: "Art. 26 LIFD (RS 642.11)"
+
+# ─── CANTON TICINO (Art. 25 LT) ──────────────────────────────────────────────
+cantonal_TI:
+  transport:
+    public_transport:
+      mode: actual_cost            # spesa effettiva documentata (abbonamento, biglietti)
+      cap_chf: null                # nessun tetto massimo cantonale
+
+    private_car:
+      rate_chf_per_km: 0.75       # STIMA 2026 — allineato a IFD. DA CONFERMARE con Decreto CdS TI 2026
+      condition: no_adequate_public_transport
+      cap_chf: null                # nessun tetto cantonale
+
+    bicycle:
+      flat_rate_chf_per_year: 700  # forfait annuale bicicletta / e-bike / ciclomotore
+
+  meals:
+    # Art. 25 cpv. 1 lett. b LT — allineato a IFD (Appendice RS 642.118.1, verificare con Decreto CdS)
+    without_cafeteria:
+      rate_chf_per_day: 15.00
+      annual_max_chf: 3200
+    with_cafeteria:
+      rate_chf_per_day: 7.50
+      annual_max_chf: 1600
+    weekly_resident:
+      rate_chf_per_day: 30.00
+      annual_max_chf: 6400
+    weekly_resident_with_cafeteria:
+      rate_chf_per_day: 22.50
+      annual_max_chf: 4800
+
+  other_expenses:
+    method: flat_rate
+    flat_rate_chf: 3000              # STIMA 2026 — DA CONFERMARE con Decreto CdS TI 2026
+    flat_rate_part_time_chf: 1500   # riduzione <50% o <6 mesi (per analogia con 2025)
+
+  # Forfait globale Art. 25 cpv. 2 LT (ALTERNATIVA alle spese singole)
+  # Votato da Parlamento TI il 10.06.2026 (52 sì, 14 no) — VERIFICARE entrata in vigore
+  flat_rate_all_expenses_chf: 3500
+
+# ─── IMPOSTA FEDERALE DIRETTA (Art. 26 LIFD) ─────────────────────────────────
+federal_IFD:
+  transport:
+    public_transport:
+      mode: actual_cost
+      cap_chf: null
+
+    private_car:
+      rate_chf_per_km: 0.75        # CONFERMATO: RS 642.118.1 Appendice, aggiornato RU 2025 578 (valido dal 1.1.2026)
+      cap_chf: 3300                # tetto massimo IFD 2026 (RS 642.118.1 Art. 5 cpv. 1)
+
+    bicycle:
+      flat_rate_chf_per_year: 700  # bicicletta, ciclomotore, moto targa gialla (Appendice RS 642.118.1)
+
+    motorcycle_white_plate:
+      rate_chf_per_km: 0.40        # motocicletta con targa bianca (Appendice RS 642.118.1)
+
+  meals:
+    without_cafeteria:
+      rate_chf_per_day: 15.00
+      annual_max_chf: 3200
+    with_cafeteria:
+      rate_chf_per_day: 7.50
+      annual_max_chf: 1600
+    weekly_resident:
+      rate_chf_per_day: 30.00
+      annual_max_chf: 6400
+    weekly_resident_with_cafeteria:
+      rate_chf_per_day: 22.50
+      annual_max_chf: 4800
+
+  other_expenses:
+    method: percentage_of_net_salary
+    rate_percent: 3.0
+    minimum_chf: 2000
+    maximum_chf: 4000
+
+# ─── GIORNI LAVORATIVI ───────────────────────────────────────────────────────
+working_days:
+  standard_annual: 220             # giorni lavorativi standard per anno
+  # Il servizio calcola: giorni_effettivi = standard_annual - giorni_home_office
+
+# ─── PARAMETRI GEOCODING ─────────────────────────────────────────────────────
+geocoding:
+  road_correction_factor: 1.25    # fattore correzione haversine → distanza stradale

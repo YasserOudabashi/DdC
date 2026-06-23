@@ -1,0 +1,90 @@
+# rules/2025.yaml
+# Valori anno fiscale 2025 — fonte: Istruzioni per la compilazione della dichiarazione
+# d'imposta 2025 delle persone fisiche, Canton Ticino (flyer_istruzioni_2025.pdf).
+# Tabella di confronto IC/IFD confermata da pagina 50 delle Istruzioni PF 2025.
+
+version: "2025"
+
+authority_reference:
+  cantonal: "Art. 25 LT (stato 2025) — tassi auto CHF 0.60/km confermati da Istruzioni PF 2025"
+  federal:  "RS 642.118.1 (stato 2025) — auto CHF 0.70/km, cap CHF 3'300 (Istruzioni PF 2025 pag. 50)"
+
+# ─── CANTON TICINO (Art. 25 LT) ──────────────────────────────────────────────
+cantonal_TI:
+  transport:
+    public_transport:
+      mode: actual_cost
+      cap_chf: null
+
+    private_car:
+      rate_chf_per_km: 0.60         # CONFERMATO: Istruzioni PF 2025, tabella IC/IFD, pag. 50
+      condition: no_adequate_public_transport
+      cap_chf: null                  # nessun tetto cantonale
+
+    bicycle:
+      flat_rate_chf_per_year: 700    # max CHF 700 o costo MP se inferiore
+
+  meals:
+    without_cafeteria:
+      rate_chf_per_day: 15.00
+      annual_max_chf: 3200
+    with_cafeteria:
+      rate_chf_per_day: 7.50
+      annual_max_chf: 1600
+    weekly_resident:
+      rate_chf_per_day: 30.00
+      annual_max_chf: 6400
+    weekly_resident_with_cafeteria:
+      rate_chf_per_day: 22.50
+      annual_max_chf: 4800
+
+  other_expenses:
+    method: flat_rate
+    flat_rate_chf: 3000              # CONFERMATO: Istruzioni PF 2025 sez. 5.1, pag. 24
+    flat_rate_part_time_chf: 1500   # <50% occupazione o <6 mesi/anno (Istruzioni PF 2025)
+
+  flat_rate_all_expenses_chf: null   # forfait globale 2025 — sconosciuto (Decreto CdS 2025 mancante)
+
+# ─── IMPOSTA FEDERALE DIRETTA (Art. 26 LIFD) ─────────────────────────────────
+federal_IFD:
+  transport:
+    public_transport:
+      mode: actual_cost
+      cap_chf: null
+
+    private_car:
+      rate_chf_per_km: 0.70         # CONFERMATO: Istruzioni PF 2025, tabella IC/IFD, pag. 50
+      cap_chf: 3300                  # CONFERMATO: Istruzioni PF 2025, tabella IC/IFD (max 3'300)
+
+    bicycle:
+      flat_rate_chf_per_year: 700
+
+    motorcycle_white_plate:
+      rate_chf_per_km: 0.40         # CONFERMATO: Istruzioni PF 2025, tabella IC/IFD
+
+  meals:
+    without_cafeteria:
+      rate_chf_per_day: 15.00
+      annual_max_chf: 3200
+    with_cafeteria:
+      rate_chf_per_day: 7.50
+      annual_max_chf: 1600
+    weekly_resident:
+      rate_chf_per_day: 30.00
+      annual_max_chf: 6400
+    weekly_resident_with_cafeteria:
+      rate_chf_per_day: 22.50
+      annual_max_chf: 4800
+
+  other_expenses:
+    method: percentage_of_net_salary
+    rate_percent: 3.0               # CONFERMATO: Istruzioni PF 2025, tabella IC/IFD
+    minimum_chf: 2000
+    maximum_chf: 4000
+
+# ─── GIORNI LAVORATIVI ───────────────────────────────────────────────────────
+working_days:
+  standard_annual: 220              # CONFERMATO: Istruzioni PF 2025, pag. 24
+
+geocoding:
+  road_correction_factor: 1.25

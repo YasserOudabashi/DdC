@@ -1,0 +1,24 @@
+{
+  "fiscal_year": 2026,
+  "home_address": {
+    "street": "Via Varese 5",
+    "city": "Varese",
+    "postal_code": "21100",
+    "country": "IT"
+  },
+  "work_address": {
+    "city": "Lugano",
+    "postal_code": "6900",
+    "country": "CH"
+  },
+  "transport_mode": "private_car",
+  "residency_type": "frontaliere",
+  "work_schedule": {
+    "days_per_week": 5.0,
+    "home_office_days_per_week": 0.0
+  },
+  "meal_situation": "without_cafeteria",
+  "override_distance_km": 30.0,
+  "include_meals": true,
+  "include_other_expenses": false
+}
