@@ -45,3 +45,11 @@
 - 35/35 test passano
 - Prossima storia: US-202 (fase 2 — Test residente settimanale, priority 6)
 
+## 2026-06-23 — US-202 completata (fase 2, priority 6)
+- Creata fixture `tests/integration/fixtures/request_weekly_resident.json` (residency_type: weekly_resident, meal_situation: weekly_resident, include_meals: true, annual_public_transport_cost_chf: 2400.0)
+- Aggiunto test integrazione `test_weekly_resident` in `tests/integration/test_api_deduction.py`:
+  verifica HTTP 200, cantonal_TI.meals_deduction_chf == 6400.0 (CHF 30/gg × 220gg = 6600 → cappato a annual_max_chf 6400), warning 'RESIDENTE SETTIMANALE' presente
+- Nessuna modifica al codice di produzione necessaria (special_cases.py già emette il warning RESIDENTE SETTIMANALE; meals_engine già applica il cap annuale)
+- 36/36 test passano
+- Prossima storia: US-203 (fase 2 — Test altre spese professionali, priority 7)
+

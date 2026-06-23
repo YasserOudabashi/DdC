@@ -92,3 +92,14 @@ async def test_mixed_transport_park_and_ride():
     assert transport["mode"] == "mixed"
     assert len(transport["lines"]) == 2
     assert transport["net_deduction_chf"] == pytest.approx(2850.0, rel=0.01)
+
+
+@pytest.mark.asyncio
+async def test_weekly_resident():
+    # residency_type: weekly_resident, meal_situation: weekly_resident, include_meals: true
+    # pasti: CHF 30/giorno × 220 giorni = 6600 → cappato a annual_max_chf 6400
+    payload = json.loads((FIXTURES / "request_weekly_resident.json").read_text())
+    status, body = await _post(payload)
+    assert status == 200
+    assert body["cantonal_TI"]["meals_deduction_chf"] == pytest.approx(6400.0, rel=0.01)
+    assert any("RESIDENTE SETTIMANALE" in w for w in body["warnings"])

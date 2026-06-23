@@ -1,0 +1,26 @@
+{
+  "fiscal_year": 2026,
+  "home_address": {
+    "street": "Via Nassa 10",
+    "city": "Lugano",
+    "postal_code": "6900",
+    "country": "CH"
+  },
+  "work_address": {
+    "street": "Viale Franscini 30",
+    "city": "Bellinzona",
+    "postal_code": "6500",
+    "country": "CH"
+  },
+  "transport_mode": "public_transport",
+  "residency_type": "weekly_resident",
+  "work_schedule": {
+    "days_per_week": 5.0,
+    "home_office_days_per_week": 0.0
+  },
+  "meal_situation": "weekly_resident",
+  "override_distance_km": null,
+  "annual_public_transport_cost_chf": 2400.0,
+  "include_meals": true,
+  "include_other_expenses": false
+}

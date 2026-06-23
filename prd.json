@@ -96,8 +96,8 @@
         "Tests pass"
       ],
       "priority": 6,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Fixture request_weekly_resident.json creata (residency_type: weekly_resident, meal_situation: weekly_resident, include_meals: true, annual_public_transport_cost_chf: 2400.0). Test integrazione test_weekly_resident verifica: HTTP 200, cantonal_TI.meals_deduction_chf == 6400.0 (30 CHF/gg × 220gg = 6600 → cappato a 6400), warning 'RESIDENTE SETTIMANALE' presente. 36/36 test passano."
     },
     {
       "id": "US-203",
