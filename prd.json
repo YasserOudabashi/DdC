@@ -303,8 +303,8 @@
         "Typecheck passes"
       ],
       "priority": 18,
-      "passes": false,
-      "notes": "Copre anche US-504 (fix commento test in CLAUDE.md). Eseguire dopo US-401, US-402, US-403."
+      "passes": true,
+      "notes": "Sezione 'Campi Lohnausweis nel Request Schema' già presente in .claude/CLAUDE.md (tabella Campo D/F/13.2.2/11). Commento test integrazione già corretto: '# usa ASGITransport, nessun server necessario'. Entrambi i criteri soddisfatti. 68/68 test passano."
     },
     {
       "id": "US-501",

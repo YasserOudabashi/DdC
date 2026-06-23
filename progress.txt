@@ -166,3 +166,11 @@
 - 68/68 test passano
 - Prossima storia: US-404 (fase 4 — Documentazione campi Lohnausweis in CLAUDE.md, priority 18)
 
+## 2026-06-23 — US-404 completata (fase 4, priority 18)
+- Verificato che .claude/CLAUDE.md già contiene la sezione 'Campi Lohnausweis nel Request Schema' con tabella completa (Campo D → employer_pays_transport, Campo F → employer_has_cafeteria, Cifra 13.2.2 → company_car_monthly_chf, Cifra 11 → annual_net_salary_chf)
+- Verificato che il commento test integrazione è già corretto: '# usa ASGITransport, nessun server necessario' (non '# richiede il server attivo')
+- Entrambi i criteri di accettazione già soddisfatti dal ciclo precedente (US-401 li aveva inclusi)
+- 68/68 test passano
+- FASE 4 COMPLETATA: tutte le storie US-401..US-404 hanno passes: true
+- Prossima fase: US-501 (fase 5 — Dockerfile per sviluppo locale, priority 19)
+
