@@ -122,3 +122,26 @@ class TestMixed:
             public_transport_cost_mixed_chf=1200.0,
         )
         assert not any(line.capped for line in result.lines)
+
+
+class TestMotorcycle:
+    def test_calculation_no_cap(self, rules_2026, schedule_full):
+        # 20km × 0.40 × 2 × 220 = 3'520 → nessun cap cantonale
+        result = cantonal_engine.calculate_transport(
+            TransportMode.MOTORCYCLE, 20.0, schedule_full, rules_2026,
+        )
+        assert result.net_deduction_chf == pytest.approx(3520.0, rel=0.01)
+        assert result.gross_deduction_chf == pytest.approx(3520.0, rel=0.01)
+        assert not result.lines[0].capped
+
+    def test_label(self, rules_2026, schedule_full):
+        result = cantonal_engine.calculate_transport(
+            TransportMode.MOTORCYCLE, 20.0, schedule_full, rules_2026,
+        )
+        assert result.lines[0].label == "Motocicletta (targa bianca)"
+
+    def test_requires_distance(self, rules_2026, schedule_full):
+        with pytest.raises(ValueError):
+            cantonal_engine.calculate_transport(
+                TransportMode.MOTORCYCLE, None, schedule_full, rules_2026,
+            )

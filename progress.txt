@@ -120,3 +120,19 @@
 - 47/47 test passano
 - Prossima storia: US-305 (fase 3 — Test moto targa bianca, priority 14)
 
+## 2026-06-23 — US-305 completata (fase 3, priority 14)
+- Creata fixture `tests/integration/fixtures/request_motorcycle.json` (transport_mode: motorcycle, override_distance_km: 20.0, schedule 5/0 giorni)
+- Aggiunta classe `TestMotorcycle` (3 test) in `tests/unit/test_cantonal_engine.py`:
+  - test_calculation_no_cap: 20×0.40×2×220=3520, nessun cap, capped: false
+  - test_label: verifica label == 'Motocicletta (targa bianca)'
+  - test_requires_distance: ValueError se one_way_km è None
+- Aggiunta classe `TestFederalMotorcycle` (3 test) in `tests/unit/test_federal_engine.py`:
+  - test_over_cap_is_capped: lordo 3520 → netto 3300, capped: true
+  - test_label: verifica 'Motocicletta' presente nell'etichetta
+  - test_under_cap_not_capped: 5×0.40×2×220=880, capped: false
+- Aggiunto test integrazione `test_motorcycle_deduction` in `tests/integration/test_api_deduction.py`:
+  verifica cantonale 3520 e federale 3300 su fixture request_motorcycle.json
+- Nessuna modifica al codice di produzione necessaria (cantonal_engine._motorcycle() e federal_engine._motorcycle_federal() già implementati in US-302/303)
+- 54/54 test passano
+- FASE 3 COMPLETATA: tutte le storie US-301..US-305 hanno passes: true
+

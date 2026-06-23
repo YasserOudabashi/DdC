@@ -1,0 +1,23 @@
+{
+  "fiscal_year": 2026,
+  "home_address": {
+    "city": "Mendrisio",
+    "postal_code": "6850",
+    "country": "CH"
+  },
+  "work_address": {
+    "city": "Lugano",
+    "postal_code": "6900",
+    "country": "CH"
+  },
+  "transport_mode": "motorcycle",
+  "residency_type": "resident_TI",
+  "work_schedule": {
+    "days_per_week": 5.0,
+    "home_office_days_per_week": 0.0
+  },
+  "meal_situation": "without_cafeteria",
+  "override_distance_km": 20.0,
+  "include_meals": false,
+  "include_other_expenses": false
+}

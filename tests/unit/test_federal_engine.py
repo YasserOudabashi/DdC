@@ -60,3 +60,28 @@ class TestFederalBicycle:
         assert result.net_deduction_chf == 700.0
         assert result.gross_deduction_chf == 700.0
         assert result.lines[0].label == "Bicicletta / e-bike"
+
+
+class TestFederalMotorcycle:
+    def test_over_cap_is_capped(self, rules_2026, schedule_full):
+        # 20km × 0.40 × 2 × 220 = 3'520 > 3'300 → cappato a 3'300 (IFD)
+        result = federal_engine.calculate_transport(
+            TransportMode.MOTORCYCLE, 20.0, schedule_full, rules_2026,
+        )
+        assert result.gross_deduction_chf == pytest.approx(3520.0, rel=0.01)
+        assert result.net_deduction_chf == pytest.approx(3300.0, rel=0.01)
+        assert result.lines[0].capped
+
+    def test_label(self, rules_2026, schedule_full):
+        result = federal_engine.calculate_transport(
+            TransportMode.MOTORCYCLE, 20.0, schedule_full, rules_2026,
+        )
+        assert "Motocicletta" in result.lines[0].label
+
+    def test_under_cap_not_capped(self, rules_2026, schedule_full):
+        # 5km × 0.40 × 2 × 220 = 880 < 3'300 → non cappato
+        result = federal_engine.calculate_transport(
+            TransportMode.MOTORCYCLE, 5.0, schedule_full, rules_2026,
+        )
+        assert result.net_deduction_chf == pytest.approx(880.0, rel=0.01)
+        assert not result.lines[0].capped

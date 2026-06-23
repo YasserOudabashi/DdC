@@ -134,3 +134,17 @@ async def test_get_rules_2025():
     assert data["version"] == "2025"
     assert data["cantonal_TI"]["transport"]["private_car"]["rate_chf_per_km"] == pytest.approx(0.60)
     assert data["federal_IFD"]["transport"]["private_car"]["rate_chf_per_km"] == pytest.approx(0.70)
+
+
+@pytest.mark.asyncio
+async def test_motorcycle_deduction():
+    # transport_mode: motorcycle, override_distance_km: 20.0
+    # cantonale: 20 × 0.40 × 2 × 220 = 3'520 (nessun cap)
+    # federale:  20 × 0.40 × 2 × 220 = 3'520 → cappato a 3'300 (IFD)
+    payload = json.loads((FIXTURES / "request_motorcycle.json").read_text())
+    status, body = await _post(payload)
+    assert status == 200
+    cantonal = body["cantonal_TI"]["transport_deduction"]
+    federal = body["federal_IFD"]["transport_deduction"]
+    assert cantonal["net_deduction_chf"] == pytest.approx(3520.0, rel=0.01)
+    assert federal["net_deduction_chf"] == pytest.approx(3300.0, rel=0.01)

@@ -228,8 +228,8 @@
         "Tests pass"
       ],
       "priority": 14,
-      "passes": false,
-      "notes": "Dipende da US-302 e US-303"
+      "passes": true,
+      "notes": "Fixture request_motorcycle.json creata (transport_mode: motorcycle, override_distance_km: 20.0). TestMotorcycle (3 test) in test_cantonal_engine.py: calcolo 3520, label 'Motocicletta (targa bianca)', ValueError senza distanza. TestFederalMotorcycle (3 test) in test_federal_engine.py: cap 3300 su 3520 lordi, label, caso sotto cap 880. Test integrazione test_motorcycle_deduction: cantonale 3520, federale 3300. 54/54 test passano."
     },
     {
       "id": "US-401",
