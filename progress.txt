@@ -136,3 +136,13 @@
 - 54/54 test passano
 - FASE 3 COMPLETATA: tutte le storie US-301..US-305 hanno passes: true
 
+## 2026-06-23 — US-401 completata (fase 4, priority 15)
+- Campo `employer_pays_transport: bool = Field(default=False)` già presente in `app/schemas/request.py`
+- Funzione `_zero_transport(original)` in `app/core/calculator.py`: mantiene `gross_deduction_chf` teorico, imposta `net_deduction_chf = 0.0`, DeductionLine con label 'Trasporto a carico del datore di lavoro', basis 'Campo D Lohnausweis spuntato — nessuna deduzione ammessa', legal_reference 'Art. 26 cpv. 2 LIFD / Art. 25 cpv. 2 LT'
+- `_cantonal_transport()` e `_federal_transport()` gestiscono la precedenza: `company_car_monthly_chf` (cifra 13.2.2) ha priorità su `employer_pays_transport` (campo D)
+- Warning in `app/core/special_cases.py`: 'CAMPO D: Il datore di lavoro mette a disposizione il trasporto gratuitamente. Nessuna deduzione ammessa (campo D Lohnausweis).' (solo se company_car_monthly_chf è assente)
+- Classe `TestEmployerPaysTransport` (5 test) in `tests/unit/test_fase4_lohnausweis.py`: net=0, gross>0, label, default_false_unchanged, company_car_overrides_campo_d
+- 68/68 test passano (inclusi 14 test fase 4)
+- NOTA per chi continua: il file `tests/unit/test_fase4_lohnausweis.py` copre anche US-402 (TestEmployerHasCafeteria) e US-403 (TestCompanyCar) — tutto il codice è già implementato, basta marcare i prossimi PRD e committare
+- Prossima storia: US-402 (fase 4 — Campo F Lohnausweis mensa aziendale, priority 16)
+

@@ -40,8 +40,24 @@ uv run uvicorn app.main:app --reload --port 8000
 ## Come eseguire i test
 ```powershell
 uv run pytest tests\unit\ -v          # veloci, nessun I/O
-uv run pytest tests\integration\ -v   # richiede il server attivo
+uv run pytest tests\integration\ -v   # usa ASGITransport, nessun server necessario
 ```
+
+## Campi Lohnausweis nel Request Schema
+
+| Campo Lohnausweis | Campo API               | Tipo    | Effetto                                        |
+|-------------------|-------------------------|---------|------------------------------------------------|
+| D (spuntato)      | `employer_pays_transport` | bool    | Azzera deduzione trasporto (net=0, gross=teorico) |
+| F (spuntato)      | `employer_has_cafeteria`  | bool    | Forza tariffa pasti ridotta (CHF 7.50/giorno)  |
+| Cifra 13.2.2 (CHF)| `company_car_monthly_chf` | float?  | Art. 5a forfait auto aziendale (×12, cap IFD)  |
+| Cifra 11 (CHF)    | `annual_net_salary_chf`   | float?  | Base calcolo altre spese 3%                    |
+
+**Ordine di precedenza trasporto:**
+1. `company_car_monthly_chf` (Art. 5a) sovrascrive la formula km normale
+2. `employer_pays_transport` azzera il net (solo se `company_car_monthly_chf` è assente)
+3. `employer_has_cafeteria` agisce solo sui pasti, non sul trasporto
+
+**Logica in `calculator.py`:** `_cantonal_transport()` e `_federal_transport()` gestiscono la precedenza.
 
 ## Normativa implementata
 - Art. 25 cpv. 1a LT: trasporto dal domicilio al luogo di lavoro

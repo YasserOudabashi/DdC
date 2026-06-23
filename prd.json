@@ -248,8 +248,8 @@
         "Typecheck passes"
       ],
       "priority": 15,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Campo employer_pays_transport: bool aggiunto in app/schemas/request.py. Logica _zero_transport() in app/core/calculator.py: mantiene gross teorico, azzera net, DeductionLine con label/basis/legal_reference corretti. Warning in app/core/special_cases.py. Precedenza company_car_monthly_chf > employer_pays_transport gestita in _cantonal_transport() e _federal_transport(). Classe TestEmployerPaysTransport (5 test) in tests/unit/test_fase4_lohnausweis.py. 68/68 test passano."
     },
     {
       "id": "US-402",
@@ -351,6 +351,118 @@
       "priority": 21,
       "passes": false,
       "notes": ""
+    },
+    {
+      "id": "US-601",
+      "fase": 6,
+      "title": "Scaffold frontend — mount StaticFiles e route root",
+      "description": "Come sviluppatore, voglio che FastAPI serva una pagina HTML alla root / in modo che aprendo http://localhost:8000 si veda l'interfaccia web invece di un 404.",
+      "acceptanceCriteria": [
+        "Cartella app/static/ creata con struttura: app/static/index.html, app/static/css/style.css, app/static/js/app.js",
+        "In app/main.py: app.mount('/static', StaticFiles(directory='app/static'), name='static') aggiunto dopo la creazione dell'app FastAPI",
+        "Aggiunta route GET / che restituisce FileResponse('app/static/index.html') — non un redirect, serve il file direttamente",
+        "index.html è un documento HTML5 valido con lang='it', charset UTF-8, viewport meta, link al CSS e script al JS",
+        "GET http://localhost:8000/ risponde HTTP 200 con Content-Type text/html",
+        "GET http://localhost:8000/v1/health continua a rispondere normalmente (nessuna regressione API)",
+        "Typecheck passes"
+      ],
+      "priority": 22,
+      "passes": false,
+      "notes": "Dipendenza: nessuna. Prerequisito per tutte le altre US-6xx. Usare FileResponse da fastapi.responses; aggiungere 'aiofiles>=23.0' alle dipendenze in pyproject.toml (richiesto da StaticFiles)."
+    },
+    {
+      "id": "US-602",
+      "fase": 6,
+      "title": "CSS — identità visiva Canton Ticino / Confederazione Svizzera",
+      "description": "Come utente finale, voglio che l'interfaccia ricordi visivamente i portali ufficiali del Canton Ticino (ti.ch) e della Confederazione (admin.ch): header istituzionale, palette colori ufficiale, tipografia pulita e accessibile.",
+      "acceptanceCriteria": [
+        "In app/static/css/style.css definite le variabili CSS: --ct-blue: #003366; --ct-blue-mid: #00509E; --ct-red: #CC0000; --ct-white: #FFFFFF; --ct-grey-light: #F5F5F5; --ct-grey-border: #CCCCCC; --ct-text: #1A1A1A; --ct-font: 'Source Sans 3', 'Frutiger', system-ui, sans-serif",
+        "Font 'Source Sans 3' caricato via Google Fonts CDN (weights 400, 600) nel <head> di index.html",
+        "Header fisso in cima: sfondo var(--ct-blue), altezza 64px, logo sinistro (stemma SVG del Canton Ticino inline o img placeholder), titolo 'Calcolo Deduzioni Trasferta' in bianco a destra del logo",
+        "Footer con sfondo var(--ct-blue), testo bianco centrato: 'Canton Ticino — Divisione delle contribuzioni | Strumento non ufficiale a scopo informativo'",
+        "Body background var(--ct-grey-light), contenuto centrato in un <main> con max-width 860px, padding 24px",
+        "Componenti CSS: .card (sfondo bianco, bordo 1px var(--ct-grey-border), border-radius 4px, padding 24px, box-shadow leggera), .btn-primary (sfondo var(--ct-blue), testo bianco, hover var(--ct-blue-mid)), .btn-secondary (outline var(--ct-blue)), .badge-cantonal (sfondo var(--ct-blue), colore bianco), .badge-federal (sfondo var(--ct-red), colore bianco)",
+        "Nessun framework CSS esterno (no Bootstrap, no Tailwind) — solo il file style.css del progetto",
+        "Typecheck passes"
+      ],
+      "priority": 23,
+      "passes": false,
+      "notes": "Lo stemma ufficiale del Canton Ticino in SVG è pubblico dominio e disponibile su Wikimedia Commons. Usare un placeholder <svg> semplice se non disponibile localmente. Il footer deve includere la nota 'strumento non ufficiale' per evitare fraintendimenti istituzionali."
+    },
+    {
+      "id": "US-603",
+      "fase": 6,
+      "title": "Form — sezione trasporto e indirizzi",
+      "description": "Come contribuente ticinese, voglio inserire il mio indirizzo di domicilio, il luogo di lavoro, il mezzo di trasporto e l'anno fiscale in un form chiaro per ottenere il calcolo della deduzione.",
+      "acceptanceCriteria": [
+        "In index.html, <form id='deduction-form'> con struttura a card: card 'Dati generali' (anno fiscale, tipo di residenza), card 'Indirizzi' (domicilio e luogo di lavoro), card 'Trasporto' (mezzo, distanza manuale opzionale, orario di lavoro)",
+        "Campo 'Anno fiscale': <select> con opzioni 2025 e 2026, default 2026",
+        "Campo 'Tipo di residenza': <select> con valori 'Residente in Ticino' (resident_TI), 'Frontaliere' (frontaliere), 'Residente settimanale' (weekly_resident)",
+        "Sezione indirizzi: due gruppi di input (Domicilio / Luogo di lavoro) ciascuno con campi: Città (text, obbligatorio), NPA (text, pattern [0-9]{4}, obbligatorio), Paese (text, default CH)",
+        "Campo 'Mezzo di trasporto': <select> con opzioni Mezzi pubblici (public_transport), Auto privata (private_car), Motocicletta targa bianca (motorcycle), Bicicletta / e-bike (bicycle), Misto auto+treno (mixed)",
+        "Campo 'Distanza effettiva (km)' (override_distance_km): input number, opzionale, visibile sempre con label 'Inserire solo se la distanza calcolata automaticamente non è corretta'",
+        "Sezione 'Orario di lavoro': giorni/settimana (select 1-5, default 5), giorni home office/settimana (select 0-4, default 0)",
+        "Validazione HTML5 nativa (required, pattern) + messaggio errore inline via JS se il server risponde 422",
+        "Typecheck passes"
+      ],
+      "priority": 24,
+      "passes": false,
+      "notes": "Per il trasporto misto (mixed), rendere visibili via JS i campi car_distance_km_mixed e public_transport_cost_mixed_chf non appena l'utente seleziona 'Misto'. Per auto privata e moto, rendere visibile il campo override_distance_km con un hint sul geocoding."
+    },
+    {
+      "id": "US-604",
+      "fase": 6,
+      "title": "Form — sezione pasti, altre spese e campi Lohnausweis",
+      "description": "Come contribuente, voglio poter indicare la situazione pasti, richiedere il calcolo delle altre spese professionali e inserire le informazioni dal mio Certificato di Salario (campi D, F, cifra 13.2.2) per ottenere un calcolo completo.",
+      "acceptanceCriteria": [
+        "Card 'Pasti fuori domicilio': checkbox 'Includi deduzione pasti' (include_meals, default spuntato), <select> 'Situazione pasti' visibile solo se checkbox spuntato — opzioni: Rientro a casa (home), Senza mensa aziendale (without_cafeteria), Con mensa aziendale (with_cafeteria), Residente settimanale senza mensa (weekly_resident), Residente settimanale con mensa (weekly_resident_with_cafeteria)",
+        "Card 'Altre spese professionali': checkbox 'Includi altre spese' (include_other_expenses, default non spuntato), se spuntato appare input 'Salario netto annuo (CHF)' (annual_net_salary_chf, number, obbligatorio se checkbox attivo)",
+        "Card 'Certificato di Salario (Lohnausweis)' con tooltip informativo: checkbox 'Campo D — Il datore mette a disposizione il trasporto' (employer_pays_transport), checkbox 'Campo F — Mensa aziendale disponibile' (employer_has_cafeteria), input 'Cifra 13.2.2 — Importo mensile auto aziendale (CHF)' (company_car_monthly_chf, number, opzionale, visibile solo se mezzo = auto privata)",
+        "Tooltip CSS puro sul punto interrogativo '?' accanto a 'Certificato di Salario': testo 'I campi D, F e 13.2.2 si trovano sul Lohnausweis (Modulo 11 DFF) rilasciato dal datore di lavoro'",
+        "Pulsante 'Calcola deduzione' (btn-primary) in fondo al form, centrato",
+        "Pulsante 'Azzera' (btn-secondary) che resetta il form ai valori default",
+        "Typecheck passes"
+      ],
+      "priority": 25,
+      "passes": false,
+      "notes": "Dipende da US-401, US-402, US-403 (campi Lohnausweis nel backend). Se il backend non ha ancora quei campi, la card Lohnausweis va comunque mostrata ma i campi inviano valori di default (false/null) senza bloccare il flusso. La visibilità condizionale dei campi va gestita con JS puro (addEventListener change)."
+    },
+    {
+      "id": "US-605",
+      "fase": 6,
+      "title": "Pannello risultati — breakdown IC e IFD con dettaglio voci",
+      "description": "Come contribuente, voglio vedere chiaramente l'importo deducibile sia per l'imposta cantonale (IC) che per l'imposta federale diretta (IFD), con il dettaglio di ogni voce e i riferimenti legali, dopo aver premuto 'Calcola'.",
+      "acceptanceCriteria": [
+        "Div #results nascosto al caricamento, visibile dopo risposta HTTP 200 dall'API; in caso di errore mostra #error-panel con il messaggio del server",
+        "Header del pannello risultati: anno fiscale, data di calcolo, distanza calcolata (km) con badge 'Geocoding: Swisstopo' o 'Geocoding: Nominatim' se geocoding_used == true",
+        "Due colonne affiancate (flex/grid, impilate su mobile): colonna IC con badge .badge-cantonal 'Cantonale TI (IC)' e colonna IFD con badge .badge-federal 'Federale IFD'",
+        "Per ciascuna colonna: totale in grande (total_deduction_chf, font-size 2rem, grassetto), poi tabella con colonne Voce / Importo CHF / Base di calcolo; ogni riga è un DeductionLine, se capped==true aggiungere icona ⚠ e testo 'Tetto massimo applicato: CHF {cap_amount_chf}'",
+        "Sezione 'Note e avvertenze': lista <ul> con tutti i warnings[] e notes[] dalla risposta, testo colore #856404 su sfondo #fff3cd (stile alert-warning), icona ℹ",
+        "Link 'Stampa / Salva PDF' che chiama window.print(); CSS @media print che nasconde header, footer, form e mostra solo #results a piena larghezza",
+        "Typecheck passes"
+      ],
+      "priority": 26,
+      "passes": false,
+      "notes": "La chiamata API avviene in app/static/js/app.js con fetch('/v1/deduction/calculate', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload)}). Mostrare uno spinner (CSS puro, animazione rotate) durante la chiamata. Se la risposta ha errors[] non vuoto, mostrarli in un alert-danger sopra i risultati."
+    },
+    {
+      "id": "US-606",
+      "fase": 6,
+      "title": "Responsive design, accessibilità WCAG 2.1 AA e test manuale",
+      "description": "Come utente su smartphone o tablet, voglio che il form e i risultati siano utilizzabili su schermi piccoli; come utente con disabilità, voglio che il sito rispetti i requisiti minimi di accessibilità previsti dalla normativa federale (LDisAb / WCAG 2.1 AA).",
+      "acceptanceCriteria": [
+        "Layout responsive: su viewport < 640px le due card IC/IFD si impilano verticalmente; i campi del form occupano il 100% della larghezza; nessun overflow orizzontale",
+        "Breakpoint unico a 640px gestito in style.css con @media (max-width: 640px)",
+        "Tutti i campi <input> e <select> hanno attributo <label> associato via for/id; nessun placeholder usato come unico label",
+        "Contrasto colori: testo su sfondo bianco ≥ 4.5:1; testo bianco su --ct-blue ≥ 4.5:1 (verificato con WebAIM Contrast Checker)",
+        "Navigazione da tastiera: Tab scorre tutti i campi nell'ordine logico; Enter su 'Calcola' invia il form; Escape chiude eventuali tooltip",
+        "Attributo aria-live='polite' sul div #results: i lettori di schermo annunciano il nuovo contenuto quando i risultati appaiono",
+        "Test manuale documentato in progress.txt: aprire http://localhost:8000 su Chrome desktop, compilare il form con caso Lugano→Bellinzona trasporto pubblico CHF 1800, verificare risultati IC CHF 5000 e IFD CHF 5000; ripetere su viewport 375px (DevTools mobile emulation)",
+        "Typecheck passes"
+      ],
+      "priority": 27,
+      "passes": false,
+      "notes": "La normativa federale svizzera (ODisAb, SR 151.31) impone WCAG 2.1 AA per i siti delle autorità; anche se questo è uno strumento informativo non ufficiale, rispettarne lo standard rafforza la credibilità istituzionale. Nessun test automatico richiesto in questa storia: il test è manuale e documentato in progress.txt."
     }
   ]
 }

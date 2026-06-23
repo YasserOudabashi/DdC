@@ -81,6 +81,10 @@ class DeductionRequest(BaseModel):
     annual_public_transport_cost_chf: Optional[float] = Field(default=None, ge=0.0)
     annual_net_salary_chf: Optional[float] = Field(default=None, ge=0.0)
 
+    employer_pays_transport: bool = Field(default=False)
+    employer_has_cafeteria: bool = Field(default=False)
+    company_car_monthly_chf: Optional[float] = Field(default=None, ge=0.0)
+
     include_meals: bool = Field(default=False)
     include_other_expenses: bool = Field(default=False)
 
