@@ -32,3 +32,16 @@
 - Tutte le storie di fase 1 sono ora completate (US-101, US-102, US-103, US-104 — passes: true)
 - Prossima storia: US-201 (fase 2 — Test trasporto misto Park & Ride, priority 5)
 
+## 2026-06-23 — US-201 completata (fase 2, priority 5)
+- Creata fixture `tests/integration/fixtures/request_mixed.json` (transport_mode: mixed, car_distance_km_mixed: 5.0, public_transport_cost_mixed_chf: 1200.0)
+- Aggiunto test integrazione `test_mixed_transport_park_and_ride` in `tests/integration/test_api_deduction.py`:
+  verifica HTTP 200, mode == 'mixed', 2 lines (auto + mezzi pubblici), net_deduction_chf == 2850.0
+- Aggiunta classe `TestMixed` (4 test) in `tests/unit/test_cantonal_engine.py`:
+  - test_both_components: auto 1650.0 + PT 1200.0 = 2850.0, 2 lines
+  - test_only_car: solo auto, 1 line
+  - test_only_public_transport: solo mezzi pubblici, 1 line
+  - test_no_cantonal_cap: nessun cap cantonale su trasporto misto
+- Calcolo _mixed() già esistente in cantonal_engine.py, nessuna modifica al codice di produzione necessaria
+- 35/35 test passano
+- Prossima storia: US-202 (fase 2 — Test residente settimanale, priority 6)
+

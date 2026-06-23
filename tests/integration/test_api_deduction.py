@@ -79,3 +79,16 @@ async def test_get_rules():
     data = resp.json()
     assert data["version"] == "2026"
     assert data["cantonal_TI"]["transport"]["private_car"]["rate_chf_per_km"] == 0.75
+
+
+@pytest.mark.asyncio
+async def test_mixed_transport_park_and_ride():
+    # car_distance_km_mixed: 5.0, public_transport_cost_mixed_chf: 1200.0
+    # auto: 0.75 × 5.0 × 2 × 220 = 1650.0; mezzi pubblici: 1200.0; totale: 2850.0
+    payload = json.loads((FIXTURES / "request_mixed.json").read_text())
+    status, body = await _post(payload)
+    assert status == 200
+    transport = body["cantonal_TI"]["transport_deduction"]
+    assert transport["mode"] == "mixed"
+    assert len(transport["lines"]) == 2
+    assert transport["net_deduction_chf"] == pytest.approx(2850.0, rel=0.01)

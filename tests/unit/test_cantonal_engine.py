@@ -81,3 +81,43 @@ class TestBicycle:
         )
         assert result.net_deduction_chf == 700.0
         assert result.gross_deduction_chf == 700.0
+
+
+class TestMixed:
+    def test_both_components(self, rules_2026, schedule_full):
+        # auto: 0.75 × 5.0 × 2 × 220 = 1650.0; mezzi pubblici: 1200.0; totale: 2850.0
+        result = cantonal_engine.calculate_transport(
+            TransportMode.MIXED, None, schedule_full, rules_2026,
+            car_distance_km_mixed=5.0,
+            public_transport_cost_mixed_chf=1200.0,
+        )
+        assert result.mode == "mixed"
+        assert result.net_deduction_chf == pytest.approx(2850.0, rel=0.01)
+        assert len(result.lines) == 2
+
+    def test_only_car(self, rules_2026, schedule_full):
+        # solo auto: 0.75 × 5.0 × 2 × 220 = 1650.0
+        result = cantonal_engine.calculate_transport(
+            TransportMode.MIXED, None, schedule_full, rules_2026,
+            car_distance_km_mixed=5.0,
+        )
+        assert result.net_deduction_chf == pytest.approx(1650.0, rel=0.01)
+        assert len(result.lines) == 1
+
+    def test_only_public_transport(self, rules_2026, schedule_full):
+        # solo mezzi pubblici: 1200.0
+        result = cantonal_engine.calculate_transport(
+            TransportMode.MIXED, None, schedule_full, rules_2026,
+            public_transport_cost_mixed_chf=1200.0,
+        )
+        assert result.net_deduction_chf == pytest.approx(1200.0, rel=0.01)
+        assert len(result.lines) == 1
+
+    def test_no_cantonal_cap(self, rules_2026, schedule_full):
+        # cantonale: nessun cap su trasporto misto
+        result = cantonal_engine.calculate_transport(
+            TransportMode.MIXED, None, schedule_full, rules_2026,
+            car_distance_km_mixed=5.0,
+            public_transport_cost_mixed_chf=1200.0,
+        )
+        assert not any(line.capped for line in result.lines)

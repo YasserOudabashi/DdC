@@ -81,8 +81,8 @@
         "Tests pass"
       ],
       "priority": 5,
-      "passes": false,
-      "notes": "Dipende da US-102 (validazione mixed già implementata)"
+      "passes": true,
+      "notes": "Fixture request_mixed.json creata (car_distance_km_mixed: 5.0, public_transport_cost_mixed_chf: 1200.0). Test integrazione test_mixed_transport_park_and_ride verifica: HTTP 200, mode == 'mixed', 2 lines, net_deduction_chf == 2850.0. Classe TestMixed (4 test) in test_cantonal_engine.py verifica entrambi i componenti, solo auto, solo mezzi pubblici, nessun cap cantonale. 35/35 test passano."
     },
     {
       "id": "US-202",
