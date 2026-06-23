@@ -195,8 +195,8 @@
         "Typecheck passes"
       ],
       "priority": 12,
-      "passes": false,
-      "notes": "Dipende da US-301 (enum) e US-304 (YAML)"
+      "passes": true,
+      "notes": "Aggiunta funzione _motorcycle() in app/core/cantonal_engine.py: rate da cantonal_TI.transport.motorcycle_white_plate (fallback a federal_IFD), formula rate×km×2×giorni, nessun cap. Ramo MOTORCYCLE aggiunto in calculate_transport(). 47/47 test passano."
     },
     {
       "id": "US-303",

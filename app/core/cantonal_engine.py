@@ -4,7 +4,7 @@ Funzioni pure: nessun I/O, nessun effetto collaterale.
 Tutti i valori CHF vengono da FiscalYearRules (caricato dal YAML).
 """
 from __future__ import annotations
-from ..rules.models import FiscalYearRules, CantonalRules
+from ..rules.models import FiscalYearRules, CantonalRules, MotorcycleRule
 from ..schemas.request import TransportMode, WorkSchedule
 from ..schemas.response import TransportResult, DeductionLine
 
@@ -32,6 +32,9 @@ def calculate_transport(
 
     if transport_mode == TransportMode.MIXED:
         return _mixed(r, effective_days, car_distance_km_mixed, public_transport_cost_mixed_chf)
+
+    if transport_mode == TransportMode.MOTORCYCLE:
+        return _motorcycle(r, effective_days, one_way_km, rules)
 
     raise ValueError(f"TransportMode non supportato: {transport_mode}")
 
@@ -120,6 +123,38 @@ def _bicycle(r: CantonalRules, effective_days: int) -> TransportResult:
             amount_chf=amount,
             basis=f"Forfait annuale CHF {amount:.0f}",
             legal_reference="Art. 25 cpv. 1 lett. a LT (decreto CdS)",
+        )],
+    )
+
+
+def _motorcycle(
+    r: CantonalRules, effective_days: int,
+    one_way_km: float | None, rules: FiscalYearRules,
+) -> TransportResult:
+    if one_way_km is None:
+        raise ValueError("one_way_km obbligatorio per TransportMode.MOTORCYCLE")
+
+    cantonal_moto: MotorcycleRule | None = r.transport.motorcycle_white_plate
+    federal_moto: MotorcycleRule | None = rules.federal_IFD.transport.motorcycle_white_plate
+    moto = cantonal_moto or federal_moto
+    if moto is None:
+        raise ValueError("motorcycle_white_plate non trovato nelle regole dell'anno selezionato")
+
+    rate = moto.rate_chf_per_km
+    gross = rate * one_way_km * 2 * effective_days
+
+    return TransportResult(
+        mode="motorcycle",
+        one_way_distance_km=one_way_km,
+        effective_working_days=effective_days,
+        gross_deduction_chf=round(gross, 2),
+        net_deduction_chf=round(gross, 2),
+        lines=[DeductionLine(
+            label="Motocicletta (targa bianca)",
+            amount_chf=round(gross, 2),
+            basis=f"CHF {rate}/km × {one_way_km:.1f}km × 2 × {effective_days} giorni",
+            legal_reference="Art. 25 cpv. 1 lett. a LT + RS 642.118.1 Appendice",
+            capped=False,
         )],
     )
 

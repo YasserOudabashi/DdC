@@ -98,3 +98,13 @@
 - 47/47 test passano
 - Prossima storia: US-302 (fase 3 — Calcolo moto in cantonal_engine, priority 12)
 
+## 2026-06-23 — US-302 completata (fase 3, priority 12)
+- Aggiunta funzione `_motorcycle(r, effective_days, one_way_km, rules)` in `app/core/cantonal_engine.py`
+- Rate letto da `cantonal_TI.transport.motorcycle_white_plate.rate_chf_per_km` con fallback a `federal_IFD.transport.motorcycle_white_plate`
+- Formula: `rate × one_way_km × 2 × effective_days`, nessun cap cantonale
+- label: 'Motocicletta (targa bianca)', legal_reference: 'Art. 25 cpv. 1 lett. a LT + RS 642.118.1 Appendice'
+- Se `one_way_km` è None → `ValueError` (coerente con `_private_car`)
+- Aggiunto ramo `if transport_mode == TransportMode.MOTORCYCLE` in `calculate_transport()`
+- 47/47 test passano
+- Prossima storia: US-303 (fase 3 — Calcolo moto in federal_engine, priority 13)
+
