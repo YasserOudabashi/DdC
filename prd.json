@@ -114,8 +114,8 @@
         "Tests pass"
       ],
       "priority": 7,
-      "passes": false,
-      "notes": "Dipende da US-101 (validazione other_expenses già implementata)"
+      "passes": true,
+      "notes": "Nuovo file tests/unit/test_other_expenses.py con 4 test (3 IFD: minimo CHF 2'000, normale CHF 3'000, massimo CHF 4'000; 1 cantonale: flat rate CHF 3'000). Aggiunto test integrazione test_other_expenses_without_salary_returns_422 in tests/integration/test_api_deduction.py. 41/41 test passano."
     },
     {
       "id": "US-204",

@@ -103,3 +103,12 @@ async def test_weekly_resident():
     assert status == 200
     assert body["cantonal_TI"]["meals_deduction_chf"] == pytest.approx(6400.0, rel=0.01)
     assert any("RESIDENTE SETTIMANALE" in w for w in body["warnings"])
+
+
+@pytest.mark.asyncio
+async def test_other_expenses_without_salary_returns_422():
+    # include_other_expenses: true senza annual_net_salary_chf → 422
+    payload = json.loads((FIXTURES / "request_base.json").read_text())
+    payload["include_other_expenses"] = True
+    status, _ = await _post(payload)
+    assert status == 422

@@ -53,3 +53,13 @@
 - 36/36 test passano
 - Prossima storia: US-203 (fase 2 — Test altre spese professionali, priority 7)
 
+## 2026-06-23 — US-203 completata (fase 2, priority 7)
+- Creato `tests/unit/test_other_expenses.py` con 4 test unitari:
+  - TestFederalOtherExpenses: CHF 50k → min CHF 2'000; CHF 100k → CHF 3'000; CHF 200k → max CHF 4'000
+  - TestCantonalOtherExpenses: flat rate 2026 → CHF 3'000 (indipendente dal salario)
+- Aggiunto test di integrazione `test_other_expenses_without_salary_returns_422` in `tests/integration/test_api_deduction.py`
+  (include_other_expenses: true senza annual_net_salary_chf → HTTP 422; sfrutta la validazione Pydantic di US-101)
+- Nessuna modifica al codice di produzione necessaria (other_expenses.py e YAML 2026 già corretti)
+- 41/41 test passano
+- Prossima storia: US-204 (fase 2 — Test bicicletta, priority 8)
+
