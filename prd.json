@@ -289,8 +289,8 @@
         "Typecheck passes"
       ],
       "priority": 17,
-      "passes": false,
-      "notes": "Dipende da US-401 per la logica di precedenza in calculator.py. Cap IFD CHF 3'300 confermato: Art. 5a rimanda al massimo di cui all'Art. 26 cpv. 1 lett. a LIFD."
+      "passes": true,
+      "notes": "Campo company_car_monthly_chf: Optional[float] in app/schemas/request.py. Logica in _cantonal_transport() e _federal_transport() (app/core/calculator.py): gross = monthly × 12, cantonale net = gross (nessun cap), federale net = min(gross, cap_chf=3300). Warning 'AUTO AZIENDALE (cifra 13.2.2)' in app/core/special_cases.py; warning aggiuntivo se transport_mode != private_car. Classe TestCompanyCar (5 test) in tests/unit/test_fase4_lohnausweis.py. 68/68 test passano."
     },
     {
       "id": "US-404",

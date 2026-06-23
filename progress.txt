@@ -155,3 +155,14 @@
 - 68/68 test passano
 - Prossima storia: US-403 (fase 4 — Cifra 13.2.2 Lohnausweis auto aziendale, priority 17)
 
+## 2026-06-23 — US-403 completata (fase 4, priority 17)
+- Campo `company_car_monthly_chf: Optional[float] = Field(default=None, ge=0.0)` già presente in `app/schemas/request.py`
+- Logica in `_cantonal_transport()` e `_federal_transport()` (app/core/calculator.py): gross = monthly × 12, cantonale net = gross (nessun cap cantonale), federale net = min(gross, cap_chf=3300 da YAML)
+- Precedenza: company_car_monthly_chf sovrascrive sia la formula km normale che employer_pays_transport
+- Warning 'AUTO AZIENDALE (cifra 13.2.2)' in `app/core/special_cases.py`; warning aggiuntivo se transport_mode != private_car
+- label: 'Auto aziendale — calcolo forfettario (cifra 13.2.2 Lohnausweis)', legal_reference: 'Art. 5a RS 642.118.1'
+- Classe `TestCompanyCar` (5 test) in `tests/unit/test_fase4_lohnausweis.py`: cantonal_no_cap (9600), federal_capped (3300), low_uncapped (2400), legal_reference, ignored_when_not_private_car
+- Tutto il codice era già implementato dal ciclo precedente (US-401); solo il PRD non era marcato
+- 68/68 test passano
+- Prossima storia: US-404 (fase 4 — Documentazione campi Lohnausweis in CLAUDE.md, priority 18)
+
