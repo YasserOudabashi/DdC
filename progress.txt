@@ -91,3 +91,10 @@
 - 47/47 test passano
 - Prossima storia: US-304 (fase 3 — motorcycle_white_plate nei YAML 2025/2026 e models.py, priority 11)
 
+## 2026-06-23 — US-304 completata (fase 3, priority 11)
+- Aggiunto `motorcycle_white_plate: { rate_chf_per_km: 0.40 }` in `cantonal_TI.transport` di `rules/2025.yaml` e `rules/2026.yaml`
+- `MotorcycleRule` e campo `motorcycle_white_plate: Optional[MotorcycleRule] = None` già presenti in `app/rules/models.py` (in `TransportRules`, classe base di `CantonalRules`)
+- Nessuna modifica al codice Python necessaria per questa storia
+- 47/47 test passano
+- Prossima storia: US-302 (fase 3 — Calcolo moto in cantonal_engine, priority 12)
+

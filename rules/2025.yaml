@@ -24,6 +24,9 @@ cantonal_TI:
     bicycle:
       flat_rate_chf_per_year: 700    # max CHF 700 o costo MP se inferiore
 
+    motorcycle_white_plate:
+      rate_chf_per_km: 0.40          # motocicletta targa bianca (allineato a IFD RS 642.118.1 Appendice)
+
   meals:
     without_cafeteria:
       rate_chf_per_day: 15.00

@@ -29,6 +29,9 @@ cantonal_TI:
     bicycle:
       flat_rate_chf_per_year: 700  # forfait annuale bicicletta / e-bike / ciclomotore
 
+    motorcycle_white_plate:
+      rate_chf_per_km: 0.40        # motocicletta targa bianca (allineato a IFD RS 642.118.1 Appendice)
+
   meals:
     # Art. 25 cpv. 1 lett. b LT — allineato a IFD (Appendice RS 642.118.1, verificare con Decreto CdS)
     without_cafeteria:

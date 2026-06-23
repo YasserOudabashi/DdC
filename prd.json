@@ -177,8 +177,8 @@
         "Typecheck passes"
       ],
       "priority": 11,
-      "passes": false,
-      "notes": "Prerequisito per US-302 e US-303"
+      "passes": true,
+      "notes": "motorcycle_white_plate: {rate_chf_per_km: 0.40} aggiunto in cantonal_TI.transport di rules/2025.yaml e rules/2026.yaml. MotorcycleRule e campo Optional[MotorcycleRule] già presenti in app/rules/models.py (TransportRules). 47/47 test passano."
     },
     {
       "id": "US-302",
