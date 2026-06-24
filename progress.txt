@@ -40,6 +40,14 @@
 - 84 test passano, nessuna regressione.
 - Prossima: US-706 (rimuovere info disclosure filesystem da YAML loader)
 
+## 2026-06-24 — US-706 DONE
+- app/rules/loader.py: rimossa variabile `available` e clausola `Disponibili: ...`
+  dal messaggio FileNotFoundError. Nuovo messaggio: solo
+  `f'Anno fiscale {fiscal_year} non supportato.'`
+  Previene l'enumerazione del filesystem da parte di attaccanti.
+- 84 test passano, nessuna regressione.
+- Prossima: US-708 (Nominatim contact email configurabile via env var)
+
 ## 2026-06-24 — US-707 DONE
 - app/schemas/request.py: aggiunti Field constraints su Address:
   city=Field(..., min_length=1, max_length=100)

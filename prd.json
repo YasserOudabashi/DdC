@@ -98,8 +98,8 @@
         "Tests pass"
       ],
       "priority": 6,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Rimossa variabile 'available' e clausola 'Disponibili:' da loader.py; messaggio ora solo 'Anno fiscale {fiscal_year} non supportato.'"
     },
     {
       "id": "US-707",
