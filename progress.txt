@@ -21,3 +21,12 @@
 - 84 test passano, nessuna regressione.
 - Prossima: US-704 (CSP, HSTS, Permissions-Policy security headers)
 
+## 2026-06-24 — US-704 DONE
+- app/security.py: aggiunti 4 nuovi header in add_security_headers():
+  Content-Security-Policy, Strict-Transport-Security, Permissions-Policy,
+  X-Permitted-Cross-Domain-Policies.
+- Tutti i precedenti 5 header (X-Content-Type-Options, X-Frame-Options, X-XSS-Protection,
+  Referrer-Policy, Cache-Control) preservati invariati.
+- 84 test passano, nessuna regressione.
+- Prossima: US-705 (proxy-aware rate limiting via TRUSTED_PROXIES)
+

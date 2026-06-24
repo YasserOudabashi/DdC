@@ -65,8 +65,8 @@
         "Tests pass"
       ],
       "priority": 4,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "CSP, HSTS, Permissions-Policy, X-Permitted-Cross-Domain-Policies aggiunti in add_security_headers() in app/security.py"
     },
     {
       "id": "US-705",
