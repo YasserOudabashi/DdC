@@ -333,8 +333,8 @@
         "Typecheck passes"
       ],
       "priority": 20,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": ".env.example già presente nella repo con tutte e 6 le variabili di app/config.py (DEFAULT_FISCAL_YEAR, LOG_LEVEL, API_KEY con commento per generazione token, RATE_LIMIT_PER_MINUTE, ALLOWED_ORIGINS, MAX_BODY_SIZE_BYTES) — ognuna con commento esplicativo. .env.example tracciato da git; .env escluso da .gitignore (riga 6). 68/68 test passano."
     },
     {
       "id": "US-503",

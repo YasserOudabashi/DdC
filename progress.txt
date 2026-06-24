@@ -184,3 +184,11 @@
 - 68/68 test passano
 - Prossima storia: US-502 (fase 5 — .env.example, priority 20)
 
+## 2026-06-24 — US-502 completata (fase 5, priority 20)
+- .env.example già presente nella repo e committato dal ciclo precedente
+- Contiene tutte e 6 le variabili di app/config.py: DEFAULT_FISCAL_YEAR, LOG_LEVEL, API_KEY (con commento per generazione token sicuro), RATE_LIMIT_PER_MINUTE, ALLOWED_ORIGINS, MAX_BODY_SIZE_BYTES
+- Ogni variabile ha un commento esplicativo sul proprio uso
+- .env.example NON è in .gitignore (tracciato correttamente); .env è in .gitignore (riga 6) — nessuna modifica necessaria
+- 68/68 test passano
+- Prossima storia: US-503 (fase 5 — Script export specifica OpenAPI, priority 21)
+
