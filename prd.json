@@ -117,8 +117,8 @@
         "Tests pass"
       ],
       "priority": 7,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Field constraints aggiunti su Address: city max_length=100, street max_length=200, postal_code min_length=3 max_length=10, country min_length=2 max_length=2"
     },
     {
       "id": "US-708",

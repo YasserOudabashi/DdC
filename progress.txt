@@ -40,3 +40,13 @@
 - 84 test passano, nessuna regressione.
 - Prossima: US-706 (rimuovere info disclosure filesystem da YAML loader)
 
+## 2026-06-24 — US-707 DONE
+- app/schemas/request.py: aggiunti Field constraints su Address:
+  city=Field(..., min_length=1, max_length=100)
+  street=Field(default=None, max_length=200)
+  postal_code=Field(..., min_length=3, max_length=10)
+  country=Field(default='CH', min_length=2, max_length=2)
+- Tutti i fixture esistenti (Lugano/6900, Bellinzona/6500, ecc.) continuano a passare.
+- 84 test passano, nessuna regressione.
+- Prossima: US-706 (rimuovere info disclosure filesystem da YAML loader)
+

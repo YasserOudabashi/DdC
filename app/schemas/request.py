@@ -28,10 +28,10 @@ class MealSituation(str, Enum):
 
 
 class Address(BaseModel):
-    street: Optional[str] = None
-    city: str
-    postal_code: str
-    country: str = "CH"
+    street: Optional[str] = Field(default=None, max_length=200)
+    city: str = Field(..., min_length=1, max_length=100)
+    postal_code: str = Field(..., min_length=3, max_length=10)
+    country: str = Field(default="CH", min_length=2, max_length=2)
 
     def full_address(self) -> str:
         parts = []
