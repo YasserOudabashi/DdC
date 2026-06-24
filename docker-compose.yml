@@ -1,0 +1,9 @@
+services:
+  trasferta-api:
+    build: .
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./rules:/app/rules
+    env_file:
+      - .env

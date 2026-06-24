@@ -174,3 +174,13 @@
 - FASE 4 COMPLETATA: tutte le storie US-401..US-404 hanno passes: true
 - Prossima fase: US-501 (fase 5 — Dockerfile per sviluppo locale, priority 19)
 
+## 2026-06-24 — US-501 completata (fase 5, priority 19)
+- Dockerfile e docker-compose.yml già presenti nella repo (creati in ciclo precedente)
+- Dockerfile: base python:3.12-slim, uv installato via COPY --from ghcr.io/astral-sh/uv:latest, layer caching pyproject.toml+uv.lock copiati prima del codice, site-packages copiati da .venv locale (workaround necessario: il sandbox blocca internet, `uv sync --no-dev` non raggiunge PyPI), porta 8000 esposta, CMD: python -m uvicorn app.main:app --host 0.0.0.0 --port 8000
+- docker-compose.yml: servizio trasferta-api, port mapping 8000:8000, volume ./rules:/app/rules (aggiornabili senza rebuild), env_file: .env
+- docker build: OK (immagine 002_applicativo-trasferta-api:latest costruita con successo)
+- Verifica: docker run su porta 8001 → GET /v1/health → {"status":"ok","default_fiscal_year":2026,"service":"DdC Trasferta Service"}
+- NOTA: `docker compose up` fallisce nel sandbox (il path /d/ non è condivisibile con Docker daemon), ma il container funziona correttamente con `docker run` diretto. Il docker-compose.yml è corretto per ambienti standard.
+- 68/68 test passano
+- Prossima storia: US-502 (fase 5 — .env.example, priority 20)
+

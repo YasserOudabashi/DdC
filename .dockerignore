@@ -1,0 +1,9 @@
+__pycache__/
+*.pyc
+*.pyo
+tests/
+documentazione/
+vendor/
+uv-cache/
+.env
+.git/

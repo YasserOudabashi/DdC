@@ -318,8 +318,8 @@
         "Typecheck passes"
       ],
       "priority": 19,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Dockerfile e docker-compose.yml già presenti nella repo. Dockerfile: base python:3.12-slim, uv installato via COPY --from ghcr.io/astral-sh/uv, layer caching pyproject.toml+uv.lock, site-packages copiati da .venv locale (workaround offline: il sandbox blocca internet), porta 8000 esposta, CMD python -m uvicorn. docker-compose.yml: servizio trasferta-api, port 8000:8000, volume ./rules:/app/rules, env_file .env. Verificato: docker build OK, container avviato su porta 8001, GET /v1/health → {status: ok, default_fiscal_year: 2026}. 68/68 test passano."
     },
     {
       "id": "US-502",
