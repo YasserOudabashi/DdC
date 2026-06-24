@@ -82,8 +82,8 @@
         "Tests pass"
       ],
       "priority": 5,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "get_real_ip() aggiunta in app/security.py; trusted_proxies: str = '' in config.py; TRUSTED_PROXIES in .env.example; limiter usa get_real_ip come key_func"
     },
     {
       "id": "US-706",

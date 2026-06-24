@@ -22,5 +22,8 @@ class Settings(BaseSettings):
     # Documentazione API — disabilitare in produzione
     docs_enabled: bool = True
 
+    # Proxy — IP del reverse proxy (separati da virgola, vuoto = connessione diretta)
+    trusted_proxies: str = ""
+
 
 settings = Settings()

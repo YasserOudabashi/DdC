@@ -11,7 +11,19 @@ from slowapi.util import get_remote_address
 from .config import settings
 
 # ─── Rate Limiter ─────────────────────────────────────────────────────────────
-limiter = Limiter(key_func=get_remote_address)
+
+def get_real_ip(request: Request) -> str:
+    """Return the real client IP, honouring X-Forwarded-For for trusted proxies."""
+    trusted = [ip.strip() for ip in settings.trusted_proxies.split(",") if ip.strip()]
+    client_host = request.client.host if request.client else None
+    if client_host and client_host in trusted:
+        forwarded_for = request.headers.get("X-Forwarded-For")
+        if forwarded_for:
+            return forwarded_for.split(",")[0].strip()
+    return get_remote_address(request)
+
+
+limiter = Limiter(key_func=get_real_ip)
 
 # ─── API Key ──────────────────────────────────────────────────────────────────
 _api_key_header = APIKeyHeader(name="X-API-Key", auto_error=False)

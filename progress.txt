@@ -30,3 +30,13 @@
 - 84 test passano, nessuna regressione.
 - Prossima: US-705 (proxy-aware rate limiting via TRUSTED_PROXIES)
 
+## 2026-06-24 — US-705 DONE
+- app/config.py: aggiunto `trusted_proxies: str = ""` in Settings.
+- app/security.py: aggiunta funzione `get_real_ip(request)` — se client.host è in
+  trusted_proxies e c'è header X-Forwarded-For, ritorna il primo IP dall'header;
+  altrimenti usa get_remote_address() (fallback invariato quando lista vuota).
+  limiter ora usa `key_func=get_real_ip` al posto di `get_remote_address`.
+- .env.example: aggiunto `TRUSTED_PROXIES=  # IP del reverse proxy, es: 127.0.0.1`.
+- 84 test passano, nessuna regressione.
+- Prossima: US-706 (rimuovere info disclosure filesystem da YAML loader)
+
