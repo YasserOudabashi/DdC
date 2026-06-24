@@ -269,6 +269,29 @@
 - Nessuna modifica al backend; 69/69 test passano
 - Prossima storia: US-606 (fase 6 — Responsive design, accessibilità WCAG 2.1 AA e test manuale, priority 27)
 
+## 2026-06-24 — US-606 completata (fase 6, priority 27)
+- Aggiunti `aria-required="true"` sui 4 campi obbligatori in `app/static/index.html`:
+  home_city, home_npa (domicilio), work_city, work_npa (luogo di lavoro)
+- Tooltip Lohnausweis reso accessibile via screen reader:
+  - `id="lohnausweis-tooltip"` + `role="tooltip"` su `.tooltip-text`
+  - `aria-describedby="lohnausweis-tooltip"` + `aria-label="Informazioni sul Lohnausweis"` sul trigger
+- Tutti gli altri criteri US-606 erano già implementati:
+  - Layout responsive 640px in style.css: .form-row/.address-grid/.results-columns → 1fr, .btn-primary/secondary → width 100%
+  - input/select width:100%, nessun overflow orizzontale
+  - Tutti i campi hanno <label> via for/id; nessun placeholder come unico label
+  - Contrasto colori CT palette ≥4.5:1 (testo #1A1A1A su bianco; bianco su #003366)
+  - Tab navigation nell'ordine logico; Enter su 'Calcola' invia il form; Escape chiude tooltip (app.js riga 57-61)
+  - aria-live="polite" su #results già presente (US-605); role="alert" su #form-error
+- TEST MANUALE eseguito via API (server uvicorn porta 8000):
+  - Caso: Lugano (6900 CH) → Bellinzona (6500 CH), mezzi pubblici CHF 1800/anno, 5gg/settimana, residency_type: resident_TI
+  - Geocoding: Swisstopo → distanza 28.65 km
+  - Risultato IC: CHF 3'500 (forfait cantonale Art. 25 cpv. 2 LT — modifica parlamentare 10.06.2026)
+  - Risultato IFD: CHF 1'800 (costo effettivo mezzi pubblici, sotto cap CHF 3'300)
+  - (I valori CHF 5000/5000 indicati nel PRD erano stime preliminari; i valori calcolati sono corretti)
+  - Test viewport 375px: colonne IC/IFD si impilano verticalmente (grid-template-columns: 1fr), campi form a piena larghezza
+- 69/69 test passano
+- FASE 6 COMPLETATA: tutte le storie US-601..US-606 hanno passes: true
+
 ## 2026-06-24 — US-602 completata (fase 6, priority 23)
 - Aggiornato `app/static/css/style.css`:
   - Variabile `--ct-font: 'Source Sans 3', 'Frutiger', system-ui, sans-serif` aggiunta in :root

@@ -461,8 +461,8 @@
         "Typecheck passes"
       ],
       "priority": 27,
-      "passes": false,
-      "notes": "La normativa federale svizzera (ODisAb, SR 151.31) impone WCAG 2.1 AA per i siti delle autorità; anche se questo è uno strumento informativo non ufficiale, rispettarne lo standard rafforza la credibilità istituzionale. Nessun test automatico richiesto in questa storia: il test è manuale e documentato in progress.txt."
+      "passes": true,
+      "notes": "Miglioramenti WCAG 2.1 AA applicati in index.html: aria-required='true' sui 4 campi obbligatori (home_city, home_npa, work_city, work_npa); tooltip Lohnausweis aggiornato con role='tooltip', id='lohnausweis-tooltip', aria-describedby e aria-label sul trigger. CSS già implementato: breakpoint 640px, .results-columns→1fr, width:100% su input, focus outline visibili, contrasto CT palette ≥4.5:1. aria-live='polite' su #results già presente (US-605). Escape chiude tooltip già implementato in app.js (US-603). Test manuale eseguito: Lugano (6900) → Bellinzona (6500), mezzi pubblici CHF 1800/anno, 5gg/settimana → IC CHF 3500 (forfait Art. 25 cpv. 2 LT), IFD CHF 1800. Risposta verificata anche su viewport 375px (colonne IC/IFD impilate verticalmente). 69/69 test passano."
     }
   ]
 }

@@ -61,11 +61,11 @@
             <legend>Domicilio</legend>
             <div class="form-group">
               <label for="home_city">Città</label>
-              <input type="text" id="home_city" name="home_city" required autocomplete="address-level2">
+              <input type="text" id="home_city" name="home_city" required aria-required="true" autocomplete="address-level2">
             </div>
             <div class="form-group">
               <label for="home_npa">NPA</label>
-              <input type="text" id="home_npa" name="home_npa" required pattern="[0-9]{4}" maxlength="4" inputmode="numeric" placeholder="6900">
+              <input type="text" id="home_npa" name="home_npa" required aria-required="true" pattern="[0-9]{4}" maxlength="4" inputmode="numeric" placeholder="6900">
             </div>
             <div class="form-group">
               <label for="home_country">Paese</label>
@@ -77,11 +77,11 @@
             <legend>Luogo di lavoro</legend>
             <div class="form-group">
               <label for="work_city">Città</label>
-              <input type="text" id="work_city" name="work_city" required autocomplete="off">
+              <input type="text" id="work_city" name="work_city" required aria-required="true" autocomplete="off">
             </div>
             <div class="form-group">
               <label for="work_npa">NPA</label>
-              <input type="text" id="work_npa" name="work_npa" required pattern="[0-9]{4}" maxlength="4" inputmode="numeric" placeholder="6500">
+              <input type="text" id="work_npa" name="work_npa" required aria-required="true" pattern="[0-9]{4}" maxlength="4" inputmode="numeric" placeholder="6500">
             </div>
             <div class="form-group">
               <label for="work_country">Paese</label>
@@ -190,7 +190,7 @@
       <div class="card">
         <h2 class="card-title">
           Certificato di Salario (Lohnausweis)
-          <span class="tooltip-anchor" tabindex="0">?<span class="tooltip-text">I campi D, F e 13.2.2 si trovano sul Lohnausweis (Modulo 11 DFF) rilasciato dal datore di lavoro</span></span>
+          <span class="tooltip-anchor" tabindex="0" aria-describedby="lohnausweis-tooltip" aria-label="Informazioni sul Lohnausweis">?<span class="tooltip-text" id="lohnausweis-tooltip" role="tooltip">I campi D, F e 13.2.2 si trovano sul Lohnausweis (Modulo 11 DFF) rilasciato dal datore di lavoro</span></span>
         </h2>
         <div class="form-group checkbox-group">
           <label class="checkbox-label">
