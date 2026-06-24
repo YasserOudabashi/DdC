@@ -7,3 +7,6 @@ __pycache__/
 *.egg-info/
 dist/
 .mypy_cache/
+uv-cache/
+vendor/
+Claude
