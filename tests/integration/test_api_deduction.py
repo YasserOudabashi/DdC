@@ -148,3 +148,12 @@ async def test_motorcycle_deduction():
     federal = body["federal_IFD"]["transport_deduction"]
     assert cantonal["net_deduction_chf"] == pytest.approx(3520.0, rel=0.01)
     assert federal["net_deduction_chf"] == pytest.approx(3300.0, rel=0.01)
+
+
+@pytest.mark.asyncio
+async def test_root_serves_html():
+    # GET / deve restituire HTTP 200 con Content-Type text/html (US-601)
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        resp = await client.get("/")
+    assert resp.status_code == 200
+    assert "text/html" in resp.headers["content-type"]

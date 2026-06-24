@@ -1,0 +1,47 @@
+/* Canton Ticino — stile base */
+:root {
+  --ct-blue: #003366;
+  --ct-blue-mid: #00509E;
+  --ct-red: #CC0000;
+  --ct-white: #FFFFFF;
+  --ct-grey-light: #F5F5F5;
+  --ct-grey-border: #CCCCCC;
+  --ct-text: #1A1A1A;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: system-ui, sans-serif;
+  background: var(--ct-grey-light);
+  color: var(--ct-text);
+}
+
+header {
+  background: var(--ct-blue);
+  height: 64px;
+  display: flex;
+  align-items: center;
+  padding: 0 24px;
+  position: sticky;
+  top: 0;
+}
+
+.header-inner { display: flex; align-items: center; gap: 16px; }
+
+.header-title { color: var(--ct-white); font-size: 1.1rem; font-weight: 600; }
+
+main {
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 24px;
+}
+
+footer {
+  background: var(--ct-blue);
+  color: var(--ct-white);
+  text-align: center;
+  padding: 16px;
+  font-size: 0.85rem;
+  margin-top: 48px;
+}

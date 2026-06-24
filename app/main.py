@@ -2,6 +2,8 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 from slowapi.errors import RateLimitExceeded
 from starlette.responses import JSONResponse
 
@@ -56,6 +58,15 @@ app.add_middleware(
 
 # ─── Security headers ─────────────────────────────────────────────────────────
 app.middleware("http")(add_security_headers)
+
+# ─── Static files & root ──────────────────────────────────────────────────────
+app.mount("/static", StaticFiles(directory="app/static"), name="static")
+
+
+@app.get("/", include_in_schema=False)
+async def root():
+    return FileResponse("app/static/index.html")
+
 
 # ─── Router ───────────────────────────────────────────────────────────────────
 app.include_router(router)

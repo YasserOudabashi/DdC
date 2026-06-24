@@ -367,8 +367,8 @@
         "Typecheck passes"
       ],
       "priority": 22,
-      "passes": false,
-      "notes": "Dipendenza: nessuna. Prerequisito per tutte le altre US-6xx. Usare FileResponse da fastapi.responses; aggiungere 'aiofiles>=23.0' alle dipendenze in pyproject.toml (richiesto da StaticFiles)."
+      "passes": true,
+      "notes": "Creata struttura app/static/ con index.html (HTML5, lang=it, charset UTF-8, viewport, link CSS, script JS), app/static/css/style.css (variabili base CT), app/static/js/app.js (placeholder). Aggiunta aiofiles>=23.0 a pyproject.toml. In app/main.py: app.mount('/static', StaticFiles(directory='app/static'), name='static') e route GET / → FileResponse('app/static/index.html'). Test integrazione test_root_serves_html verifica HTTP 200 + Content-Type text/html. GET /v1/health invariato. 69/69 test passano."
     },
     {
       "id": "US-602",

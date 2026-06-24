@@ -202,3 +202,15 @@
 - FASE 5 COMPLETATA: tutte le storie US-501..US-503 hanno passes: true
 - Prossima fase: US-601 (fase 6 — Scaffold frontend, priority 22)
 
+## 2026-06-24 — US-601 completata (fase 6, priority 22)
+- Creata struttura `app/static/` con tre file:
+  - `app/static/index.html`: HTML5 valido, lang=it, charset UTF-8, viewport meta, link CSS, script JS
+  - `app/static/css/style.css`: variabili CSS base Canton Ticino (--ct-blue, --ct-red, ecc.), header/footer/main
+  - `app/static/js/app.js`: placeholder (implementazione nelle storie successive)
+- Aggiunta dipendenza `aiofiles>=23.0` in pyproject.toml (richiesta da StaticFiles)
+- In `app/main.py`: aggiunto `app.mount('/static', StaticFiles(directory='app/static'), name='static')` e route `GET /` → `FileResponse('app/static/index.html')`
+- Aggiunto test integrazione `test_root_serves_html` in `tests/integration/test_api_deduction.py`: verifica HTTP 200 + Content-Type text/html
+- GET /v1/health e tutti gli endpoint esistenti invariati (nessuna regressione)
+- 69/69 test passano
+- Prossima storia: US-602 (fase 6 — CSS identità visiva Canton Ticino, priority 23)
+
