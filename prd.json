@@ -32,8 +32,8 @@
         "Tests pass"
       ],
       "priority": 2,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "limiter.limit decorator aggiunto su health(); request: Request come primo param"
     },
     {
       "id": "US-703",

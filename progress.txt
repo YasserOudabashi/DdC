@@ -7,3 +7,9 @@
 - 84 test passano, nessuna regressione.
 - Prossima: US-702 (rate limiting su /v1/health)
 
+## 2026-06-24 — US-702 DONE
+- app/api/v1/endpoints/health.py: aggiunto import Request, limiter; decorator
+  @limiter.limit("{rate_limit_per_minute}/minute") e request: Request come primo param.
+- 84 test passano, nessuna regressione.
+- Prossima: US-703 (toggle /docs e /redoc via DOCS_ENABLED env var)
+
