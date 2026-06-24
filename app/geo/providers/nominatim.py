@@ -7,22 +7,23 @@ from __future__ import annotations
 from typing import Optional, Tuple
 import httpx
 from .base import GeoProvider
+from app.config import settings
 
 _BASE = "https://nominatim.openstreetmap.org/search"
-_HEADERS = {"User-Agent": "DdC-Trasferta-Service/1.0 (oudabashiy@gmail.com)"}
 
 
 class NominatimProvider(GeoProvider):
     name = "nominatim"
 
     async def resolve(self, address: str) -> Optional[Tuple[float, float]]:
+        headers = {"User-Agent": f"DdC-Trasferta-Service/1.0 ({settings.nominatim_contact_email})"}
         params = {
             "q": address,
             "format": "json",
             "limit": 1,
             "countrycodes": "ch,it",
         }
-        async with httpx.AsyncClient(timeout=10.0, headers=_HEADERS) as client:
+        async with httpx.AsyncClient(timeout=10.0, headers=headers) as client:
             try:
                 resp = await client.get(_BASE, params=params)
                 resp.raise_for_status()

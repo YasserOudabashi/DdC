@@ -134,8 +134,8 @@
         "Tests pass"
       ],
       "priority": 8,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "nominatim_contact_email: str = 'admin@example.com' in config.py; _HEADERS rimosso da nominatim.py, header costruito dinamicamente con settings.nominatim_contact_email; NOMINATIM_CONTACT_EMAIL in .env.example"
     },
     {
       "id": "US-709",

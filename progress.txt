@@ -58,3 +58,12 @@
 - 84 test passano, nessuna regressione.
 - Prossima: US-706 (rimuovere info disclosure filesystem da YAML loader)
 
+## 2026-06-24 — US-708 DONE
+- app/config.py: aggiunto `nominatim_contact_email: str = "admin@example.com"` in Settings.
+- app/geo/providers/nominatim.py: rimosso `_HEADERS` globale con email hardcoded;
+  header User-Agent ora costruito dinamicamente in resolve() leggendo
+  settings.nominatim_contact_email. Aggiunto import di `settings` da app.config.
+- .env.example: aggiunto `NOMINATIM_CONTACT_EMAIL=tua@email.com  # per User-Agent Nominatim`.
+- 84 test passano, nessuna regressione.
+- Prossima: US-709 (Docker container come utente non-root)
+

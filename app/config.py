@@ -25,5 +25,8 @@ class Settings(BaseSettings):
     # Proxy — IP del reverse proxy (separati da virgola, vuoto = connessione diretta)
     trusted_proxies: str = ""
 
+    # Nominatim — email per User-Agent (richiesta dalla policy OSM)
+    nominatim_contact_email: str = "admin@example.com"
+
 
 settings = Settings()
