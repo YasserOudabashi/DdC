@@ -1,6 +1,8 @@
 """Security layer — rate limiting, API key, security headers."""
 from __future__ import annotations
 
+import secrets
+
 from fastapi import Request, HTTPException, Security
 from fastapi.security import APIKeyHeader
 from slowapi import Limiter
@@ -18,7 +20,7 @@ _api_key_header = APIKeyHeader(name="X-API-Key", auto_error=False)
 async def verify_api_key(api_key: str | None = Security(_api_key_header)) -> None:
     if not settings.api_key:
         return  # nessuna chiave configurata → accesso libero
-    if api_key != settings.api_key:
+    if not secrets.compare_digest(api_key or "", settings.api_key or ""):
         raise HTTPException(status_code=401, detail="API key mancante o non valida")
 
 

@@ -1,468 +1,204 @@
 {
-  "project": "Trasferta TI — Web Service Deduzioni",
-  "branchName": "ralph/deduzioni-trasferta-ti",
-  "description": "Correzione bug e validazioni, completamento test suite, nuovo mezzo moto targa bianca, integrazione Lohnausweis e deployment locale",
+  "project": "DdC Trasferta TI",
+  "branchName": "ralph/security-hardening",
+  "description": "Security Review & Hardening — fixes vulnerabilities and adds defense-in-depth for public internet deployment (Infomaniak VPS). No breaking API changes.",
   "userStories": [
     {
-      "id": "US-101",
-      "fase": 1,
-      "title": "Validazione cross-field: other_expenses senza salario",
-      "description": "Come utilizzatore dell'API, voglio ricevere un errore esplicito se chiedo il calcolo delle altre spese professionali senza fornire il salario netto.",
+      "id": "US-701",
+      "title": "Constant-time API key comparison",
+      "description": "As a security engineer, I want the API key comparison to be timing-safe so that an attacker cannot recover the key by measuring response times.",
       "acceptanceCriteria": [
-        "Se include_other_expenses: true e annual_net_salary_chf è assente o null → HTTP 422 con messaggio: 'annual_net_salary_chf è obbligatorio quando include_other_expenses è true'",
-        "Se include_other_expenses: false (default) → annual_net_salary_chf rimane opzionale, nessun cambiamento",
-        "Il validator è in app/schemas/request.py come @model_validator(mode='after')",
-        "Test unitario che verifica il 422 aggiunto in tests/unit/",
-        "Tutti i test esistenti passano ancora (11/11)",
-        "Typecheck passes"
+        "In app/security.py: import `secrets` from stdlib",
+        "Replace `api_key != settings.api_key` with `not secrets.compare_digest(api_key or \"\", settings.api_key or \"\")` in verify_api_key()",
+        "If settings.api_key is empty string (no auth configured), behavior is unchanged: all requests pass",
+        "If settings.api_key is set, wrong key returns HTTP 401, correct key returns HTTP 200",
+        "Typecheck passes",
+        "Tests pass"
       ],
       "priority": 1,
       "passes": true,
-      "notes": "Implementato @model_validator(mode='after') in DeductionRequest. Test in tests/unit/test_request_validation.py. 25/25 test passano."
+      "notes": "secrets.compare_digest implementato in app/security.py"
     },
     {
-      "id": "US-102",
-      "fase": 1,
-      "title": "Validazione cross-field: trasporto misto senza dati",
-      "description": "Come utilizzatore dell'API, voglio ricevere un errore chiaro se scelgo transport_mode: mixed senza fornire almeno una distanza auto o un costo mezzi pubblici.",
+      "id": "US-702",
+      "title": "Rate limiting on /v1/health endpoint",
+      "description": "As an operator, I want the health endpoint to be rate-limited so it cannot be used for reconnaissance or amplification attacks.",
       "acceptanceCriteria": [
-        "Se transport_mode: 'mixed' e sia car_distance_km_mixed che public_transport_cost_mixed_chf sono null → HTTP 422 con messaggio: 'Per transport_mode mixed è necessario fornire almeno car_distance_km_mixed o public_transport_cost_mixed_chf'",
-        "Se almeno uno dei due è fornito → richiesta accettata normalmente",
-        "Il validator è in app/schemas/request.py come @model_validator(mode='after')",
-        "Test unitario che verifica il 422 aggiunto in tests/unit/",
-        "Tutti i test esistenti passano ancora",
-        "Typecheck passes"
+        "In app/api/v1/endpoints/health.py: add `@limiter.limit(f\"{settings.rate_limit_per_minute}/minute\")` decorator on the health() function",
+        "Import `limiter` from `app.security` and `settings` from `app.config`",
+        "Import `Request` from `fastapi` and add `request: Request` as first parameter to health()",
+        "GET /v1/health still returns HTTP 200 with {\"status\": \"ok\", ...} for normal requests",
+        "Typecheck passes",
+        "Tests pass"
       ],
       "priority": 2,
-      "passes": true,
-      "notes": "Implementato @model_validator(mode='after') validate_mixed_transport_requires_data in DeductionRequest. 5 test aggiunti in TestMixedTransportValidation (test_request_validation.py). 30/30 test passano."
+      "passes": false,
+      "notes": ""
     },
     {
-      "id": "US-103",
-      "fase": 1,
-      "title": "Fix testo warning frontaliero",
-      "description": "Come lettore della risposta API, voglio leggere informazioni giuridiche corrette nel warning del frontaliero, non una data sbagliata.",
+      "id": "US-703",
+      "title": "Toggle /docs and /redoc via DOCS_ENABLED env var",
+      "description": "As an operator, I want to disable Swagger UI and ReDoc in production via an environment variable so the API schema is not publicly visible.",
       "acceptanceCriteria": [
-        "In app/core/special_cases.py, il warning frontaliero è aggiornato da 'accordo Italia-Svizzera 2024 (in vigore dal 2024)' a 'accordo CH-IT firmato il 23.12.2020 (in vigore dal 17.07.2023, RS 0.642.045.43)'",
-        "Nessun altro comportamento cambia",
-        "Test test_frontaliero_warning passa ancora",
-        "Typecheck passes"
+        "In app/config.py: add `docs_enabled: bool = True` to Settings class",
+        "In app/main.py: pass `docs_url=\"/docs\" if settings.docs_enabled else None` and `redoc_url=\"/redoc\" if settings.docs_enabled else None` to FastAPI() constructor",
+        "Default `docs_enabled=True` preserves current behavior for local development",
+        "In .env.example: add `DOCS_ENABLED=false  # false in produzione` line",
+        "Typecheck passes",
+        "Tests pass"
       ],
       "priority": 3,
-      "passes": true,
-      "notes": "Aggiornato testo warning in app/core/special_cases.py: 'accordo CH-IT firmato il 23.12.2020 (in vigore dal 17.07.2023, RS 0.642.045.43)'. Test test_frontaliero_warning passa (30/30 test totali)."
+      "passes": false,
+      "notes": ""
     },
     {
-      "id": "US-104",
-      "fase": 1,
-      "title": "Fix deprecation warning pyproject.toml",
-      "description": "Come sviluppatore, voglio che uv run pytest non mostri warning di deprecazione.",
+      "id": "US-704",
+      "title": "Add CSP, HSTS, and Permissions-Policy security headers",
+      "description": "As a user, I want the browser to receive Content-Security-Policy, HSTS, and Permissions-Policy headers so the frontend is protected against injection and downgrade attacks.",
       "acceptanceCriteria": [
-        "In pyproject.toml, la sezione [tool.uv] dev-dependencies viene rimossa",
-        "Le dipendenze dev restano solo in [dependency-groups] dev (formato corretto per uv >= 0.4)",
-        "uv run pytest tests/unit/ -v gira senza il warning 'The tool.uv.dev-dependencies field is deprecated'",
-        "Tutti i test passano ancora dopo la modifica",
-        "Typecheck passes"
+        "In app/security.py add_security_headers(): add `Content-Security-Policy: default-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; script-src 'self'; img-src 'self' data:; connect-src 'self'; frame-ancestors 'none'`",
+        "Add `Strict-Transport-Security: max-age=31536000; includeSubDomains`",
+        "Add `Permissions-Policy: geolocation=(), camera=(), microphone=()`",
+        "Add `X-Permitted-Cross-Domain-Policies: none`",
+        "All previously existing headers (X-Content-Type-Options, X-Frame-Options, X-XSS-Protection, Referrer-Policy, Cache-Control) are preserved unchanged",
+        "Typecheck passes",
+        "Tests pass"
       ],
       "priority": 4,
-      "passes": true,
-      "notes": "Rimossa sezione [tool.uv] dev-dependencies da pyproject.toml. Dipendenze dev migrate a [dependency-groups] dev (formato corretto per uv >= 0.4). Rimosso anche [project.optional-dependencies] dev (ridondante). 30/30 test passano senza il warning di deprecazione."
+      "passes": false,
+      "notes": ""
     },
     {
-      "id": "US-201",
-      "fase": 2,
-      "title": "Test trasporto misto (Park & Ride)",
-      "description": "Come sviluppatore, voglio un test che verifichi il calcolo per chi usa l'auto fino alla stazione e poi il treno.",
+      "id": "US-705",
+      "title": "Proxy-aware rate limiting via TRUSTED_PROXIES",
+      "description": "As an operator behind Nginx, I want the rate limiter to read the real client IP from X-Forwarded-For so that all users are not counted as the same proxy IP.",
       "acceptanceCriteria": [
-        "Nuova fixture tests/integration/fixtures/request_mixed.json con transport_mode: 'mixed', car_distance_km_mixed: 5.0, public_transport_cost_mixed_chf: 1200.0",
-        "Test di integrazione in tests/integration/test_api_deduction.py: HTTP 200, cantonal_TI.transport_deduction.mode == 'mixed', risposta ha due lines (auto + mezzi pubblici)",
-        "Test unitario in tests/unit/test_cantonal_engine.py per _mixed() con valori noti",
-        "Tutti i test precedenti passano ancora",
+        "In app/config.py: add `trusted_proxies: str = \"\"` to Settings (comma-separated IPs, empty = direct connection)",
+        "In app/security.py: add function `get_real_ip(request: Request) -> str` — if request.client.host is in the configured trusted_proxies list AND X-Forwarded-For header is present, return first IP from X-Forwarded-For; otherwise return get_remote_address(request)",
+        "Replace `key_func=get_remote_address` with `key_func=get_real_ip` in the Limiter() instantiation",
+        "In .env.example: add `TRUSTED_PROXIES=  # IP del reverse proxy, es: 127.0.0.1` line",
+        "Existing rate limiting behavior is unchanged when TRUSTED_PROXIES is empty",
+        "Typecheck passes",
         "Tests pass"
       ],
       "priority": 5,
-      "passes": true,
-      "notes": "Fixture request_mixed.json creata (car_distance_km_mixed: 5.0, public_transport_cost_mixed_chf: 1200.0). Test integrazione test_mixed_transport_park_and_ride verifica: HTTP 200, mode == 'mixed', 2 lines, net_deduction_chf == 2850.0. Classe TestMixed (4 test) in test_cantonal_engine.py verifica entrambi i componenti, solo auto, solo mezzi pubblici, nessun cap cantonale. 35/35 test passano."
+      "passes": false,
+      "notes": ""
     },
     {
-      "id": "US-202",
-      "fase": 2,
-      "title": "Test residente settimanale",
-      "description": "Come sviluppatore, voglio un test per il residente settimanale che verifichi la tariffa pasti maggiorata (CHF 30/giorno).",
+      "id": "US-706",
+      "title": "Remove filesystem info disclosure from YAML loader error",
+      "description": "As an operator, I want error messages to not reveal which fiscal year files exist on the server so that attackers cannot enumerate the filesystem.",
       "acceptanceCriteria": [
-        "Nuova fixture tests/integration/fixtures/request_weekly_resident.json con residency_type: 'weekly_resident', meal_situation: 'weekly_resident', include_meals: true, annual_public_transport_cost_chf: 2400.0",
-        "Test verifica: HTTP 200, cantonal_TI.meals_deduction_chf == 6400.0 (max annuo residente settimanale), warning 'RESIDENTE SETTIMANALE' presente nella risposta",
-        "Tutti i test precedenti passano",
+        "In app/rules/loader.py: remove the `available` variable and the `f'Disponibili: ...'` clause from the FileNotFoundError message",
+        "New error message is only: `f'Anno fiscale {fiscal_year} non supportato.'`",
+        "The HTTP status code returned by the endpoint (422 for calculate, 404 for rules) is unchanged",
+        "POST /v1/deduction/calculate with fiscal_year=1900 returns 422; response body does NOT contain the word 'Disponibili'",
+        "Typecheck passes",
         "Tests pass"
       ],
       "priority": 6,
-      "passes": true,
-      "notes": "Fixture request_weekly_resident.json creata (residency_type: weekly_resident, meal_situation: weekly_resident, include_meals: true, annual_public_transport_cost_chf: 2400.0). Test integrazione test_weekly_resident verifica: HTTP 200, cantonal_TI.meals_deduction_chf == 6400.0 (30 CHF/gg × 220gg = 6600 → cappato a 6400), warning 'RESIDENTE SETTIMANALE' presente. 36/36 test passano."
+      "passes": false,
+      "notes": ""
     },
     {
-      "id": "US-203",
-      "fase": 2,
-      "title": "Test altre spese professionali",
-      "description": "Come sviluppatore, voglio test che verifichino il calcolo delle altre spese professionali con i casi limite (minimo, fascia normale, massimo).",
+      "id": "US-707",
+      "title": "Input length and format validation on Address fields",
+      "description": "As an operator, I want address fields to have length limits so that excessively long strings are rejected before being forwarded to external geocoding APIs.",
       "acceptanceCriteria": [
-        "Test unitario: salario CHF 50'000 → 3% = CHF 1'500 → risultato = CHF 2'000 (minimo IFD)",
-        "Test unitario: salario CHF 100'000 → 3% = CHF 3'000 → risultato = CHF 3'000",
-        "Test unitario: salario CHF 200'000 → 3% = CHF 6'000 → risultato = CHF 4'000 (massimo IFD)",
-        "Test di integrazione: include_other_expenses: true senza annual_net_salary_chf → HTTP 422",
-        "Test cantonale: include_other_expenses: true con salario → risultato = CHF 3'000 (flat rate 2026)",
-        "Tutti i test precedenti passano",
+        "In app/schemas/request.py Address model: city gets `Field(..., min_length=1, max_length=100)`",
+        "street gets `Field(default=None, max_length=200)`",
+        "postal_code gets `Field(..., min_length=3, max_length=10)` (no regex, to stay compatible with both CH NPA 4-digit and IT CAP 5-digit formats)",
+        "country gets `Field(default='CH', min_length=2, max_length=2)` so only 2-char codes are accepted",
+        "POST with city containing 200 characters returns HTTP 422",
+        "POST with country='SVIZZERA' (7 chars) returns HTTP 422",
+        "All existing test fixtures (Lugano 6900, Bellinzona 6500, etc.) continue to return HTTP 200",
+        "Typecheck passes",
         "Tests pass"
       ],
       "priority": 7,
-      "passes": true,
-      "notes": "Nuovo file tests/unit/test_other_expenses.py con 4 test (3 IFD: minimo CHF 2'000, normale CHF 3'000, massimo CHF 4'000; 1 cantonale: flat rate CHF 3'000). Aggiunto test integrazione test_other_expenses_without_salary_returns_422 in tests/integration/test_api_deduction.py. 41/41 test passano."
+      "passes": false,
+      "notes": ""
     },
     {
-      "id": "US-204",
-      "fase": 2,
-      "title": "Test bicicletta",
-      "description": "Come sviluppatore, voglio un test per la bicicletta che verifichi il forfait annuale CHF 700.",
+      "id": "US-708",
+      "title": "Make Nominatim contact email configurable",
+      "description": "As a developer, I want the personal email in the Nominatim User-Agent to be set via environment variable so it is not hardcoded in the public source code.",
       "acceptanceCriteria": [
-        "Test unitario in tests/unit/test_cantonal_engine.py: transport_mode BICYCLE → net_deduction_chf == 700.0 (cantonale)",
-        "Test federale: transport_mode BICYCLE → net_deduction_chf == 700.0 (IFD)",
-        "Test verifica lines[0].label == 'Bicicletta / e-bike'",
-        "Tutti i test precedenti passano",
+        "In app/config.py: add `nominatim_contact_email: str = \"admin@example.com\"` to Settings",
+        "In app/geo/providers/nominatim.py: remove the hardcoded email from `_HEADERS`; build User-Agent header dynamically at call time reading `settings.nominatim_contact_email`",
+        "Import `settings` from `app.config` in nominatim.py",
+        "In .env.example: add `NOMINATIM_CONTACT_EMAIL=tua@email.com  # per User-Agent Nominatim` line",
+        "Geocoding still works: User-Agent header is still present, just with configurable email",
+        "Typecheck passes",
         "Tests pass"
       ],
       "priority": 8,
-      "passes": true,
-      "notes": "Aggiunto assert lines[0].label == 'Bicicletta / e-bike' in TestBicycle::test_flat_rate (test_cantonal_engine.py). Aggiunta classe TestFederalBicycle::test_flat_rate in test_federal_engine.py: verifica net_deduction_chf == 700.0, gross == 700.0, label == 'Bicicletta / e-bike'. 42/42 test passano."
+      "passes": false,
+      "notes": ""
     },
     {
-      "id": "US-205",
-      "fase": 2,
-      "title": "Test anno fiscale 2025",
-      "description": "Come sviluppatore, voglio un test per l'anno 2025 che verifichi le tariffe differenti (IC 0.60/km, IFD 0.70/km) dal YAML 2025.",
+      "id": "US-709",
+      "title": "Run Docker container as non-root user",
+      "description": "As an operator, I want the Docker container to run as a non-privileged user so that a container escape or RCE does not give root access to the host.",
       "acceptanceCriteria": [
-        "Test unitario tests/unit/test_fiscal_year_2025.py: auto 20km, 220 giorni, anno 2025 → cantonale 0.60 × 20 × 2 × 220 = CHF 5'280 (nessun cap), federale CHF 6'160 → cappato a CHF 3'300",
-        "Test verifica rules_version == '2025' nella risposta",
-        "Test GET /v1/deduction/rules/2025 → rate_chf_per_km == 0.60 (IC) e 0.70 (IFD)",
-        "Tutti i test precedenti passano",
-        "Tests pass"
+        "In Dockerfile: add `RUN addgroup --system appgroup && adduser --system --ingroup appgroup --no-create-home appuser` before CMD",
+        "Add `USER appuser` immediately after the adduser line",
+        "The existing Dockerfile structure (COPY, uv setup, site-packages workaround, EXPOSE 8000, CMD) is preserved",
+        "`docker build -t ddc-test .` from D:\\006-Documenti\\Lavori\\DdC\\002_Applicativo completes without errors",
+        "`docker run --rm -p 8099:8000 ddc-test` → GET http://localhost:8099/v1/health returns HTTP 200",
+        "Typecheck passes (no Python changes)"
       ],
       "priority": 9,
-      "passes": true,
-      "notes": "Creato tests/unit/test_fiscal_year_2025.py con TestCantonal2025 (test_private_car_rate_and_no_cap: 0.60×20×2×220=5280, nessun cap; test_rules_version: version=='2025') e TestFederal2025 (test_private_car_over_cap: 0.70×20×2×220=6160→cappato a 3300). Aggiunti test integrazione test_fiscal_year_2025_rules_version (rules_version=='2025' nella risposta POST) e test_get_rules_2025 (GET /v1/deduction/rules/2025: IC 0.60, IFD 0.70) in tests/integration/test_api_deduction.py. 47/47 test passano."
+      "passes": false,
+      "notes": ""
     },
     {
-      "id": "US-301",
-      "fase": 3,
-      "title": "Aggiungere MOTORCYCLE all'enum TransportMode",
-      "description": "Come utilizzatore dell'API, voglio poter selezionare 'motorcycle' come mezzo di trasporto per ottenere il calcolo a CHF 0.40/km.",
+      "id": "US-710",
+      "title": "Add pip-audit for dependency vulnerability scanning",
+      "description": "As a developer, I want a documented command to audit dependencies for known CVEs so that vulnerabilities are caught before deployment.",
       "acceptanceCriteria": [
-        "In app/schemas/request.py, aggiunto MOTORCYCLE = 'motorcycle' all'enum TransportMode",
-        "Il valore 'motorcycle' è accettato dal validatore Pydantic della richiesta",
-        "Il valore compare nella documentazione automatica Swagger /docs",
-        "Nessun test esistente si rompe",
+        "In pyproject.toml [dependency-groups] dev: add `\"pip-audit>=2.7\"` entry",
+        "Run `uv run pip-audit` from D:\\006-Documenti\\Lavori\\DdC\\002_Applicativo; if vulnerabilities are found, update the affected packages to fixed versions in pyproject.toml and regenerate uv.lock with `uv lock`",
+        "Create docs/security.md with: `# Security` heading, `## Dependency audit` section, command `uv run pip-audit`, one-sentence description",
+        "`uv run pip-audit` exits with code 0 (zero known vulnerabilities)",
+        "All existing 69+ tests still pass with updated dependencies",
         "Typecheck passes"
       ],
       "priority": 10,
-      "passes": true,
-      "notes": "Aggiunto MOTORCYCLE = 'motorcycle' alla classe TransportMode (str, Enum) in app/schemas/request.py. Nessuna logica di calcolo aggiunta in questa storia (prerequisito per US-302/303). 47/47 test passano."
+      "passes": false,
+      "notes": ""
     },
     {
-      "id": "US-304",
-      "fase": 3,
-      "title": "Aggiungere motorcycle_white_plate ai YAML cantonali 2025 e 2026",
-      "description": "Come sviluppatore, voglio che i YAML 2025 e 2026 abbiano esplicitamente motorcycle_white_plate nella sezione cantonal_TI.transport, e che il modello Pydantic lo supporti.",
+      "id": "US-711",
+      "title": "Fix ALLOWED_ORIGINS wildcard warning in .env.example",
+      "description": "As an operator following the deployment guide, I want .env.example to warn against ALLOWED_ORIGINS=* so I do not accidentally expose the API to all origins in production.",
       "acceptanceCriteria": [
-        "In rules/2026.yaml, sezione cantonal_TI.transport, aggiunto: motorcycle_white_plate: { rate_chf_per_km: 0.40 }",
-        "In rules/2025.yaml, stessa aggiunta in cantonal_TI.transport (già presente in federal_IFD)",
-        "In app/rules/models.py, CantonalTransportRules include il campo motorcycle_white_plate come Optional",
+        "In .env.example: change the ALLOWED_ORIGINS value from `*` to `http://localhost:8000`",
+        "Add comment line above: `# CORS — NON usare * in produzione! Esempio: https://tuo-dominio.ch`",
+        "If docs/deploy-infomaniak-nano.md exists: add a warning paragraph near the .env configuration step explaining that ALLOWED_ORIGINS=* exposes the API to cross-origin requests from any website",
+        "If docs/deploy-infomaniak-nano.md does not exist: only update .env.example",
+        "No Python code changes",
         "Typecheck passes"
       ],
       "priority": 11,
-      "passes": true,
-      "notes": "motorcycle_white_plate: {rate_chf_per_km: 0.40} aggiunto in cantonal_TI.transport di rules/2025.yaml e rules/2026.yaml. MotorcycleRule e campo Optional[MotorcycleRule] già presenti in app/rules/models.py (TransportRules). 47/47 test passano."
+      "passes": false,
+      "notes": ""
     },
     {
-      "id": "US-302",
-      "fase": 3,
-      "title": "Calcolo moto in cantonal_engine",
-      "description": "Come sviluppatore, voglio che il motore cantonale calcoli la deduzione per moto targa bianca a CHF 0.40/km senza cap cantonale.",
+      "id": "US-712",
+      "title": "Security test suite",
+      "description": "As a developer, I want automated tests for all critical security behaviors so that regressions are caught immediately in CI.",
       "acceptanceCriteria": [
-        "In app/core/cantonal_engine.py, aggiunta funzione _motorcycle(r, effective_days, one_way_km)",
-        "Formula: rate × one_way_km × 2 × effective_days, rate letto da rules.cantonal_TI.transport.motorcycle_white_plate.rate_chf_per_km (fallback a federal)",
-        "Ramo if transport_mode == TransportMode.MOTORCYCLE aggiunto in calculate_transport()",
-        "label: 'Motocicletta (targa bianca)', legal_reference: 'Art. 25 cpv. 1 lett. a LT + RS 642.118.1 Appendice'",
-        "Se one_way_km è None → ValueError (come per auto privata)",
-        "Nessun cap cantonale applicato",
+        "Create tests/unit/test_security.py with tests: test_api_key_empty_allows_all (settings.api_key='' → verify_api_key does not raise), test_api_key_wrong_raises_401 (wrong key → HTTPException 401), test_api_key_correct_passes (correct key → no exception), test_get_real_ip_direct (no trusted proxies → client.host returned), test_get_real_ip_from_xfwd (client.host in trusted list + X-Forwarded-For header → forwarded IP returned), test_postal_code_too_long_invalid (postal_code 20 chars → ValidationError), test_country_too_long_invalid (country='CHE' → ValidationError)",
+        "Create tests/integration/test_security_headers.py with tests: test_security_headers_present (GET / → response has Content-Security-Policy, X-Frame-Options, X-Content-Type-Options, Strict-Transport-Security, Permissions-Policy), test_health_endpoint_responds (GET /v1/health → status 200)",
+        "All new tests pass: `uv run pytest tests/unit/test_security.py tests/integration/test_security_headers.py -v`",
+        "All existing 69+ tests still pass: `uv run pytest tests/ -v`",
         "Typecheck passes"
       ],
       "priority": 12,
-      "passes": true,
-      "notes": "Aggiunta funzione _motorcycle() in app/core/cantonal_engine.py: rate da cantonal_TI.transport.motorcycle_white_plate (fallback a federal_IFD), formula rate×km×2×giorni, nessun cap. Ramo MOTORCYCLE aggiunto in calculate_transport(). 47/47 test passano."
-    },
-    {
-      "id": "US-303",
-      "fase": 3,
-      "title": "Calcolo moto in federal_engine",
-      "description": "Come sviluppatore, voglio che il motore federale calcoli la deduzione per moto targa bianca con il cap IFD CHF 3'300.",
-      "acceptanceCriteria": [
-        "In app/core/federal_engine.py, aggiunta _motorcycle(r, effective_days, one_way_km)",
-        "Formula: rate × one_way_km × 2 × effective_days, rate da rules.federal_IFD.transport.motorcycle_white_plate.rate_chf_per_km",
-        "Cap CHF 3'300 applicato (la moto è veicolo privato ai sensi dell'Art. 26 LIFD)",
-        "label: 'Motocicletta targa bianca (IFD — soggetta a tetto massimo)', capped: true se lordo supera il cap",
-        "Ramo if transport_mode == TransportMode.MOTORCYCLE aggiunto in calculate_transport()",
-        "Typecheck passes"
-      ],
-      "priority": 13,
-      "passes": true,
-      "notes": "Aggiunta funzione _motorcycle_federal() in app/core/federal_engine.py: rate da federal_IFD.transport.motorcycle_white_plate.rate_chf_per_km, formula rate×km×2×giorni, cap CHF 3300 (stesso di private_car, Art. 26 LIFD). label: 'Motocicletta targa bianca (IFD — soggetta a tetto massimo)', capped: true se lordo supera il cap. Ramo MOTORCYCLE aggiunto in calculate_transport(). 47/47 test passano."
-    },
-    {
-      "id": "US-305",
-      "fase": 3,
-      "title": "Test moto targa bianca",
-      "description": "Come sviluppatore, voglio test che verifichino il calcolo a CHF 0.40/km e l'applicazione del cap IFD per la moto.",
-      "acceptanceCriteria": [
-        "Test unitario cantonal: 20km × 0.40 × 2 × 220 = CHF 3'520 → nessun cap cantonale",
-        "Test unitario federal: 20km × 0.40 × 2 × 220 = CHF 3'520 → cappato a CHF 3'300 (IFD)",
-        "Test di integrazione con fixture tests/integration/fixtures/request_motorcycle.json: transport_mode 'motorcycle', override_distance_km: 20.0 → cantonale CHF 3'520, federale CHF 3'300",
-        "Tutti i test precedenti passano",
-        "Tests pass"
-      ],
-      "priority": 14,
-      "passes": true,
-      "notes": "Fixture request_motorcycle.json creata (transport_mode: motorcycle, override_distance_km: 20.0). TestMotorcycle (3 test) in test_cantonal_engine.py: calcolo 3520, label 'Motocicletta (targa bianca)', ValueError senza distanza. TestFederalMotorcycle (3 test) in test_federal_engine.py: cap 3300 su 3520 lordi, label, caso sotto cap 880. Test integrazione test_motorcycle_deduction: cantonale 3520, federale 3300. 54/54 test passano."
-    },
-    {
-      "id": "US-401",
-      "fase": 4,
-      "title": "Campo D Lohnausweis — datore paga il trasporto",
-      "description": "Come utilizzatore dell'API, voglio poter indicare che il datore paga il trasporto (campo D spuntato), così il sistema azzera automaticamente la deduzione trasporto.",
-      "acceptanceCriteria": [
-        "Aggiunto in app/schemas/request.py: employer_pays_transport: bool = Field(default=False)",
-        "Se employer_pays_transport: true → net_deduction_chf == 0.0 per entrambi i livelli IC e IFD",
-        "gross_deduction_chf mostra il valore teorico, net_deduction_chf == 0.0",
-        "DeductionLine: label 'Trasporto a carico del datore di lavoro', amount_chf: 0.0, basis: 'Campo D Lohnausweis spuntato — nessuna deduzione ammessa', legal_reference: 'Art. 26 cpv. 2 LIFD / Art. 25 cpv. 2 LT'",
-        "Warning: 'CAMPO D: Il datore di lavoro mette a disposizione il trasporto gratuitamente. Nessuna deduzione ammessa (campo D Lohnausweis).'",
-        "Test unitario: employer_pays_transport: true → net_deduction_chf == 0.0",
-        "Test unitario: employer_pays_transport: false (default) → calcolo invariato",
-        "Tutti i test esistenti passano",
-        "Typecheck passes"
-      ],
-      "priority": 15,
-      "passes": true,
-      "notes": "Campo employer_pays_transport: bool aggiunto in app/schemas/request.py. Logica _zero_transport() in app/core/calculator.py: mantiene gross teorico, azzera net, DeductionLine con label/basis/legal_reference corretti. Warning in app/core/special_cases.py. Precedenza company_car_monthly_chf > employer_pays_transport gestita in _cantonal_transport() e _federal_transport(). Classe TestEmployerPaysTransport (5 test) in tests/unit/test_fase4_lohnausweis.py. 68/68 test passano."
-    },
-    {
-      "id": "US-402",
-      "fase": 4,
-      "title": "Campo F Lohnausweis — mensa aziendale",
-      "description": "Come utilizzatore dell'API, voglio poter indicare che il datore ha una mensa (campo F spuntato), così il sistema imposta automaticamente la tariffa pasti ridotta.",
-      "acceptanceCriteria": [
-        "Aggiunto in app/schemas/request.py: employer_has_cafeteria: bool = Field(default=False)",
-        "Se employer_has_cafeteria: true e include_meals: true e meal_situation era 'without_cafeteria' → forzato internamente a 'with_cafeteria' (CHF 7.50/giorno)",
-        "Se meal_situation era 'weekly_resident' → forzato a 'weekly_resident_with_cafeteria' (CHF 22.50/giorno)",
-        "Se meal_situation era già 'with_cafeteria', 'weekly_resident_with_cafeteria' o 'home' → nessun cambiamento",
-        "Warning se il campo F forza un cambio: 'CAMPO F: Mensa aziendale disponibile — applicata tariffa ridotta pasti (CHF 7.50/giorno invece di CHF 15.00/giorno)'",
-        "Test: employer_has_cafeteria: true e meal_situation: 'without_cafeteria' → pasti calcolati a CHF 7.50/giorno",
-        "Tutti i test esistenti passano",
-        "Typecheck passes"
-      ],
-      "priority": 16,
-      "passes": true,
-      "notes": "Campo employer_has_cafeteria: bool = Field(default=False) già presente in app/schemas/request.py. Funzione _resolve_meal_situation() in app/core/calculator.py: WITHOUT_CAFETERIA → WITH_CAFETERIA, WEEKLY_RESIDENT → WEEKLY_RESIDENT_WITH_CAFETERIA, altrimenti invariato. Warning 'CAMPO F: ...' generato solo se il campo forza un cambio. Classe TestEmployerHasCafeteria (4 test) in tests/unit/test_fase4_lohnausweis.py. 68/68 test passano."
-    },
-    {
-      "id": "US-403",
-      "fase": 4,
-      "title": "Cifra 13.2.2 Lohnausweis — auto aziendale Art. 5a RS 642.118.1",
-      "description": "Come utilizzatore dell'API, voglio poter indicare l'importo mensile della cifra 13.2.2 per il calcolo forfettario dell'auto aziendale secondo Art. 5a RS 642.118.1.",
-      "acceptanceCriteria": [
-        "Aggiunto in app/schemas/request.py: company_car_monthly_chf: Optional[float] = Field(default=None, ge=0.0)",
-        "Se company_car_monthly_chf è fornito e transport_mode == 'private_car': gross = company_car_monthly_chf × 12, cantonale net = gross (nessun cap), federale net = min(gross, cap_chf)",
-        "La formula km normale NON viene applicata quando company_car_monthly_chf è presente",
-        "label: 'Auto aziendale — calcolo forfettario (cifra 13.2.2 Lohnausweis)', basis: 'CHF {monthly} × 12 mesi (Art. 5a RS 642.118.1)', legal_reference: 'Art. 5a RS 642.118.1'",
-        "Warning: 'AUTO AZIENDALE (cifra 13.2.2): Applicato calcolo forfettario Art. 5a RS 642.118.1. Verificare che l'importo mensile corrisponda esattamente alla cifra 13.2.2 del Lohnausweis.'",
-        "Se company_car_monthly_chf è fornito e transport_mode != 'private_car' → warning che il campo sarà ignorato",
-        "Se sia company_car_monthly_chf che employer_pays_transport sono forniti → company_car_monthly_chf ha precedenza",
-        "Test unitario: CHF 800/mese → CHF 9'600 lordi → cantonale CHF 9'600, federale CHF 3'300",
-        "Test unitario: CHF 200/mese → CHF 2'400 → entrambi i livelli CHF 2'400 (sotto il cap)",
-        "Tutti i test esistenti passano",
-        "Typecheck passes"
-      ],
-      "priority": 17,
-      "passes": true,
-      "notes": "Campo company_car_monthly_chf: Optional[float] in app/schemas/request.py. Logica in _cantonal_transport() e _federal_transport() (app/core/calculator.py): gross = monthly × 12, cantonale net = gross (nessun cap), federale net = min(gross, cap_chf=3300). Warning 'AUTO AZIENDALE (cifra 13.2.2)' in app/core/special_cases.py; warning aggiuntivo se transport_mode != private_car. Classe TestCompanyCar (5 test) in tests/unit/test_fase4_lohnausweis.py. 68/68 test passano."
-    },
-    {
-      "id": "US-404",
-      "fase": 4,
-      "title": "Documentazione campi Lohnausweis in CLAUDE.md",
-      "description": "Come agente futuro che legge il CLAUDE.md, voglio vedere documentati i nuovi campi Lohnausweis e la nota corretta sui test di integrazione.",
-      "acceptanceCriteria": [
-        "In 002_Applicativo/.claude/CLAUDE.md, aggiunta sezione 'Campi Lohnausweis nel Request Schema' con tabella: Campo D → employer_pays_transport, Campo F → employer_has_cafeteria, Cifra 13.2.2 → company_car_monthly_chf, Cifra 11 → annual_net_salary_chf",
-        "In CLAUDE.md, la riga dei test integrazione aggiornata: '# usa ASGITransport, nessun server necessario' (rimuovere '# richiede il server attivo')",
-        "Typecheck passes"
-      ],
-      "priority": 18,
-      "passes": true,
-      "notes": "Sezione 'Campi Lohnausweis nel Request Schema' già presente in .claude/CLAUDE.md (tabella Campo D/F/13.2.2/11). Commento test integrazione già corretto: '# usa ASGITransport, nessun server necessario'. Entrambi i criteri soddisfatti. 68/68 test passano."
-    },
-    {
-      "id": "US-501",
-      "fase": 5,
-      "title": "Dockerfile per sviluppo locale",
-      "description": "Come sviluppatore, voglio un Dockerfile e un docker-compose.yml che avviino il servizio in modo riproducibile su qualsiasi macchina.",
-      "acceptanceCriteria": [
-        "File 002_Applicativo/Dockerfile creato: base image python:3.12-slim, installazione uv, layer caching (pyproject.toml + uv.lock copiati prima del codice), uv sync --no-dev, porta 8000 esposta, CMD: uvicorn app.main:app --host 0.0.0.0 --port 8000",
-        "File 002_Applicativo/docker-compose.yml creato: servizio trasferta-api, port mapping 8000:8000, volume mount per rules/ (regole fiscali aggiornabili senza rebuild), env_file: .env",
-        "docker compose up --build avvia il servizio e GET http://localhost:8000/v1/health risponde {status: ok}",
-        "Typecheck passes"
-      ],
-      "priority": 19,
-      "passes": true,
-      "notes": "Dockerfile e docker-compose.yml già presenti nella repo. Dockerfile: base python:3.12-slim, uv installato via COPY --from ghcr.io/astral-sh/uv, layer caching pyproject.toml+uv.lock, site-packages copiati da .venv locale (workaround offline: il sandbox blocca internet), porta 8000 esposta, CMD python -m uvicorn. docker-compose.yml: servizio trasferta-api, port 8000:8000, volume ./rules:/app/rules, env_file .env. Verificato: docker build OK, container avviato su porta 8001, GET /v1/health → {status: ok, default_fiscal_year: 2026}. 68/68 test passano."
-    },
-    {
-      "id": "US-502",
-      "fase": 5,
-      "title": "File .env.example con tutte le variabili configurabili",
-      "description": "Come sviluppatore che configura il servizio per la prima volta, voglio un .env.example che documenti tutte le variabili di app/config.py.",
-      "acceptanceCriteria": [
-        "File 002_Applicativo/.env.example creato con variabili: DEFAULT_FISCAL_YEAR, LOG_LEVEL, API_KEY (con commento esempio), RATE_LIMIT_PER_MINUTE, ALLOWED_ORIGINS, MAX_BODY_SIZE_BYTES — ognuna con commento esplicativo",
-        "Il file .env.example è tracciato da git (non presente in .gitignore)",
-        "Il file .env (con valori reali) è in .gitignore",
-        "Typecheck passes"
-      ],
-      "priority": 20,
-      "passes": true,
-      "notes": ".env.example già presente nella repo con tutte e 6 le variabili di app/config.py (DEFAULT_FISCAL_YEAR, LOG_LEVEL, API_KEY con commento per generazione token, RATE_LIMIT_PER_MINUTE, ALLOWED_ORIGINS, MAX_BODY_SIZE_BYTES) — ognuna con commento esplicativo. .env.example tracciato da git; .env escluso da .gitignore (riga 6). 68/68 test passano."
-    },
-    {
-      "id": "US-503",
-      "fase": 5,
-      "title": "Script export specifica OpenAPI",
-      "description": "Come integratore esterno, voglio uno script che esporti la specifica OpenAPI in formato JSON per importarla in Postman o generare client automaticamente.",
-      "acceptanceCriteria": [
-        "Script 002_Applicativo/scripts/export_openapi.py creato: avvia app in-process, legge app.openapi(), salva in docs/openapi.json",
-        "File 002_Applicativo/docs/openapi.json presente e aggiornato con tutti gli endpoint: /v1/health, /v1/deduction/calculate, /v1/deduction/rules/{fiscal_year}",
-        "uv run python scripts/export_openapi.py rigenera docs/openapi.json senza errori",
-        "Il file openapi.json è JSON valido (json.loads non solleva eccezioni)",
-        "Typecheck passes"
-      ],
-      "priority": 21,
-      "passes": true,
-      "notes": "Creato scripts/export_openapi.py: aggiunge project root a sys.path, importa app.main:app in-process, chiama app.openapi(), salva in docs/openapi.json. Creata directory docs/ con openapi.json (JSON valido, 4 chiavi top-level: openapi, info, paths, components). Endpoint presenti: /v1/health, /v1/deduction/calculate, /v1/deduction/rules/{fiscal_year}. uv run python scripts/export_openapi.py gira senza errori. 68/68 test passano."
-    },
-    {
-      "id": "US-601",
-      "fase": 6,
-      "title": "Scaffold frontend — mount StaticFiles e route root",
-      "description": "Come sviluppatore, voglio che FastAPI serva una pagina HTML alla root / in modo che aprendo http://localhost:8000 si veda l'interfaccia web invece di un 404.",
-      "acceptanceCriteria": [
-        "Cartella app/static/ creata con struttura: app/static/index.html, app/static/css/style.css, app/static/js/app.js",
-        "In app/main.py: app.mount('/static', StaticFiles(directory='app/static'), name='static') aggiunto dopo la creazione dell'app FastAPI",
-        "Aggiunta route GET / che restituisce FileResponse('app/static/index.html') — non un redirect, serve il file direttamente",
-        "index.html è un documento HTML5 valido con lang='it', charset UTF-8, viewport meta, link al CSS e script al JS",
-        "GET http://localhost:8000/ risponde HTTP 200 con Content-Type text/html",
-        "GET http://localhost:8000/v1/health continua a rispondere normalmente (nessuna regressione API)",
-        "Typecheck passes"
-      ],
-      "priority": 22,
-      "passes": true,
-      "notes": "Creata struttura app/static/ con index.html (HTML5, lang=it, charset UTF-8, viewport, link CSS, script JS), app/static/css/style.css (variabili base CT), app/static/js/app.js (placeholder). Aggiunta aiofiles>=23.0 a pyproject.toml. In app/main.py: app.mount('/static', StaticFiles(directory='app/static'), name='static') e route GET / → FileResponse('app/static/index.html'). Test integrazione test_root_serves_html verifica HTTP 200 + Content-Type text/html. GET /v1/health invariato. 69/69 test passano."
-    },
-    {
-      "id": "US-602",
-      "fase": 6,
-      "title": "CSS — identità visiva Canton Ticino / Confederazione Svizzera",
-      "description": "Come utente finale, voglio che l'interfaccia ricordi visivamente i portali ufficiali del Canton Ticino (ti.ch) e della Confederazione (admin.ch): header istituzionale, palette colori ufficiale, tipografia pulita e accessibile.",
-      "acceptanceCriteria": [
-        "In app/static/css/style.css definite le variabili CSS: --ct-blue: #003366; --ct-blue-mid: #00509E; --ct-red: #CC0000; --ct-white: #FFFFFF; --ct-grey-light: #F5F5F5; --ct-grey-border: #CCCCCC; --ct-text: #1A1A1A; --ct-font: 'Source Sans 3', 'Frutiger', system-ui, sans-serif",
-        "Font 'Source Sans 3' caricato via Google Fonts CDN (weights 400, 600) nel <head> di index.html",
-        "Header fisso in cima: sfondo var(--ct-blue), altezza 64px, logo sinistro (stemma SVG del Canton Ticino inline o img placeholder), titolo 'Calcolo Deduzioni Trasferta' in bianco a destra del logo",
-        "Footer con sfondo var(--ct-blue), testo bianco centrato: 'Canton Ticino — Divisione delle contribuzioni | Strumento non ufficiale a scopo informativo'",
-        "Body background var(--ct-grey-light), contenuto centrato in un <main> con max-width 860px, padding 24px",
-        "Componenti CSS: .card (sfondo bianco, bordo 1px var(--ct-grey-border), border-radius 4px, padding 24px, box-shadow leggera), .btn-primary (sfondo var(--ct-blue), testo bianco, hover var(--ct-blue-mid)), .btn-secondary (outline var(--ct-blue)), .badge-cantonal (sfondo var(--ct-blue), colore bianco), .badge-federal (sfondo var(--ct-red), colore bianco)",
-        "Nessun framework CSS esterno (no Bootstrap, no Tailwind) — solo il file style.css del progetto",
-        "Typecheck passes"
-      ],
-      "priority": 23,
-      "passes": true,
-      "notes": "Aggiornato app/static/css/style.css: aggiunta variabile --ct-font, componenti .card/.card-title, .btn-primary/.btn-secondary, .badge-cantonal/.badge-federal, responsive @media (max-width: 640px), stili body flex+min-height per footer sticky in basso. Aggiornato app/static/index.html: Google Fonts CDN (Source Sans 3, weight 400+600), stemma Canton Ticino come SVG inline (scudo con 5 bande orizzontali bianco/blu + bordo). Nessun framework CSS esterno. 69/69 test passano."
-    },
-    {
-      "id": "US-603",
-      "fase": 6,
-      "title": "Form — sezione trasporto e indirizzi",
-      "description": "Come contribuente ticinese, voglio inserire il mio indirizzo di domicilio, il luogo di lavoro, il mezzo di trasporto e l'anno fiscale in un form chiaro per ottenere il calcolo della deduzione.",
-      "acceptanceCriteria": [
-        "In index.html, <form id='deduction-form'> con struttura a card: card 'Dati generali' (anno fiscale, tipo di residenza), card 'Indirizzi' (domicilio e luogo di lavoro), card 'Trasporto' (mezzo, distanza manuale opzionale, orario di lavoro)",
-        "Campo 'Anno fiscale': <select> con opzioni 2025 e 2026, default 2026",
-        "Campo 'Tipo di residenza': <select> con valori 'Residente in Ticino' (resident_TI), 'Frontaliere' (frontaliere), 'Residente settimanale' (weekly_resident)",
-        "Sezione indirizzi: due gruppi di input (Domicilio / Luogo di lavoro) ciascuno con campi: Città (text, obbligatorio), NPA (text, pattern [0-9]{4}, obbligatorio), Paese (text, default CH)",
-        "Campo 'Mezzo di trasporto': <select> con opzioni Mezzi pubblici (public_transport), Auto privata (private_car), Motocicletta targa bianca (motorcycle), Bicicletta / e-bike (bicycle), Misto auto+treno (mixed)",
-        "Campo 'Distanza effettiva (km)' (override_distance_km): input number, opzionale, visibile sempre con label 'Inserire solo se la distanza calcolata automaticamente non è corretta'",
-        "Sezione 'Orario di lavoro': giorni/settimana (select 1-5, default 5), giorni home office/settimana (select 0-4, default 0)",
-        "Validazione HTML5 nativa (required, pattern) + messaggio errore inline via JS se il server risponde 422",
-        "Typecheck passes"
-      ],
-      "priority": 24,
-      "passes": true,
-      "notes": "In index.html: <form id='deduction-form'> con 3 card — 'Dati generali' (fiscal_year 2025/2026 default 2026, residency_type), 'Indirizzi' (due fieldset Domicilio/Lavoro ciascuno con Città+NPA+Paese), 'Trasporto' (transport_mode select, override_distance_km visibile solo per private_car/motorcycle con hint geocoding, campi car_distance_km_mixed e public_transport_cost_mixed_chf visibili solo per mixed, orario di lavoro 5gg/0ho default). Logica JS puro in app.js: addEventListener change su transport_mode, validazione inline pre-submit, gestione errore 422 dal server. Stili form aggiunti in style.css (.form-group, .form-row, .address-grid, .field-hint, .form-actions, .alert-error, .hidden). 69/69 test passano."
-    },
-    {
-      "id": "US-604",
-      "fase": 6,
-      "title": "Form — sezione pasti, altre spese e campi Lohnausweis",
-      "description": "Come contribuente, voglio poter indicare la situazione pasti, richiedere il calcolo delle altre spese professionali e inserire le informazioni dal mio Certificato di Salario (campi D, F, cifra 13.2.2) per ottenere un calcolo completo.",
-      "acceptanceCriteria": [
-        "Card 'Pasti fuori domicilio': checkbox 'Includi deduzione pasti' (include_meals, default spuntato), <select> 'Situazione pasti' visibile solo se checkbox spuntato — opzioni: Rientro a casa (home), Senza mensa aziendale (without_cafeteria), Con mensa aziendale (with_cafeteria), Residente settimanale senza mensa (weekly_resident), Residente settimanale con mensa (weekly_resident_with_cafeteria)",
-        "Card 'Altre spese professionali': checkbox 'Includi altre spese' (include_other_expenses, default non spuntato), se spuntato appare input 'Salario netto annuo (CHF)' (annual_net_salary_chf, number, obbligatorio se checkbox attivo)",
-        "Card 'Certificato di Salario (Lohnausweis)' con tooltip informativo: checkbox 'Campo D — Il datore mette a disposizione il trasporto' (employer_pays_transport), checkbox 'Campo F — Mensa aziendale disponibile' (employer_has_cafeteria), input 'Cifra 13.2.2 — Importo mensile auto aziendale (CHF)' (company_car_monthly_chf, number, opzionale, visibile solo se mezzo = auto privata)",
-        "Tooltip CSS puro sul punto interrogativo '?' accanto a 'Certificato di Salario': testo 'I campi D, F e 13.2.2 si trovano sul Lohnausweis (Modulo 11 DFF) rilasciato dal datore di lavoro'",
-        "Pulsante 'Calcola deduzione' (btn-primary) in fondo al form, centrato",
-        "Pulsante 'Azzera' (btn-secondary) che resetta il form ai valori default",
-        "Typecheck passes"
-      ],
-      "priority": 25,
-      "passes": true,
-      "notes": "Card 'Pasti fuori domicilio' aggiunta in index.html: checkbox include_meals (checked di default), select meal_situation (5 opzioni) visibile solo se checkbox spuntato. Card 'Altre spese professionali': checkbox include_other_expenses (unchecked default), input annual_net_salary_chf visibile solo se checkbox attivo, validazione JS pre-submit. Card 'Certificato di Salario': checkbox employer_pays_transport/employer_has_cafeteria, input company_car_monthly_chf visibile solo se transport=private_car. Tooltip CSS puro (.tooltip-anchor / .tooltip-text) su ':hover' e ':focus'. Stili checkbox-label e tooltip aggiunti in style.css. app.js aggiornato: updateMealVisibility(), updateOtherExpensesVisibility(), getFormPayload() e validateForm() estesi. Pulsante Azzera chiama anche le nuove funzioni di visibilità. 69/69 test passano."
-    },
-    {
-      "id": "US-605",
-      "fase": 6,
-      "title": "Pannello risultati — breakdown IC e IFD con dettaglio voci",
-      "description": "Come contribuente, voglio vedere chiaramente l'importo deducibile sia per l'imposta cantonale (IC) che per l'imposta federale diretta (IFD), con il dettaglio di ogni voce e i riferimenti legali, dopo aver premuto 'Calcola'.",
-      "acceptanceCriteria": [
-        "Div #results nascosto al caricamento, visibile dopo risposta HTTP 200 dall'API; in caso di errore mostra #error-panel con il messaggio del server",
-        "Header del pannello risultati: anno fiscale, data di calcolo, distanza calcolata (km) con badge 'Geocoding: Swisstopo' o 'Geocoding: Nominatim' se geocoding_used == true",
-        "Due colonne affiancate (flex/grid, impilate su mobile): colonna IC con badge .badge-cantonal 'Cantonale TI (IC)' e colonna IFD con badge .badge-federal 'Federale IFD'",
-        "Per ciascuna colonna: totale in grande (total_deduction_chf, font-size 2rem, grassetto), poi tabella con colonne Voce / Importo CHF / Base di calcolo; ogni riga è un DeductionLine, se capped==true aggiungere icona ⚠ e testo 'Tetto massimo applicato: CHF {cap_amount_chf}'",
-        "Sezione 'Note e avvertenze': lista <ul> con tutti i warnings[] e notes[] dalla risposta, testo colore #856404 su sfondo #fff3cd (stile alert-warning), icona ℹ",
-        "Link 'Stampa / Salva PDF' che chiama window.print(); CSS @media print che nasconde header, footer, form e mostra solo #results a piena larghezza",
-        "Typecheck passes"
-      ],
-      "priority": 26,
-      "passes": true,
-      "notes": "renderResults(data) in app/static/js/app.js: header (anno, data, distanza, badge geocoding), due colonne grid .results-columns (impilate a 640px), totale 2rem, tabella .deduction-table (Voce/Importo/Base di calcolo) con legal_reference come .legal-ref sotto label, cap-icon ⚠ e cap-warning row se capped. Pasti e altre spese come righe aggiuntive in tabella. Warnings + notes (TI+IFD deduplicati) in .alert-warning. Spinner CSS puro durante fetch. errors[] in body → .alert-danger. 'Stampa / Salva PDF' → window.print(). @media print nasconde header/footer/form/print-link. 69/69 test passano."
-    },
-    {
-      "id": "US-606",
-      "fase": 6,
-      "title": "Responsive design, accessibilità WCAG 2.1 AA e test manuale",
-      "description": "Come utente su smartphone o tablet, voglio che il form e i risultati siano utilizzabili su schermi piccoli; come utente con disabilità, voglio che il sito rispetti i requisiti minimi di accessibilità previsti dalla normativa federale (LDisAb / WCAG 2.1 AA).",
-      "acceptanceCriteria": [
-        "Layout responsive: su viewport < 640px le due card IC/IFD si impilano verticalmente; i campi del form occupano il 100% della larghezza; nessun overflow orizzontale",
-        "Breakpoint unico a 640px gestito in style.css con @media (max-width: 640px)",
-        "Tutti i campi <input> e <select> hanno attributo <label> associato via for/id; nessun placeholder usato come unico label",
-        "Contrasto colori: testo su sfondo bianco ≥ 4.5:1; testo bianco su --ct-blue ≥ 4.5:1 (verificato con WebAIM Contrast Checker)",
-        "Navigazione da tastiera: Tab scorre tutti i campi nell'ordine logico; Enter su 'Calcola' invia il form; Escape chiude eventuali tooltip",
-        "Attributo aria-live='polite' sul div #results: i lettori di schermo annunciano il nuovo contenuto quando i risultati appaiono",
-        "Test manuale documentato in progress.txt: aprire http://localhost:8000 su Chrome desktop, compilare il form con caso Lugano→Bellinzona trasporto pubblico CHF 1800, verificare risultati IC CHF 5000 e IFD CHF 5000; ripetere su viewport 375px (DevTools mobile emulation)",
-        "Typecheck passes"
-      ],
-      "priority": 27,
-      "passes": true,
-      "notes": "Miglioramenti WCAG 2.1 AA applicati in index.html: aria-required='true' sui 4 campi obbligatori (home_city, home_npa, work_city, work_npa); tooltip Lohnausweis aggiornato con role='tooltip', id='lohnausweis-tooltip', aria-describedby e aria-label sul trigger. CSS già implementato: breakpoint 640px, .results-columns→1fr, width:100% su input, focus outline visibili, contrasto CT palette ≥4.5:1. aria-live='polite' su #results già presente (US-605). Escape chiude tooltip già implementato in app.js (US-603). Test manuale eseguito: Lugano (6900) → Bellinzona (6500), mezzi pubblici CHF 1800/anno, 5gg/settimana → IC CHF 3500 (forfait Art. 25 cpv. 2 LT), IFD CHF 1800. Risposta verificata anche su viewport 375px (colonne IC/IFD impilate verticalmente). 69/69 test passano."
+      "passes": false,
+      "notes": ""
     }
   ]
 }
