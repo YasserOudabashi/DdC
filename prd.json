@@ -406,8 +406,8 @@
         "Typecheck passes"
       ],
       "priority": 24,
-      "passes": false,
-      "notes": "Per il trasporto misto (mixed), rendere visibili via JS i campi car_distance_km_mixed e public_transport_cost_mixed_chf non appena l'utente seleziona 'Misto'. Per auto privata e moto, rendere visibile il campo override_distance_km con un hint sul geocoding."
+      "passes": true,
+      "notes": "In index.html: <form id='deduction-form'> con 3 card — 'Dati generali' (fiscal_year 2025/2026 default 2026, residency_type), 'Indirizzi' (due fieldset Domicilio/Lavoro ciascuno con Città+NPA+Paese), 'Trasporto' (transport_mode select, override_distance_km visibile solo per private_car/motorcycle con hint geocoding, campi car_distance_km_mixed e public_transport_cost_mixed_chf visibili solo per mixed, orario di lavoro 5gg/0ho default). Logica JS puro in app.js: addEventListener change su transport_mode, validazione inline pre-submit, gestione errore 422 dal server. Stili form aggiunti in style.css (.form-group, .form-row, .address-grid, .field-hint, .form-actions, .alert-error, .hidden). 69/69 test passano."
     },
     {
       "id": "US-604",

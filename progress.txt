@@ -214,6 +214,22 @@
 - 69/69 test passano
 - Prossima storia: US-602 (fase 6 — CSS identità visiva Canton Ticino, priority 23)
 
+## 2026-06-24 — US-603 completata (fase 6, priority 24)
+- Aggiornato `app/static/index.html`: aggiunto `<form id="deduction-form">` con 3 card:
+  - Card 'Dati generali': select `fiscal_year` (2025/2026 default 2026) e select `residency_type` (resident_TI/frontaliere/weekly_resident)
+  - Card 'Indirizzi': due fieldset (`Domicilio` / `Luogo di lavoro`) ciascuno con input Città (text, required), NPA (text, pattern [0-9]{4}, required), Paese (text, default CH)
+  - Card 'Trasporto': select `transport_mode` (5 opzioni), input `override_distance_km` visibile solo per private_car/motorcycle con hint geocoding, blocco `mixed-fields` visibile solo per mixed (car_distance_km_mixed + public_transport_cost_mixed_chf), select giorni/settimana (1-5 default 5) e home office (0-4 default 0)
+  - Div `#form-error` per errori inline, bottoni 'Calcola' (btn-primary) e 'Azzera' (btn-secondary)
+  - Div `#results` con `aria-live="polite"` nascosto al caricamento
+- Aggiornato `app/static/js/app.js`: logica completa JS puro
+  - `updateTransportVisibility()`: mostra/nasconde campi in base a transport_mode
+  - `validateForm()`: validazione pre-submit (NPA 4 cifre, campi required, mixed senza dati)
+  - `form.addEventListener('submit')`: chiamata fetch a POST /v1/deduction/calculate, gestione HTTP 422 con messaggio dal server, gestione errori di rete
+  - `btnReset.addEventListener('click')`: reset form + hide results/error
+- Aggiornato `app/static/css/style.css`: aggiunti stili form (.form-group, .form-row, label, input, select, fieldset, .address-grid, .field-hint, .form-actions, .alert-error, .hidden, responsive 640px)
+- Nessuna modifica al backend; 69/69 test passano
+- Prossima storia: US-604 (fase 6 — Form sezione pasti, altre spese e campi Lohnausweis, priority 25)
+
 ## 2026-06-24 — US-602 completata (fase 6, priority 23)
 - Aggiornato `app/static/css/style.css`:
   - Variabile `--ct-font: 'Source Sans 3', 'Frutiger', system-ui, sans-serif` aggiunta in :root

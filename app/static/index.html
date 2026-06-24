@@ -12,18 +12,15 @@
 <body>
   <header>
     <div class="header-inner">
-      <!-- Stemma Canton Ticino — placeholder SVG -->
       <svg class="header-logo" viewBox="0 0 40 48" xmlns="http://www.w3.org/2000/svg" aria-label="Stemma Canton Ticino" role="img">
         <defs>
           <clipPath id="shield-clip">
             <path d="M20 0 L40 6 L40 32 Q40 44 20 48 Q0 44 0 32 L0 6 Z"/>
           </clipPath>
         </defs>
-        <!-- Scudo: bande orizzontali bianche e blu (5 bande: bianco-blu-bianco-blu-bianco) -->
         <rect width="40" height="48" fill="white" clip-path="url(#shield-clip)"/>
         <rect y="9.6" width="40" height="9.6" fill="#003366" clip-path="url(#shield-clip)"/>
         <rect y="28.8" width="40" height="9.6" fill="#003366" clip-path="url(#shield-clip)"/>
-        <!-- Bordo scudo -->
         <path d="M20 0 L40 6 L40 32 Q40 44 20 48 Q0 44 0 32 L0 6 Z"
               fill="none" stroke="#003366" stroke-width="1.5"/>
       </svg>
@@ -32,7 +29,140 @@
   </header>
 
   <main>
-    <p>Servizio DdC — Canton Ticino</p>
+    <form id="deduction-form" novalidate>
+
+      <!-- Card: Dati generali -->
+      <div class="card">
+        <h2 class="card-title">Dati generali</h2>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="fiscal_year">Anno fiscale</label>
+            <select id="fiscal_year" name="fiscal_year">
+              <option value="2026" selected>2026</option>
+              <option value="2025">2025</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="residency_type">Tipo di residenza</label>
+            <select id="residency_type" name="residency_type">
+              <option value="resident_TI" selected>Residente in Ticino</option>
+              <option value="frontaliere">Frontaliere</option>
+              <option value="weekly_resident">Residente settimanale</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card: Indirizzi -->
+      <div class="card">
+        <h2 class="card-title">Indirizzi</h2>
+        <div class="address-grid">
+          <fieldset class="address-group">
+            <legend>Domicilio</legend>
+            <div class="form-group">
+              <label for="home_city">Città</label>
+              <input type="text" id="home_city" name="home_city" required autocomplete="address-level2">
+            </div>
+            <div class="form-group">
+              <label for="home_npa">NPA</label>
+              <input type="text" id="home_npa" name="home_npa" required pattern="[0-9]{4}" maxlength="4" inputmode="numeric" placeholder="6900">
+            </div>
+            <div class="form-group">
+              <label for="home_country">Paese</label>
+              <input type="text" id="home_country" name="home_country" value="CH" maxlength="2">
+            </div>
+          </fieldset>
+
+          <fieldset class="address-group">
+            <legend>Luogo di lavoro</legend>
+            <div class="form-group">
+              <label for="work_city">Città</label>
+              <input type="text" id="work_city" name="work_city" required autocomplete="off">
+            </div>
+            <div class="form-group">
+              <label for="work_npa">NPA</label>
+              <input type="text" id="work_npa" name="work_npa" required pattern="[0-9]{4}" maxlength="4" inputmode="numeric" placeholder="6500">
+            </div>
+            <div class="form-group">
+              <label for="work_country">Paese</label>
+              <input type="text" id="work_country" name="work_country" value="CH" maxlength="2">
+            </div>
+          </fieldset>
+        </div>
+      </div>
+
+      <!-- Card: Trasporto -->
+      <div class="card">
+        <h2 class="card-title">Trasporto</h2>
+
+        <div class="form-group">
+          <label for="transport_mode">Mezzo di trasporto</label>
+          <select id="transport_mode" name="transport_mode">
+            <option value="public_transport" selected>Mezzi pubblici</option>
+            <option value="private_car">Auto privata</option>
+            <option value="motorcycle">Motocicletta targa bianca</option>
+            <option value="bicycle">Bicicletta / e-bike</option>
+            <option value="mixed">Misto auto + treno</option>
+          </select>
+        </div>
+
+        <!-- Distanza override (auto privata / moto) -->
+        <div id="distance-override-group" class="form-group hidden">
+          <label for="override_distance_km">Distanza effettiva (km)</label>
+          <input type="number" id="override_distance_km" name="override_distance_km" min="0.1" step="0.1">
+          <span class="field-hint">Inserire solo se la distanza calcolata automaticamente non è corretta</span>
+        </div>
+
+        <!-- Campi trasporto misto -->
+        <div id="mixed-fields" class="form-group-block hidden">
+          <div class="form-group">
+            <label for="car_distance_km_mixed">Distanza in auto fino alla stazione (km)</label>
+            <input type="number" id="car_distance_km_mixed" name="car_distance_km_mixed" min="0.1" step="0.1">
+          </div>
+          <div class="form-group">
+            <label for="public_transport_cost_mixed_chf">Costo abbonamento mezzi pubblici (CHF/anno)</label>
+            <input type="number" id="public_transport_cost_mixed_chf" name="public_transport_cost_mixed_chf" min="0" step="1">
+          </div>
+        </div>
+
+        <!-- Orario di lavoro -->
+        <div class="form-row" style="margin-top: 16px;">
+          <div class="form-group">
+            <label for="days_per_week">Giorni lavorativi/settimana</label>
+            <select id="days_per_week" name="days_per_week">
+              <option value="1">1</option>
+              <option value="2">2</option>
+              <option value="3">3</option>
+              <option value="4">4</option>
+              <option value="5" selected>5</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="home_office_days_per_week">Giorni home office/settimana</label>
+            <select id="home_office_days_per_week" name="home_office_days_per_week">
+              <option value="0" selected>0</option>
+              <option value="1">1</option>
+              <option value="2">2</option>
+              <option value="3">3</option>
+              <option value="4">4</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- Errore inline -->
+      <div id="form-error" class="alert-error hidden" role="alert"></div>
+
+      <!-- Azioni -->
+      <div class="form-actions">
+        <button type="submit" class="btn-primary">Calcola deduzione</button>
+        <button type="button" id="btn-reset" class="btn-secondary">Azzera</button>
+      </div>
+
+    </form>
+
+    <!-- Pannello risultati (nascosto finché non si calcola) -->
+    <div id="results" class="hidden" aria-live="polite"></div>
   </main>
 
   <footer>
