@@ -230,6 +230,22 @@
 - Nessuna modifica al backend; 69/69 test passano
 - Prossima storia: US-604 (fase 6 — Form sezione pasti, altre spese e campi Lohnausweis, priority 25)
 
+## 2026-06-24 — US-604 completata (fase 6, priority 25)
+- Aggiunte 3 nuove card a `app/static/index.html` (dopo la card Trasporto, prima di errore/azioni):
+  - Card 'Pasti fuori domicilio': checkbox `include_meals` (checked di default) + select `meal_situation` (5 opzioni) visibile solo se checkbox spuntato
+  - Card 'Altre spese professionali': checkbox `include_other_expenses` (unchecked default) + input `annual_net_salary_chf` visibile solo se checkbox attivo
+  - Card 'Certificato di Salario (Lohnausweis)': checkbox `employer_pays_transport`, checkbox `employer_has_cafeteria`, input `company_car_monthly_chf` visibile solo se transport=private_car; tooltip CSS puro su '?' con testo esplicativo Lohnausweis
+- `app/static/css/style.css`: aggiunti stili `.checkbox-group`, `.checkbox-label`, `.tooltip-anchor`, `.tooltip-text` (visibile su :hover/:focus)
+- `app/static/js/app.js` aggiornato:
+  - `updateMealVisibility()`: mostra/nasconde select meal_situation al toggle include_meals
+  - `updateOtherExpensesVisibility()`: mostra/nasconde annual_net_salary_chf al toggle include_other_expenses (+ imposta required dinamicamente)
+  - `updateTransportVisibility()` estesa: gestisce anche `companyCarGroup` (visible solo per private_car)
+  - `getFormPayload()` esteso: include_meals, meal_situation, include_other_expenses, annual_net_salary_chf, employer_pays_transport, employer_has_cafeteria, company_car_monthly_chf
+  - `validateForm()`: nuova regola — annual_net_salary_chf obbligatorio se include_other_expenses attivo
+  - `btnReset`: chiama anche `updateMealVisibility()` e `updateOtherExpensesVisibility()` dopo form.reset()
+- 69/69 test passano (nessuna modifica al backend)
+- Prossima storia: US-605 (fase 6 — Pannello risultati IC e IFD, priority 26)
+
 ## 2026-06-24 — US-602 completata (fase 6, priority 23)
 - Aggiornato `app/static/css/style.css`:
   - Variabile `--ct-font: 'Source Sans 3', 'Frutiger', system-ui, sans-serif` aggiunta in :root

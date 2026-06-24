@@ -150,6 +150,67 @@
         </div>
       </div>
 
+      <!-- Card: Pasti fuori domicilio -->
+      <div class="card">
+        <h2 class="card-title">Pasti fuori domicilio</h2>
+        <div class="form-group checkbox-group">
+          <label class="checkbox-label">
+            <input type="checkbox" id="include_meals" name="include_meals" checked>
+            Includi deduzione pasti
+          </label>
+        </div>
+        <div id="meal-situation-group" class="form-group">
+          <label for="meal_situation">Situazione pasti</label>
+          <select id="meal_situation" name="meal_situation">
+            <option value="without_cafeteria" selected>Senza mensa aziendale (CHF 15.00/giorno)</option>
+            <option value="with_cafeteria">Con mensa aziendale (CHF 7.50/giorno)</option>
+            <option value="home">Rientro a casa</option>
+            <option value="weekly_resident">Residente settimanale senza mensa (CHF 30.00/giorno)</option>
+            <option value="weekly_resident_with_cafeteria">Residente settimanale con mensa (CHF 22.50/giorno)</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Card: Altre spese professionali -->
+      <div class="card">
+        <h2 class="card-title">Altre spese professionali</h2>
+        <div class="form-group checkbox-group">
+          <label class="checkbox-label">
+            <input type="checkbox" id="include_other_expenses" name="include_other_expenses">
+            Includi altre spese professionali (3% del salario netto)
+          </label>
+        </div>
+        <div id="salary-group" class="form-group hidden">
+          <label for="annual_net_salary_chf">Salario netto annuo (CHF)</label>
+          <input type="number" id="annual_net_salary_chf" name="annual_net_salary_chf" min="0" step="100">
+        </div>
+      </div>
+
+      <!-- Card: Certificato di Salario (Lohnausweis) -->
+      <div class="card">
+        <h2 class="card-title">
+          Certificato di Salario (Lohnausweis)
+          <span class="tooltip-anchor" tabindex="0">?<span class="tooltip-text">I campi D, F e 13.2.2 si trovano sul Lohnausweis (Modulo 11 DFF) rilasciato dal datore di lavoro</span></span>
+        </h2>
+        <div class="form-group checkbox-group">
+          <label class="checkbox-label">
+            <input type="checkbox" id="employer_pays_transport" name="employer_pays_transport">
+            Campo D — Il datore mette a disposizione il trasporto
+          </label>
+        </div>
+        <div class="form-group checkbox-group">
+          <label class="checkbox-label">
+            <input type="checkbox" id="employer_has_cafeteria" name="employer_has_cafeteria">
+            Campo F — Mensa aziendale disponibile
+          </label>
+        </div>
+        <div id="company-car-group" class="form-group hidden">
+          <label for="company_car_monthly_chf">Cifra 13.2.2 — Importo mensile auto aziendale (CHF)</label>
+          <input type="number" id="company_car_monthly_chf" name="company_car_monthly_chf" min="0" step="1">
+          <span class="field-hint">Compilare solo se nella cifra 13.2.2 del Lohnausweis è indicato un importo mensile</span>
+        </div>
+      </div>
+
       <!-- Errore inline -->
       <div id="form-error" class="alert-error hidden" role="alert"></div>
 

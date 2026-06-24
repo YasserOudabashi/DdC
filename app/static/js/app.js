@@ -10,23 +10,54 @@
   const formError = document.getElementById('form-error');
   const btnReset = document.getElementById('btn-reset');
 
+  const includeMealsChk = document.getElementById('include_meals');
+  const mealSituationGroup = document.getElementById('meal-situation-group');
+
+  const includeOtherExpensesChk = document.getElementById('include_other_expenses');
+  const salaryGroup = document.getElementById('salary-group');
+
+  const companyCarGroup = document.getElementById('company-car-group');
+
   function updateTransportVisibility() {
     const mode = transportSelect.value;
     const needsDistance = mode === 'private_car' || mode === 'motorcycle';
     const isMixed = mode === 'mixed';
+    const isPrivateCar = mode === 'private_car';
 
     distanceOverrideGroup.classList.toggle('hidden', !needsDistance);
     mixedFields.classList.toggle('hidden', !isMixed);
+    companyCarGroup.classList.toggle('hidden', !isPrivateCar);
 
-    // Required only when visible
     const carMixed = document.getElementById('car_distance_km_mixed');
     const ptMixed = document.getElementById('public_transport_cost_mixed_chf');
     carMixed.required = false;
     ptMixed.required = false;
   }
 
+  function updateMealVisibility() {
+    mealSituationGroup.classList.toggle('hidden', !includeMealsChk.checked);
+  }
+
+  function updateOtherExpensesVisibility() {
+    salaryGroup.classList.toggle('hidden', !includeOtherExpensesChk.checked);
+    const salaryInput = document.getElementById('annual_net_salary_chf');
+    salaryInput.required = includeOtherExpensesChk.checked;
+  }
+
   transportSelect.addEventListener('change', updateTransportVisibility);
+  includeMealsChk.addEventListener('change', updateMealVisibility);
+  includeOtherExpensesChk.addEventListener('change', updateOtherExpensesVisibility);
+
   updateTransportVisibility();
+  updateMealVisibility();
+  updateOtherExpensesVisibility();
+
+  // Tooltip: close on Escape
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') {
+      document.querySelectorAll('.tooltip-anchor').forEach(function (el) { el.blur(); });
+    }
+  });
 
   function showError(message) {
     formError.textContent = message;
@@ -83,6 +114,28 @@
       if (ptCost) payload.public_transport_cost_mixed_chf = parseFloat(ptCost);
     }
 
+    // Pasti
+    payload.include_meals = includeMealsChk.checked;
+    if (includeMealsChk.checked) {
+      payload.meal_situation = document.getElementById('meal_situation').value;
+    }
+
+    // Altre spese professionali
+    payload.include_other_expenses = includeOtherExpensesChk.checked;
+    if (includeOtherExpensesChk.checked) {
+      const salary = document.getElementById('annual_net_salary_chf').value;
+      if (salary) payload.annual_net_salary_chf = parseFloat(salary);
+    }
+
+    // Campi Lohnausweis
+    payload.employer_pays_transport = document.getElementById('employer_pays_transport').checked;
+    payload.employer_has_cafeteria = document.getElementById('employer_has_cafeteria').checked;
+
+    if (mode === 'private_car') {
+      const carMonthly = document.getElementById('company_car_monthly_chf').value;
+      if (carMonthly) payload.company_car_monthly_chf = parseFloat(carMonthly);
+    }
+
     return payload;
   }
 
@@ -103,6 +156,13 @@
       const ptCost = document.getElementById('public_transport_cost_mixed_chf').value;
       if (!carKm && !ptCost) {
         return 'Per il trasporto misto fornire almeno la distanza in auto o il costo mezzi pubblici.';
+      }
+    }
+
+    if (includeOtherExpensesChk.checked) {
+      const salary = document.getElementById('annual_net_salary_chf').value;
+      if (!salary || parseFloat(salary) <= 0) {
+        return 'Inserire il salario netto annuo per calcolare le altre spese professionali.';
       }
     }
 
@@ -161,5 +221,7 @@
     hideError();
     document.getElementById('results').classList.add('hidden');
     updateTransportVisibility();
+    updateMealVisibility();
+    updateOtherExpensesVisibility();
   });
 })();

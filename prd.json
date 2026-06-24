@@ -424,8 +424,8 @@
         "Typecheck passes"
       ],
       "priority": 25,
-      "passes": false,
-      "notes": "Dipende da US-401, US-402, US-403 (campi Lohnausweis nel backend). Se il backend non ha ancora quei campi, la card Lohnausweis va comunque mostrata ma i campi inviano valori di default (false/null) senza bloccare il flusso. La visibilità condizionale dei campi va gestita con JS puro (addEventListener change)."
+      "passes": true,
+      "notes": "Card 'Pasti fuori domicilio' aggiunta in index.html: checkbox include_meals (checked di default), select meal_situation (5 opzioni) visibile solo se checkbox spuntato. Card 'Altre spese professionali': checkbox include_other_expenses (unchecked default), input annual_net_salary_chf visibile solo se checkbox attivo, validazione JS pre-submit. Card 'Certificato di Salario': checkbox employer_pays_transport/employer_has_cafeteria, input company_car_monthly_chf visibile solo se transport=private_car. Tooltip CSS puro (.tooltip-anchor / .tooltip-text) su ':hover' e ':focus'. Stili checkbox-label e tooltip aggiunti in style.css. app.js aggiornato: updateMealVisibility(), updateOtherExpensesVisibility(), getFormPayload() e validateForm() estesi. Pulsante Azzera chiama anche le nuove funzioni di visibilità. 69/69 test passano."
     },
     {
       "id": "US-605",
