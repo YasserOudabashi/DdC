@@ -386,8 +386,8 @@
         "Typecheck passes"
       ],
       "priority": 23,
-      "passes": false,
-      "notes": "Lo stemma ufficiale del Canton Ticino in SVG è pubblico dominio e disponibile su Wikimedia Commons. Usare un placeholder <svg> semplice se non disponibile localmente. Il footer deve includere la nota 'strumento non ufficiale' per evitare fraintendimenti istituzionali."
+      "passes": true,
+      "notes": "Aggiornato app/static/css/style.css: aggiunta variabile --ct-font, componenti .card/.card-title, .btn-primary/.btn-secondary, .badge-cantonal/.badge-federal, responsive @media (max-width: 640px), stili body flex+min-height per footer sticky in basso. Aggiornato app/static/index.html: Google Fonts CDN (Source Sans 3, weight 400+600), stemma Canton Ticino come SVG inline (scudo con 5 bande orizzontali bianco/blu + bordo). Nessun framework CSS esterno. 69/69 test passano."
     },
     {
       "id": "US-603",

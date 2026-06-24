@@ -4,11 +4,29 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Calcolo Deduzioni Trasferta — Canton Ticino</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/static/css/style.css">
 </head>
 <body>
   <header>
     <div class="header-inner">
+      <!-- Stemma Canton Ticino — placeholder SVG -->
+      <svg class="header-logo" viewBox="0 0 40 48" xmlns="http://www.w3.org/2000/svg" aria-label="Stemma Canton Ticino" role="img">
+        <defs>
+          <clipPath id="shield-clip">
+            <path d="M20 0 L40 6 L40 32 Q40 44 20 48 Q0 44 0 32 L0 6 Z"/>
+          </clipPath>
+        </defs>
+        <!-- Scudo: bande orizzontali bianche e blu (5 bande: bianco-blu-bianco-blu-bianco) -->
+        <rect width="40" height="48" fill="white" clip-path="url(#shield-clip)"/>
+        <rect y="9.6" width="40" height="9.6" fill="#003366" clip-path="url(#shield-clip)"/>
+        <rect y="28.8" width="40" height="9.6" fill="#003366" clip-path="url(#shield-clip)"/>
+        <!-- Bordo scudo -->
+        <path d="M20 0 L40 6 L40 32 Q40 44 20 48 Q0 44 0 32 L0 6 Z"
+              fill="none" stroke="#003366" stroke-width="1.5"/>
+      </svg>
       <span class="header-title">Calcolo Deduzioni Trasferta</span>
     </div>
   </header>

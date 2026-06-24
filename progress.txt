@@ -214,3 +214,19 @@
 - 69/69 test passano
 - Prossima storia: US-602 (fase 6 — CSS identità visiva Canton Ticino, priority 23)
 
+## 2026-06-24 — US-602 completata (fase 6, priority 23)
+- Aggiornato `app/static/css/style.css`:
+  - Variabile `--ct-font: 'Source Sans 3', 'Frutiger', system-ui, sans-serif` aggiunta in :root
+  - font-family applicato a body; body ora flex+min-height:100vh per footer sempre in basso
+  - Componente `.card` (sfondo bianco, bordo 1px var(--ct-grey-border), border-radius 4px, padding 24px, box-shadow leggera) + `.card-title` (blu, bordo inferiore 2px)
+  - `.btn-primary` (sfondo var(--ct-blue), hover var(--ct-blue-mid), focus outline), `.btn-secondary` (outline var(--ct-blue), hover inverso)
+  - `.badge-cantonal` (sfondo var(--ct-blue), testo bianco), `.badge-federal` (sfondo var(--ct-red), testo bianco)
+  - Responsive @media (max-width: 640px): padding ridotto, font-size header ridotto
+  - Nessun framework CSS esterno (no Bootstrap, no Tailwind)
+- Aggiornato `app/static/index.html`:
+  - Google Fonts CDN: `Source Sans 3` pesi 400+600 caricati via `<link rel="preconnect">` + `<link href="fonts.googleapis.com/...">` nel `<head>`
+  - Stemma Canton Ticino come SVG inline nel header: scudo con 5 bande orizzontali bianco/blu (bande nelle posizioni corrette), bordo scudo blu, clip-path a forma di scudo araldico
+  - Logo con `aria-label="Stemma Canton Ticino" role="img"` per accessibilità
+- 69/69 test passano
+- Prossima storia: US-603 (fase 6 — Form sezione trasporto e indirizzi, priority 24)
+

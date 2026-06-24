@@ -1,4 +1,4 @@
-/* Canton Ticino — stile base */
+/* Canton Ticino — identità visiva istituzionale */
 :root {
   --ct-blue: #003366;
   --ct-blue-mid: #00509E;
@@ -7,16 +7,21 @@
   --ct-grey-light: #F5F5F5;
   --ct-grey-border: #CCCCCC;
   --ct-text: #1A1A1A;
+  --ct-font: 'Source Sans 3', 'Frutiger', system-ui, sans-serif;
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
 body {
-  font-family: system-ui, sans-serif;
+  font-family: var(--ct-font);
   background: var(--ct-grey-light);
   color: var(--ct-text);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
 }
 
+/* ── Header ── */
 header {
   background: var(--ct-blue);
   height: 64px;
@@ -25,23 +30,142 @@ header {
   padding: 0 24px;
   position: sticky;
   top: 0;
+  z-index: 100;
 }
 
-.header-inner { display: flex; align-items: center; gap: 16px; }
+.header-inner {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+}
 
-.header-title { color: var(--ct-white); font-size: 1.1rem; font-weight: 600; }
+.header-logo {
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+}
 
+.header-title {
+  color: var(--ct-white);
+  font-size: 1.1rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+/* ── Main content ── */
 main {
   max-width: 860px;
+  width: 100%;
   margin: 0 auto;
   padding: 24px;
+  flex: 1;
 }
 
+/* ── Footer ── */
 footer {
   background: var(--ct-blue);
   color: var(--ct-white);
   text-align: center;
-  padding: 16px;
+  padding: 16px 24px;
   font-size: 0.85rem;
-  margin-top: 48px;
+}
+
+/* ── Card ── */
+.card {
+  background: var(--ct-white);
+  border: 1px solid var(--ct-grey-border);
+  border-radius: 4px;
+  padding: 24px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  margin-bottom: 16px;
+}
+
+.card-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--ct-blue);
+  margin-bottom: 16px;
+  padding-bottom: 8px;
+  border-bottom: 2px solid var(--ct-blue);
+}
+
+/* ── Buttons ── */
+.btn-primary {
+  background: var(--ct-blue);
+  color: var(--ct-white);
+  border: none;
+  padding: 10px 24px;
+  border-radius: 4px;
+  font-family: var(--ct-font);
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.btn-primary:hover {
+  background: var(--ct-blue-mid);
+}
+
+.btn-primary:focus {
+  outline: 3px solid var(--ct-blue-mid);
+  outline-offset: 2px;
+}
+
+.btn-secondary {
+  background: transparent;
+  color: var(--ct-blue);
+  border: 2px solid var(--ct-blue);
+  padding: 8px 24px;
+  border-radius: 4px;
+  font-family: var(--ct-font);
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.btn-secondary:hover {
+  background: var(--ct-blue);
+  color: var(--ct-white);
+}
+
+.btn-secondary:focus {
+  outline: 3px solid var(--ct-blue-mid);
+  outline-offset: 2px;
+}
+
+/* ── Badges ── */
+.badge-cantonal {
+  background: var(--ct-blue);
+  color: var(--ct-white);
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: 3px;
+  display: inline-block;
+  letter-spacing: 0.03em;
+}
+
+.badge-federal {
+  background: var(--ct-red);
+  color: var(--ct-white);
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: 3px;
+  display: inline-block;
+  letter-spacing: 0.03em;
+}
+
+/* ── Responsive ── */
+@media (max-width: 640px) {
+  main {
+    padding: 16px;
+  }
+
+  .header-title {
+    font-size: 0.95rem;
+  }
 }
