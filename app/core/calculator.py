@@ -3,7 +3,7 @@ Orchestratore principale — coordina tutti i motori di calcolo.
 Chiamato dall'endpoint POST /v1/deduction/calculate.
 """
 from __future__ import annotations
-from ..schemas.request import DeductionRequest, MealSituation, TransportMode
+from ..schemas.request import DeductionRequest, MealSituation, ResidencyType, TransportMode
 from ..schemas.response import DeductionLine, DeductionResponse, TaxLevelResult, TransportResult
 from ..rules.loader import load_rules
 from ..rules.models import FiscalYearRules
@@ -63,11 +63,21 @@ def _build_cantonal(
     if req.include_meals:
         meals_chf = meals_engine.calculate_meals_cantonal(effective_meal_situation, req.work_schedule, rules)
 
+    accommodation_chf: float | None = None
+    if (req.residency_type == ResidencyType.WEEKLY_RESIDENT
+            and req.annual_accommodation_cost_chf is not None):
+        accommodation_chf = round(req.annual_accommodation_cost_chf, 2)
+
     other_chf: float | None = None
     if req.include_other_expenses and req.annual_net_salary_chf is not None:
         other_chf = other_expenses.calculate_other_cantonal(req.annual_net_salary_chf, rules)
 
-    total = transport.net_deduction_chf + (meals_chf or 0.0) + (other_chf or 0.0)
+    secondary_chf: float | None = None
+    if req.include_secondary_activity:
+        secondary_chf = other_expenses.calculate_secondary_cantonal(rules)
+
+    total = (transport.net_deduction_chf + (meals_chf or 0.0) + (accommodation_chf or 0.0)
+             + (other_chf or 0.0) + (secondary_chf or 0.0))
 
     flat_rate = rules.cantonal_TI.flat_rate_all_expenses_chf
     flat_rate_applied = False
@@ -79,7 +89,9 @@ def _build_cantonal(
         level="cantonal_TI",
         transport_deduction=transport,
         meals_deduction_chf=meals_chf,
+        accommodation_deduction_chf=accommodation_chf,
         other_expenses_deduction_chf=other_chf,
+        secondary_activity_deduction_chf=secondary_chf,
         total_deduction_chf=round(total, 2),
         flat_rate_applied=flat_rate_applied,
         flat_rate_chf=flat_rate if flat_rate_applied else None,
@@ -97,17 +109,29 @@ def _build_federal(
     if req.include_meals:
         meals_chf = meals_engine.calculate_meals_federal(effective_meal_situation, req.work_schedule, rules)
 
+    accommodation_chf: float | None = None
+    if (req.residency_type == ResidencyType.WEEKLY_RESIDENT
+            and req.annual_accommodation_cost_chf is not None):
+        accommodation_chf = round(req.annual_accommodation_cost_chf, 2)
+
     other_chf: float | None = None
     if req.include_other_expenses and req.annual_net_salary_chf is not None:
         other_chf = other_expenses.calculate_other_federal(req.annual_net_salary_chf, rules)
 
-    total = transport.net_deduction_chf + (meals_chf or 0.0) + (other_chf or 0.0)
+    secondary_chf: float | None = None
+    if req.include_secondary_activity:
+        secondary_chf = other_expenses.calculate_secondary_federal(req.annual_net_salary_chf, rules)
+
+    total = (transport.net_deduction_chf + (meals_chf or 0.0) + (accommodation_chf or 0.0)
+             + (other_chf or 0.0) + (secondary_chf or 0.0))
 
     return TaxLevelResult(
         level="federal_IFD",
         transport_deduction=transport,
         meals_deduction_chf=meals_chf,
+        accommodation_deduction_chf=accommodation_chf,
         other_expenses_deduction_chf=other_chf,
+        secondary_activity_deduction_chf=secondary_chf,
         total_deduction_chf=round(total, 2),
         notes=_federal_notes(rules),
     )

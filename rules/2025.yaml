@@ -1,7 +1,7 @@
 # rules/2025.yaml
-# Valori anno fiscale 2025 — fonte: Istruzioni per la compilazione della dichiarazione
-# d'imposta 2025 delle persone fisiche, Canton Ticino (flyer_istruzioni_2025.pdf).
-# Tabella di confronto IC/IFD confermata da pagina 50 delle Istruzioni PF 2025.
+# Valori anno fiscale 2025 — fonti:
+#   - Istruzioni per la compilazione della dichiarazione d'imposta 2025 PF, Canton Ticino (pag. 50)
+#   - Tabella di confronto IC/IFD (Tabella_deduzioni_PF_2025.pdf, sez. 9)
 
 version: "2025"
 
@@ -29,24 +29,33 @@ cantonal_TI:
 
   meals:
     without_cafeteria:
-      rate_chf_per_day: 15.00
+      rate_chf_per_day: 15.00        # doppia economia domestica, 1 pasto
       annual_max_chf: 3200
     with_cafeteria:
-      rate_chf_per_day: 7.50
+      rate_chf_per_day: 7.50         # con mensa / contributo datore di lavoro, 1 pasto
       annual_max_chf: 1600
+    shift_work:
+      rate_chf_per_day: 15.00        # lavori a turni — stessa tariffa senza mensa
+      annual_max_chf: 3200           # CONFERMATO: Tabella_deduzioni_PF_2025.pdf sez. 9
     weekly_resident:
-      rate_chf_per_day: 30.00
+      rate_chf_per_day: 30.00        # rientro settimanale, 2 pasti
       annual_max_chf: 6400
     weekly_resident_with_cafeteria:
-      rate_chf_per_day: 22.50
+      rate_chf_per_day: 22.50        # rientro settimanale con mensa, 2 pasti
       annual_max_chf: 4800
+    weekly_resident_accommodation:
+      mode: actual_cost              # alloggio residente settimanale: costo effettivo 1 camera
+      cap_chf: null                  # CONFERMATO: Tabella_deduzioni_PF_2025.pdf sez. 9
 
   other_expenses:
     method: flat_rate
-    flat_rate_chf: 3000              # CONFERMATO: Istruzioni PF 2025 sez. 5.1, pag. 24
-    flat_rate_part_time_chf: 1500   # <50% occupazione o <6 mesi/anno (Istruzioni PF 2025)
+    flat_rate_chf: 3000              # CONFERMATO: Tabella_deduzioni_PF_2025.pdf sez. 9
+    flat_rate_part_time_chf: 1500   # lavoro <50% o <6 mesi/anno — CONFERMATO: Tabella_deduzioni_PF_2025.pdf sez. 9
+    secondary_activity:              # spese per attività accessoria dipendente
+      flat_rate_chf: 800             # CONFERMATO: Tabella_deduzioni_PF_2025.pdf sez. 9
+      method: flat_rate_or_actual    # 800 CHF o spese effettive se superiori
 
-  flat_rate_all_expenses_chf: null   # forfait globale 2025 — sconosciuto (Decreto CdS 2025 mancante)
+  flat_rate_all_expenses_chf: null   # forfait globale 2025 — non previsto (solo dal 2026, Art. 25 cpv. 2 LT)
 
 # ─── IMPOSTA FEDERALE DIRETTA (Art. 26 LIFD) ─────────────────────────────────
 federal_IFD:
@@ -67,23 +76,38 @@ federal_IFD:
 
   meals:
     without_cafeteria:
-      rate_chf_per_day: 15.00
+      rate_chf_per_day: 15.00        # doppia economia domestica, 1 pasto
       annual_max_chf: 3200
     with_cafeteria:
-      rate_chf_per_day: 7.50
+      rate_chf_per_day: 7.50         # con mensa / contributo datore di lavoro, 1 pasto
       annual_max_chf: 1600
+    shift_work:
+      rate_chf_per_day: 15.00        # lavori a turni — stessa tariffa senza mensa
+      annual_max_chf: 3200           # CONFERMATO: Tabella_deduzioni_PF_2025.pdf sez. 9
     weekly_resident:
-      rate_chf_per_day: 30.00
+      rate_chf_per_day: 30.00        # rientro settimanale, 2 pasti
       annual_max_chf: 6400
     weekly_resident_with_cafeteria:
-      rate_chf_per_day: 22.50
+      rate_chf_per_day: 22.50        # rientro settimanale con mensa, 2 pasti
       annual_max_chf: 4800
+    weekly_resident_accommodation:
+      mode: actual_cost              # alloggio residente settimanale: costo effettivo 1 camera
+      cap_chf: null                  # CONFERMATO: Tabella_deduzioni_PF_2025.pdf sez. 9
 
   other_expenses:
     method: percentage_of_net_salary
-    rate_percent: 3.0               # CONFERMATO: Istruzioni PF 2025, tabella IC/IFD
+    rate_percent: 3.0                # CONFERMATO: Tabella_deduzioni_PF_2025.pdf sez. 9
     minimum_chf: 2000
     maximum_chf: 4000
+    part_time:                       # lavoro <50% o <6 mesi/anno — stessa formula (min/max invariati)
+      rate_percent: 3.0
+      minimum_chf: 2000
+      maximum_chf: 4000
+    secondary_activity:              # spese per attività accessoria dipendente
+      method: percentage_of_net_salary  # CONFERMATO: Tabella_deduzioni_PF_2025.pdf sez. 9
+      rate_percent: 20.0
+      minimum_chf: 800
+      maximum_chf: 2400
 
 # ─── GIORNI LAVORATIVI ───────────────────────────────────────────────────────
 working_days:

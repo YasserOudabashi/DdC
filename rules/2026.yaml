@@ -33,24 +33,33 @@ cantonal_TI:
       rate_chf_per_km: 0.40        # motocicletta targa bianca (allineato a IFD RS 642.118.1 Appendice)
 
   meals:
-    # Art. 25 cpv. 1 lett. b LT — allineato a IFD (Appendice RS 642.118.1, verificare con Decreto CdS)
+    # Art. 25 cpv. 1 lett. b LT — allineato a IFD (Appendice RS 642.118.1)
     without_cafeteria:
-      rate_chf_per_day: 15.00
+      rate_chf_per_day: 15.00        # doppia economia domestica, 1 pasto
       annual_max_chf: 3200
     with_cafeteria:
-      rate_chf_per_day: 7.50
+      rate_chf_per_day: 7.50         # con mensa / contributo datore di lavoro, 1 pasto
       annual_max_chf: 1600
+    shift_work:
+      rate_chf_per_day: 15.00        # lavori a turni — stessa tariffa senza mensa
+      annual_max_chf: 3200           # per analogia con 2025 (Tabella_deduzioni_PF_2025.pdf sez. 9)
     weekly_resident:
-      rate_chf_per_day: 30.00
+      rate_chf_per_day: 30.00        # rientro settimanale, 2 pasti
       annual_max_chf: 6400
     weekly_resident_with_cafeteria:
-      rate_chf_per_day: 22.50
+      rate_chf_per_day: 22.50        # rientro settimanale con mensa, 2 pasti
       annual_max_chf: 4800
+    weekly_resident_accommodation:
+      mode: actual_cost              # alloggio residente settimanale: costo effettivo 1 camera
+      cap_chf: null                  # per analogia con 2025 (Tabella_deduzioni_PF_2025.pdf sez. 9)
 
   other_expenses:
     method: flat_rate
     flat_rate_chf: 3000              # STIMA 2026 — DA CONFERMARE con Decreto CdS TI 2026
-    flat_rate_part_time_chf: 1500   # riduzione <50% o <6 mesi (per analogia con 2025)
+    flat_rate_part_time_chf: 1500   # lavoro <50% o <6 mesi/anno (per analogia con 2025)
+    secondary_activity:              # spese per attività accessoria dipendente
+      flat_rate_chf: 800             # per analogia con 2025 (Tabella_deduzioni_PF_2025.pdf sez. 9)
+      method: flat_rate_or_actual    # 800 CHF o spese effettive se superiori
 
   # Forfait globale Art. 25 cpv. 2 LT (ALTERNATIVA alle spese singole)
   # Votato da Parlamento TI il 10.06.2026 (52 sì, 14 no) — VERIFICARE entrata in vigore
@@ -75,23 +84,38 @@ federal_IFD:
 
   meals:
     without_cafeteria:
-      rate_chf_per_day: 15.00
+      rate_chf_per_day: 15.00        # doppia economia domestica, 1 pasto
       annual_max_chf: 3200
     with_cafeteria:
-      rate_chf_per_day: 7.50
+      rate_chf_per_day: 7.50         # con mensa / contributo datore di lavoro, 1 pasto
       annual_max_chf: 1600
+    shift_work:
+      rate_chf_per_day: 15.00        # lavori a turni — stessa tariffa senza mensa
+      annual_max_chf: 3200           # per analogia con 2025 (Tabella_deduzioni_PF_2025.pdf sez. 9)
     weekly_resident:
-      rate_chf_per_day: 30.00
+      rate_chf_per_day: 30.00        # rientro settimanale, 2 pasti
       annual_max_chf: 6400
     weekly_resident_with_cafeteria:
-      rate_chf_per_day: 22.50
+      rate_chf_per_day: 22.50        # rientro settimanale con mensa, 2 pasti
       annual_max_chf: 4800
+    weekly_resident_accommodation:
+      mode: actual_cost              # alloggio residente settimanale: costo effettivo 1 camera
+      cap_chf: null                  # per analogia con 2025 (Tabella_deduzioni_PF_2025.pdf sez. 9)
 
   other_expenses:
     method: percentage_of_net_salary
-    rate_percent: 3.0
+    rate_percent: 3.0                # confermato RS 642.118.1
     minimum_chf: 2000
     maximum_chf: 4000
+    part_time:                       # lavoro <50% o <6 mesi/anno — stessa formula (min/max invariati)
+      rate_percent: 3.0
+      minimum_chf: 2000
+      maximum_chf: 4000
+    secondary_activity:              # spese per attività accessoria dipendente
+      method: percentage_of_net_salary
+      rate_percent: 20.0
+      minimum_chf: 800
+      maximum_chf: 2400
 
 # ─── GIORNI LAVORATIVI ───────────────────────────────────────────────────────
 working_days:

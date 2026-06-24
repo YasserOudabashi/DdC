@@ -3,7 +3,7 @@ Casi speciali: note e avvertenze per frontalieri, residenti settimanali, home of
 Non cambia i calcoli numerici — aggiunge solo warnings alla risposta.
 """
 from __future__ import annotations
-from ..schemas.request import DeductionRequest, ResidencyType
+from ..schemas.request import DeductionRequest, MealSituation, ResidencyType
 
 
 def collect_warnings(req: DeductionRequest) -> list[str]:
@@ -19,10 +19,23 @@ def collect_warnings(req: DeductionRequest) -> list[str]:
         )
 
     if req.residency_type == ResidencyType.WEEKLY_RESIDENT:
+        if req.annual_accommodation_cost_chf is not None:
+            warnings.append(
+                f"RESIDENTE SETTIMANALE: Alloggio infrasettimanale CHF {req.annual_accommodation_cost_chf:.2f} "
+                "incluso come costo effettivo (costo 1 camera — Art. 25 cpv. 1 lett. c LT)."
+            )
+        else:
+            warnings.append(
+                "RESIDENTE SETTIMANALE: Indicare il costo annuo di alloggio infrasettimanale "
+                "(campo 'annual_accommodation_cost_chf') per includerlo nella deduzione. "
+                "Deducibile il costo effettivo di una camera (Art. 25 cpv. 1 lett. c LT)."
+            )
+
+    if req.meal_situation == MealSituation.SHIFT_WORK:
         warnings.append(
-            "RESIDENTE SETTIMANALE: I costi di alloggio infrasettimanale possono essere "
-            "deducibili oltre alle spese di trasporto. Verificare Art. 25 cpv. 1 lett. c LT "
-            "e la prassi cantonale TI per i residenti settimanali."
+            "LAVORI A TURNI: Deduzione pasti calcolata a CHF 15.00/giorno, max CHF 3'200/anno. "
+            "Se il datore di lavoro dispone di mensa o versa un contributo, applicare invece "
+            "la tariffa ridotta CHF 7.50/giorno (situazione 'with_cafeteria', max CHF 1'600/anno)."
         )
 
     ws = req.work_schedule

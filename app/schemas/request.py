@@ -22,6 +22,7 @@ class MealSituation(str, Enum):
     HOME                         = "home"                          # nessuna deduzione
     WITHOUT_CAFETERIA            = "without_cafeteria"             # Art. 6 cpv. 1: CHF 15/giorno
     WITH_CAFETERIA               = "with_cafeteria"                # Art. 6 cpv. 2: CHF 7.50/giorno (mezza)
+    SHIFT_WORK                   = "shift_work"                    # lavori a turni: CHF 15/giorno, max 3'200
     WEEKLY_RESIDENT              = "weekly_resident"               # Art. 9: CHF 30/giorno
     WEEKLY_RESIDENT_WITH_CAFETERIA = "weekly_resident_with_cafeteria"  # Art. 9+6: CHF 22.50/giorno
 
@@ -85,8 +86,11 @@ class DeductionRequest(BaseModel):
     employer_has_cafeteria: bool = Field(default=False)
     company_car_monthly_chf: Optional[float] = Field(default=None, ge=0.0)
 
+    annual_accommodation_cost_chf: Optional[float] = Field(default=None, ge=0.0)
+
     include_meals: bool = Field(default=False)
     include_other_expenses: bool = Field(default=False)
+    include_secondary_activity: bool = Field(default=False)
 
     @model_validator(mode="after")
     def validate_other_expenses_requires_salary(self) -> DeductionRequest:

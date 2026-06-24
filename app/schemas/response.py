@@ -27,7 +27,9 @@ class TaxLevelResult(BaseModel):
     level: str                           # "cantonal_TI" | "federal_IFD"
     transport_deduction: TransportResult
     meals_deduction_chf: Optional[float] = None
+    accommodation_deduction_chf: Optional[float] = None
     other_expenses_deduction_chf: Optional[float] = None
+    secondary_activity_deduction_chf: Optional[float] = None
     total_deduction_chf: float
     flat_rate_applied: bool = False      # True se usato il forfait invece delle spese effettive
     flat_rate_chf: Optional[float] = None

@@ -38,6 +38,13 @@ def _calculate(
     office_days = work_schedule.days_per_week - work_schedule.home_office_days_per_week
     effective_days = max(0, round(weeks * office_days))
 
+    if meal_situation == MealSituation.SHIFT_WORK:
+        if meals.shift_work is None:
+            raise ValueError("shift_work non configurato nelle regole per questo anno fiscale")
+        rule = meals.shift_work
+        gross = rule.rate_chf_per_day * effective_days
+        return round(min(gross, rule.annual_max_chf), 2)
+
     rule_map = {
         MealSituation.WITHOUT_CAFETERIA:             meals.without_cafeteria,
         MealSituation.WITH_CAFETERIA:                meals.with_cafeteria,

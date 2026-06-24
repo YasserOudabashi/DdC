@@ -34,11 +34,26 @@ class MealRule(BaseModel):
     annual_max_chf: float
 
 
+class AccommodationRule(BaseModel):
+    mode: str                                # "actual_cost"
+    cap_chf: Optional[float]
+
+
 class MealsRules(BaseModel):
     without_cafeteria: MealRule              # Art. 6 cpv. 1 — deduzione intera
     with_cafeteria: MealRule                 # Art. 6 cpv. 2 — mezza deduzione (con mensa)
+    shift_work: Optional[MealRule] = None    # lavori a turni — CHF 15/giorno, max 3'200
     weekly_resident: MealRule                # Art. 9 cpv. 2 — soggiorno fuori domicilio
     weekly_resident_with_cafeteria: MealRule # Art. 9 + 6 cpv. 2 — residente settimanale con mensa
+    weekly_resident_accommodation: Optional[AccommodationRule] = None  # alloggio 1 camera, costo effettivo
+
+
+class SecondaryActivityRule(BaseModel):
+    method: str                              # "flat_rate_or_actual" | "percentage_of_net_salary"
+    flat_rate_chf: Optional[float] = None    # IC: forfait CHF 800
+    rate_percent: Optional[float] = None     # IFD: 20% salario netto
+    minimum_chf: Optional[float] = None      # IFD: min CHF 800
+    maximum_chf: Optional[float] = None      # IFD: max CHF 2'400
 
 
 class OtherExpensesRule(BaseModel):
@@ -48,6 +63,7 @@ class OtherExpensesRule(BaseModel):
     rate_percent: Optional[float] = None     # usato quando method="percentage_of_net_salary" (IFD)
     minimum_chf: Optional[float] = None
     maximum_chf: Optional[float] = None
+    secondary_activity: Optional[SecondaryActivityRule] = None  # attività accessoria dipendente
 
 
 class TaxLevelRules(BaseModel):
