@@ -9,6 +9,7 @@
   const mixedFields = document.getElementById('mixed-fields');
   const formError = document.getElementById('form-error');
   const btnReset = document.getElementById('btn-reset');
+  const resultsDiv = document.getElementById('results');
 
   const includeMealsChk = document.getElementById('include_meals');
   const mealSituationGroup = document.getElementById('meal-situation-group');
@@ -169,6 +170,161 @@
     return null;
   }
 
+  // ── Helpers ──────────────────────────────────────────────────────────────
+
+  function escapeHtml(str) {
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
+
+  function formatChf(amount) {
+    return "CHF " + amount.toLocaleString('de-CH', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    });
+  }
+
+  function showSpinner() {
+    resultsDiv.innerHTML =
+      '<div class="spinner-wrapper">' +
+        '<div class="spinner"></div>' +
+        '<p class="spinner-label">Calcolo in corso…</p>' +
+      '</div>';
+    resultsDiv.classList.remove('hidden');
+  }
+
+  function clearResults() {
+    resultsDiv.innerHTML = '';
+    resultsDiv.classList.add('hidden');
+  }
+
+  // ── Results renderer ──────────────────────────────────────────────────────
+
+  function buildDeductionTable(level) {
+    const transport = level.transport_deduction;
+    let rows = '';
+
+    transport.lines.forEach(function (line) {
+      const capMark = line.capped ? ' <span class="cap-icon" title="Tetto massimo applicato">⚠</span>' : '';
+      const capRow = (line.capped && line.cap_amount_chf != null)
+        ? '<tr><td colspan="3" class="cap-warning">Tetto massimo applicato: ' + formatChf(line.cap_amount_chf) + '</td></tr>'
+        : '';
+
+      rows +=
+        '<tr>' +
+          '<td>' + escapeHtml(line.label) + capMark +
+            '<span class="legal-ref">' + escapeHtml(line.legal_reference) + '</span></td>' +
+          '<td class="amount">' + formatChf(line.amount_chf) + '</td>' +
+          '<td class="basis">' + escapeHtml(line.basis) + '</td>' +
+        '</tr>' + capRow;
+    });
+
+    if (level.meals_deduction_chf != null) {
+      rows +=
+        '<tr>' +
+          '<td>Pasti fuori domicilio</td>' +
+          '<td class="amount">' + formatChf(level.meals_deduction_chf) + '</td>' +
+          '<td class="basis">—</td>' +
+        '</tr>';
+    }
+
+    if (level.other_expenses_deduction_chf != null) {
+      rows +=
+        '<tr>' +
+          '<td>Altre spese professionali</td>' +
+          '<td class="amount">' + formatChf(level.other_expenses_deduction_chf) + '</td>' +
+          '<td class="basis">3% salario netto</td>' +
+        '</tr>';
+    }
+
+    return (
+      '<table class="deduction-table">' +
+        '<thead><tr><th>Voce</th><th>Importo</th><th>Base di calcolo</th></tr></thead>' +
+        '<tbody>' + rows + '</tbody>' +
+      '</table>'
+    );
+  }
+
+  function buildColumn(level, badgeClass, badgeLabel) {
+    return (
+      '<div class="results-column">' +
+        '<div class="results-column-header">' +
+          '<span class="' + badgeClass + '">' + badgeLabel + '</span>' +
+        '</div>' +
+        '<div class="total-amount">' + formatChf(level.total_deduction_chf) + '</div>' +
+        buildDeductionTable(level) +
+      '</div>'
+    );
+  }
+
+  function renderResults(data) {
+    // Header
+    const calcDate = new Date(data.calculated_at);
+    const dateStr = calcDate.toLocaleDateString('it-CH', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    const timeStr = calcDate.toLocaleTimeString('it-CH', { hour: '2-digit', minute: '2-digit' });
+
+    let geoHtml = '';
+    if (data.geocoding_used) {
+      const provider = (data.geocoding_provider || '').toLowerCase().indexOf('swisstopo') >= 0
+        ? 'Swisstopo' : 'Nominatim';
+      geoHtml = ' <span class="badge-geo">Geocoding: ' + provider + '</span>';
+    }
+
+    let distHtml = '';
+    if (data.distance_km != null) {
+      distHtml = ' &mdash; Distanza: <strong>' + data.distance_km.toFixed(1) + ' km</strong>';
+    }
+
+    // Errors[] in body (separate from HTTP errors)
+    let errHtml = '';
+    if (data.errors && data.errors.length > 0) {
+      errHtml = '<div class="alert-danger">' +
+        data.errors.map(function (e) { return escapeHtml(e); }).join('<br>') +
+        '</div>';
+    }
+
+    // Warnings + notes from both levels
+    const allWarnings = (data.warnings || []).slice();
+    (data.cantonal_TI.notes || []).forEach(function (n) { allWarnings.push(n); });
+    (data.federal_IFD.notes || []).forEach(function (n) {
+      if (allWarnings.indexOf(n) < 0) allWarnings.push(n);
+    });
+
+    let warnHtml = '';
+    if (allWarnings.length > 0) {
+      warnHtml =
+        '<div class="alert-warning">' +
+          '<strong>ℹ️ Note e avvertenze</strong>' +
+          '<ul>' + allWarnings.map(function (w) { return '<li>' + escapeHtml(w) + '</li>'; }).join('') + '</ul>' +
+        '</div>';
+    }
+
+    const html =
+      '<div class="results-header">' +
+        '<strong>Anno fiscale ' + data.fiscal_year + '</strong>' +
+        ' &mdash; Calcolato il ' + dateStr + ' alle ' + timeStr +
+        distHtml + geoHtml +
+      '</div>' +
+      errHtml +
+      '<div class="results-columns">' +
+        buildColumn(data.cantonal_TI, 'badge-cantonal', 'Cantonale TI (IC)') +
+        buildColumn(data.federal_IFD, 'badge-federal', 'Federale IFD') +
+      '</div>' +
+      warnHtml +
+      '<div class="print-link">' +
+        '<a href="#" onclick="window.print(); return false;">🖨 Stampa / Salva PDF</a>' +
+      '</div>';
+
+    resultsDiv.innerHTML = html;
+    resultsDiv.classList.remove('hidden');
+    resultsDiv.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  // ── Form submit ───────────────────────────────────────────────────────────
+
   form.addEventListener('submit', async function (e) {
     e.preventDefault();
     hideError();
@@ -180,6 +336,7 @@
     }
 
     const payload = getFormPayload();
+    showSpinner();
 
     try {
       const resp = await fetch('/v1/deduction/calculate', {
@@ -189,6 +346,7 @@
       });
 
       if (resp.status === 422) {
+        clearResults();
         const data = await resp.json();
         const detail = data.detail;
         let msg = 'Errore di validazione.';
@@ -202,16 +360,16 @@
       }
 
       if (!resp.ok) {
+        clearResults();
         showError('Errore del server (' + resp.status + '). Riprovare più tardi.');
         return;
       }
 
-      // Risultati gestiti in storie successive
       const data = await resp.json();
-      document.getElementById('results').textContent = JSON.stringify(data, null, 2);
-      document.getElementById('results').classList.remove('hidden');
+      renderResults(data);
 
     } catch (err) {
+      clearResults();
       showError('Impossibile contattare il server. Verificare la connessione.');
     }
   });
@@ -219,7 +377,7 @@
   btnReset.addEventListener('click', function () {
     form.reset();
     hideError();
-    document.getElementById('results').classList.add('hidden');
+    clearResults();
     updateTransportVisibility();
     updateMealVisibility();
     updateOtherExpensesVisibility();

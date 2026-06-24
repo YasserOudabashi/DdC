@@ -442,8 +442,8 @@
         "Typecheck passes"
       ],
       "priority": 26,
-      "passes": false,
-      "notes": "La chiamata API avviene in app/static/js/app.js con fetch('/v1/deduction/calculate', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload)}). Mostrare uno spinner (CSS puro, animazione rotate) durante la chiamata. Se la risposta ha errors[] non vuoto, mostrarli in un alert-danger sopra i risultati."
+      "passes": true,
+      "notes": "renderResults(data) in app/static/js/app.js: header (anno, data, distanza, badge geocoding), due colonne grid .results-columns (impilate a 640px), totale 2rem, tabella .deduction-table (Voce/Importo/Base di calcolo) con legal_reference come .legal-ref sotto label, cap-icon ⚠ e cap-warning row se capped. Pasti e altre spese come righe aggiuntive in tabella. Warnings + notes (TI+IFD deduplicati) in .alert-warning. Spinner CSS puro durante fetch. errors[] in body → .alert-danger. 'Stampa / Salva PDF' → window.print(). @media print nasconde header/footer/form/print-link. 69/69 test passano."
     },
     {
       "id": "US-606",

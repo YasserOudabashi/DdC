@@ -337,6 +337,186 @@ fieldset legend {
   display: none !important;
 }
 
+/* ── Spinner ── */
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.spinner-wrapper {
+  text-align: center;
+  padding: 40px 24px;
+}
+
+.spinner {
+  width: 36px;
+  height: 36px;
+  border: 4px solid var(--ct-grey-border);
+  border-top-color: var(--ct-blue);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin: 0 auto 12px;
+}
+
+.spinner-label {
+  color: #555;
+  font-size: 0.9rem;
+}
+
+/* ── Results panel ── */
+#results {
+  margin-top: 8px;
+}
+
+.results-header {
+  font-size: 0.85rem;
+  color: #555;
+  margin-bottom: 16px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.results-header strong {
+  color: var(--ct-text);
+}
+
+.badge-geo {
+  background: #6c757d;
+  color: var(--ct-white);
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 3px;
+  display: inline-block;
+}
+
+.results-columns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.results-column {
+  background: var(--ct-white);
+  border: 1px solid var(--ct-grey-border);
+  border-radius: 4px;
+  padding: 20px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.results-column-header {
+  margin-bottom: 12px;
+}
+
+.total-amount {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--ct-text);
+  margin-bottom: 16px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Deduction table ── */
+.deduction-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.82rem;
+}
+
+.deduction-table th {
+  text-align: left;
+  font-weight: 600;
+  color: var(--ct-blue);
+  border-bottom: 2px solid var(--ct-blue);
+  padding: 5px 4px;
+  white-space: nowrap;
+}
+
+.deduction-table td {
+  padding: 6px 4px;
+  border-bottom: 1px solid var(--ct-grey-border);
+  vertical-align: top;
+  line-height: 1.35;
+}
+
+.deduction-table td.amount {
+  text-align: right;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+  padding-right: 8px;
+}
+
+.deduction-table td.basis {
+  color: #555;
+  font-size: 0.78rem;
+}
+
+.legal-ref {
+  display: block;
+  font-size: 0.72rem;
+  color: #777;
+  margin-top: 2px;
+}
+
+.cap-icon {
+  color: #856404;
+  font-size: 0.85rem;
+}
+
+.cap-warning {
+  color: #856404;
+  font-size: 0.78rem;
+  padding: 2px 4px 6px;
+  font-style: italic;
+}
+
+/* ── Alert warning ── */
+.alert-warning {
+  background: #fff3cd;
+  color: #856404;
+  border: 1px solid #ffc107;
+  border-radius: 4px;
+  padding: 12px 16px;
+  margin-bottom: 16px;
+  font-size: 0.9rem;
+}
+
+.alert-warning ul {
+  margin: 8px 0 0 20px;
+}
+
+.alert-warning li {
+  margin-bottom: 4px;
+  line-height: 1.45;
+}
+
+/* ── Alert danger (errori body) ── */
+.alert-danger {
+  background: #f8d7da;
+  color: #721c24;
+  border: 1px solid #f5c6cb;
+  border-radius: 4px;
+  padding: 12px 16px;
+  margin-bottom: 16px;
+  font-size: 0.9rem;
+}
+
+/* ── Print link ── */
+.print-link {
+  text-align: right;
+  margin-top: 4px;
+  margin-bottom: 8px;
+}
+
+.print-link a {
+  color: var(--ct-blue);
+  font-size: 0.875rem;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
 /* ── Responsive ── */
 @media (max-width: 640px) {
   main {
@@ -348,7 +528,8 @@ fieldset legend {
   }
 
   .form-row,
-  .address-grid {
+  .address-grid,
+  .results-columns {
     grid-template-columns: 1fr;
   }
 
@@ -360,5 +541,35 @@ fieldset legend {
   .btn-secondary {
     width: 100%;
     text-align: center;
+  }
+}
+
+/* ── Print ── */
+@media print {
+  header,
+  footer,
+  #deduction-form,
+  .form-actions,
+  #form-error,
+  .print-link {
+    display: none !important;
+  }
+
+  #results {
+    display: block !important;
+  }
+
+  main {
+    max-width: 100%;
+    padding: 0;
+  }
+
+  .results-columns {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .results-column {
+    box-shadow: none;
+    border: 1px solid #ccc;
   }
 }

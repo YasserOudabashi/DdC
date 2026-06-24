@@ -246,6 +246,29 @@
 - 69/69 test passano (nessuna modifica al backend)
 - Prossima storia: US-605 (fase 6 — Pannello risultati IC e IFD, priority 26)
 
+## 2026-06-24 — US-605 completata (fase 6, priority 26)
+- Aggiornato `app/static/js/app.js`:
+  - `renderResults(data)`: costruisce header (anno fiscale, data/ora, distanza km, badge geocoding provider),
+    due colonne `.results-columns` con `buildColumn()` per IC e IFD
+  - `buildDeductionTable(level)`: tabella .deduction-table (Voce / Importo / Base di calcolo),
+    ogni riga = DeductionLine con legal_reference come .legal-ref sotto il label,
+    ⚠ cap-icon + riga .cap-warning se capped==true; pasti e altre spese come righe aggiuntive
+  - Warnings (top-level) + notes (cantonal_TI + federal_IFD deduplicati) → .alert-warning con <ul>
+  - `showSpinner()` / `clearResults()`: spinner CSS puro durante fetch, nascosto al completamento
+  - errors[] nella risposta body → .alert-danger sopra le colonne
+  - Link 'Stampa / Salva PDF' → window.print()
+  - Submit handler aggiornato: showSpinner → fetch → renderResults o clearResults + showError
+  - btnReset aggiornato: chiama clearResults()
+- Aggiornato `app/static/css/style.css`:
+  - Spinner: @keyframes spin, .spinner-wrapper, .spinner, .spinner-label
+  - Risultati: .results-header, .badge-geo, .results-columns (grid 1fr 1fr), .results-column, .total-amount (2rem bold)
+  - Tabella: .deduction-table, th/td, .amount (text-right tabular-nums), .basis, .legal-ref, .cap-icon, .cap-warning
+  - .alert-warning (#fff3cd), .alert-danger (#f8d7da), .print-link
+  - @media (max-width: 640px): .results-columns → 1fr (impilate su mobile)
+  - @media print: nasconde header/footer/form/form-actions/form-error/print-link; #results piena larghezza
+- Nessuna modifica al backend; 69/69 test passano
+- Prossima storia: US-606 (fase 6 — Responsive design, accessibilità WCAG 2.1 AA e test manuale, priority 27)
+
 ## 2026-06-24 — US-602 completata (fase 6, priority 23)
 - Aggiornato `app/static/css/style.css`:
   - Variabile `--ct-font: 'Source Sans 3', 'Frutiger', system-ui, sans-serif` aggiunta in :root
