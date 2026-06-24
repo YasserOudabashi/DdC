@@ -192,3 +192,13 @@
 - 68/68 test passano
 - Prossima storia: US-503 (fase 5 — Script export specifica OpenAPI, priority 21)
 
+## 2026-06-24 — US-503 completata (fase 5, priority 21)
+- Creata directory `scripts/` e file `scripts/export_openapi.py`
+- Lo script aggiunge la project root a sys.path (necessario perché Python aggiunge la dir dello script, non la root), importa `app.main:app` in-process, chiama `app.openapi()`, salva in `docs/openapi.json`
+- Creata directory `docs/` con il file `openapi.json` generato (JSON valido)
+- Endpoint presenti nella spec: /v1/health, /v1/deduction/calculate, /v1/deduction/rules/{fiscal_year}
+- `uv run python scripts/export_openapi.py` gira senza errori e rigenera il file
+- 68/68 test passano
+- FASE 5 COMPLETATA: tutte le storie US-501..US-503 hanno passes: true
+- Prossima fase: US-601 (fase 6 — Scaffold frontend, priority 22)
+

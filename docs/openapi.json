@@ -1,0 +1,668 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "DdC Trasferta Service",
+    "description": "Web Service per il calcolo delle deduzioni fiscali per spese di trasferta casa-lavoro — Canton Ticino (Art. 25 LT) e IFD (Art. 26 LIFD).",
+    "version": "0.2.0"
+  },
+  "paths": {
+    "/v1/health": {
+      "get": {
+        "tags": [
+          "health"
+        ],
+        "summary": "Health",
+        "operationId": "health_v1_health_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response Health V1 Health Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/deduction/calculate": {
+      "post": {
+        "tags": [
+          "deduction"
+        ],
+        "summary": "Calculate Deduction",
+        "operationId": "calculate_deduction_v1_deduction_calculate_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DeductionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeductionResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ]
+      }
+    },
+    "/v1/deduction/rules/{fiscal_year}": {
+      "get": {
+        "tags": [
+          "deduction"
+        ],
+        "summary": "Get Rules",
+        "operationId": "get_rules_v1_deduction_rules__fiscal_year__get",
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "fiscal_year",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Fiscal Year"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Get Rules V1 Deduction Rules  Fiscal Year  Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Address": {
+        "properties": {
+          "street": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Street"
+          },
+          "city": {
+            "type": "string",
+            "title": "City"
+          },
+          "postal_code": {
+            "type": "string",
+            "title": "Postal Code"
+          },
+          "country": {
+            "type": "string",
+            "title": "Country",
+            "default": "CH"
+          }
+        },
+        "type": "object",
+        "required": [
+          "city",
+          "postal_code"
+        ],
+        "title": "Address"
+      },
+      "DeductionLine": {
+        "properties": {
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "amount_chf": {
+            "type": "number",
+            "title": "Amount Chf"
+          },
+          "basis": {
+            "type": "string",
+            "title": "Basis"
+          },
+          "legal_reference": {
+            "type": "string",
+            "title": "Legal Reference"
+          },
+          "capped": {
+            "type": "boolean",
+            "title": "Capped",
+            "default": false
+          },
+          "cap_amount_chf": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cap Amount Chf"
+          }
+        },
+        "type": "object",
+        "required": [
+          "label",
+          "amount_chf",
+          "basis",
+          "legal_reference"
+        ],
+        "title": "DeductionLine"
+      },
+      "DeductionRequest": {
+        "properties": {
+          "fiscal_year": {
+            "type": "integer",
+            "maximum": 2030.0,
+            "minimum": 2020.0,
+            "title": "Fiscal Year",
+            "default": 2026
+          },
+          "home_address": {
+            "$ref": "#/components/schemas/Address"
+          },
+          "work_address": {
+            "$ref": "#/components/schemas/Address"
+          },
+          "transport_mode": {
+            "$ref": "#/components/schemas/TransportMode"
+          },
+          "residency_type": {
+            "$ref": "#/components/schemas/ResidencyType",
+            "default": "resident_TI"
+          },
+          "work_schedule": {
+            "$ref": "#/components/schemas/WorkSchedule"
+          },
+          "meal_situation": {
+            "$ref": "#/components/schemas/MealSituation",
+            "default": "home"
+          },
+          "override_distance_km": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 500.0,
+                "minimum": 0.1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Override Distance Km"
+          },
+          "car_distance_km_mixed": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Car Distance Km Mixed"
+          },
+          "public_transport_cost_mixed_chf": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Public Transport Cost Mixed Chf"
+          },
+          "annual_public_transport_cost_chf": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Annual Public Transport Cost Chf"
+          },
+          "annual_net_salary_chf": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Annual Net Salary Chf"
+          },
+          "employer_pays_transport": {
+            "type": "boolean",
+            "title": "Employer Pays Transport",
+            "default": false
+          },
+          "employer_has_cafeteria": {
+            "type": "boolean",
+            "title": "Employer Has Cafeteria",
+            "default": false
+          },
+          "company_car_monthly_chf": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Company Car Monthly Chf"
+          },
+          "include_meals": {
+            "type": "boolean",
+            "title": "Include Meals",
+            "default": false
+          },
+          "include_other_expenses": {
+            "type": "boolean",
+            "title": "Include Other Expenses",
+            "default": false
+          }
+        },
+        "type": "object",
+        "required": [
+          "home_address",
+          "work_address",
+          "transport_mode"
+        ],
+        "title": "DeductionRequest",
+        "example": {
+          "annual_public_transport_cost_chf": 1800.0,
+          "fiscal_year": 2026,
+          "home_address": {
+            "city": "Lugano",
+            "postal_code": "6900",
+            "street": "Via Nassa 10"
+          },
+          "include_meals": true,
+          "include_other_expenses": false,
+          "meal_situation": "without_cafeteria",
+          "residency_type": "resident_TI",
+          "transport_mode": "public_transport",
+          "work_address": {
+            "city": "Bellinzona",
+            "postal_code": "6500",
+            "street": "Viale Franscini 30"
+          },
+          "work_schedule": {
+            "days_per_week": 5.0,
+            "home_office_days_per_week": 0.0
+          }
+        }
+      },
+      "DeductionResponse": {
+        "properties": {
+          "request_id": {
+            "type": "string",
+            "title": "Request Id"
+          },
+          "calculated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Calculated At"
+          },
+          "fiscal_year": {
+            "type": "integer",
+            "title": "Fiscal Year"
+          },
+          "rules_version": {
+            "type": "string",
+            "title": "Rules Version"
+          },
+          "cantonal_TI": {
+            "$ref": "#/components/schemas/TaxLevelResult"
+          },
+          "federal_IFD": {
+            "$ref": "#/components/schemas/TaxLevelResult"
+          },
+          "geocoding_used": {
+            "type": "boolean",
+            "title": "Geocoding Used",
+            "default": false
+          },
+          "geocoding_provider": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Geocoding Provider"
+          },
+          "distance_km": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Distance Km"
+          },
+          "warnings": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Warnings",
+            "default": []
+          },
+          "errors": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Errors",
+            "default": []
+          }
+        },
+        "type": "object",
+        "required": [
+          "fiscal_year",
+          "rules_version",
+          "cantonal_TI",
+          "federal_IFD"
+        ],
+        "title": "DeductionResponse"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "MealSituation": {
+        "type": "string",
+        "enum": [
+          "home",
+          "without_cafeteria",
+          "with_cafeteria",
+          "weekly_resident",
+          "weekly_resident_with_cafeteria"
+        ],
+        "title": "MealSituation"
+      },
+      "ResidencyType": {
+        "type": "string",
+        "enum": [
+          "resident_TI",
+          "frontaliere",
+          "weekly_resident"
+        ],
+        "title": "ResidencyType"
+      },
+      "TaxLevelResult": {
+        "properties": {
+          "level": {
+            "type": "string",
+            "title": "Level"
+          },
+          "transport_deduction": {
+            "$ref": "#/components/schemas/TransportResult"
+          },
+          "meals_deduction_chf": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Meals Deduction Chf"
+          },
+          "other_expenses_deduction_chf": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Other Expenses Deduction Chf"
+          },
+          "total_deduction_chf": {
+            "type": "number",
+            "title": "Total Deduction Chf"
+          },
+          "flat_rate_applied": {
+            "type": "boolean",
+            "title": "Flat Rate Applied",
+            "default": false
+          },
+          "flat_rate_chf": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Flat Rate Chf"
+          },
+          "notes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Notes",
+            "default": []
+          }
+        },
+        "type": "object",
+        "required": [
+          "level",
+          "transport_deduction",
+          "total_deduction_chf"
+        ],
+        "title": "TaxLevelResult"
+      },
+      "TransportMode": {
+        "type": "string",
+        "enum": [
+          "public_transport",
+          "private_car",
+          "bicycle",
+          "mixed",
+          "motorcycle"
+        ],
+        "title": "TransportMode"
+      },
+      "TransportResult": {
+        "properties": {
+          "mode": {
+            "type": "string",
+            "title": "Mode"
+          },
+          "one_way_distance_km": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "One Way Distance Km"
+          },
+          "effective_working_days": {
+            "type": "integer",
+            "title": "Effective Working Days"
+          },
+          "gross_deduction_chf": {
+            "type": "number",
+            "title": "Gross Deduction Chf"
+          },
+          "net_deduction_chf": {
+            "type": "number",
+            "title": "Net Deduction Chf"
+          },
+          "lines": {
+            "items": {
+              "$ref": "#/components/schemas/DeductionLine"
+            },
+            "type": "array",
+            "title": "Lines",
+            "default": []
+          }
+        },
+        "type": "object",
+        "required": [
+          "mode",
+          "effective_working_days",
+          "gross_deduction_chf",
+          "net_deduction_chf"
+        ],
+        "title": "TransportResult"
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "ctx": {
+            "type": "object",
+            "title": "Context"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      },
+      "WorkSchedule": {
+        "properties": {
+          "days_per_week": {
+            "type": "number",
+            "maximum": 7.0,
+            "minimum": 0.5,
+            "title": "Days Per Week",
+            "default": 5.0
+          },
+          "home_office_days_per_week": {
+            "type": "number",
+            "maximum": 7.0,
+            "minimum": 0.0,
+            "title": "Home Office Days Per Week",
+            "default": 0.0
+          }
+        },
+        "type": "object",
+        "title": "WorkSchedule"
+      }
+    },
+    "securitySchemes": {
+      "APIKeyHeader": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "X-API-Key"
+      }
+    }
+  }
+}

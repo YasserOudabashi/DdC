@@ -349,8 +349,8 @@
         "Typecheck passes"
       ],
       "priority": 21,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Creato scripts/export_openapi.py: aggiunge project root a sys.path, importa app.main:app in-process, chiama app.openapi(), salva in docs/openapi.json. Creata directory docs/ con openapi.json (JSON valido, 4 chiavi top-level: openapi, info, paths, components). Endpoint presenti: /v1/health, /v1/deduction/calculate, /v1/deduction/rules/{fiscal_year}. uv run python scripts/export_openapi.py gira senza errori. 68/68 test passano."
     },
     {
       "id": "US-601",
