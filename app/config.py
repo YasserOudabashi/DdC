@@ -19,5 +19,8 @@ class Settings(BaseSettings):
     # Sicurezza — dimensione massima body in bytes (1 MB di default)
     max_body_size_bytes: int = 1_048_576
 
+    # Documentazione API — disabilitare in produzione
+    docs_enabled: bool = True
+
 
 settings = Settings()

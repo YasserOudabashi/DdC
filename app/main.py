@@ -28,8 +28,8 @@ app = FastAPI(
         "casa-lavoro — Canton Ticino (Art. 25 LT) e IFD (Art. 26 LIFD)."
     ),
     version="0.2.0",
-    docs_url="/docs",
-    redoc_url="/redoc",
+    docs_url="/docs" if settings.docs_enabled else None,
+    redoc_url="/redoc" if settings.docs_enabled else None,
     lifespan=lifespan,
 )
 

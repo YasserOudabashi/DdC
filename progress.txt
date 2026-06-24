@@ -13,3 +13,11 @@
 - 84 test passano, nessuna regressione.
 - Prossima: US-703 (toggle /docs e /redoc via DOCS_ENABLED env var)
 
+## 2026-06-24 — US-703 DONE
+- app/config.py: aggiunto `docs_enabled: bool = True` in Settings.
+- app/main.py: docs_url e redoc_url ora condizionali su settings.docs_enabled
+  (None disabilita completamente Swagger UI e ReDoc).
+- .env.example: aggiunto `DOCS_ENABLED=false  # false in produzione`.
+- 84 test passano, nessuna regressione.
+- Prossima: US-704 (CSP, HSTS, Permissions-Policy security headers)
+

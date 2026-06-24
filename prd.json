@@ -48,8 +48,8 @@
         "Tests pass"
       ],
       "priority": 3,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "docs_enabled: bool = True in config.py; docs_url/redoc_url condizionali in main.py; DOCS_ENABLED=false in .env.example"
     },
     {
       "id": "US-704",
