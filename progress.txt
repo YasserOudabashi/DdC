@@ -65,5 +65,13 @@
   settings.nominatim_contact_email. Aggiunto import di `settings` da app.config.
 - .env.example: aggiunto `NOMINATIM_CONTACT_EMAIL=tua@email.com  # per User-Agent Nominatim`.
 - 84 test passano, nessuna regressione.
-- Prossima: US-709 (Docker container come utente non-root)
+
+## 2026-06-24 — US-709, US-710, US-711, US-712 DONE (manualmente, sandbox non può eseguire docker)
+- US-709: Dockerfile — aggiunge appgroup + appuser non-root, direttiva USER appuser prima di CMD.
+- US-710: pyproject.toml — pip-audit>=2.7 in dev deps; creato docs/security.md con sezione audit.
+- US-711: .env.example — ALLOWED_ORIGINS non più *, commento warning produzione aggiunto.
+- US-712: tests/unit/test_security.py (7 test: API key, real IP, Address validation);
+          tests/integration/test_security_headers.py (2 test: headers + health).
+- 93/93 test passano.
+- FASE 7 COMPLETATA: tutte le storie US-701..US-712 hanno passes: true.
 

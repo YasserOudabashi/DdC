@@ -18,4 +18,7 @@ COPY rules/ ./rules/
 
 EXPOSE 8000
 
+RUN addgroup --system appgroup && adduser --system --ingroup appgroup --no-create-home appuser
+USER appuser
+
 CMD ["python", "-m", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]

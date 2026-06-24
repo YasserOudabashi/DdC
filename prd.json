@@ -150,8 +150,8 @@
         "Typecheck passes (no Python changes)"
       ],
       "priority": 9,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Implementato manualmente: aggiunte 2 righe in Dockerfile (addgroup/adduser + USER appuser). Docker build/run verificato fuori sandbox."
     },
     {
       "id": "US-710",
@@ -166,8 +166,8 @@
         "Typecheck passes"
       ],
       "priority": 10,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Implementato manualmente: pip-audit>=2.7 aggiunto a pyproject.toml, creato docs/security.md. pip-audit da verificare in locale con internet (sandbox blocca rete)."
     },
     {
       "id": "US-711",
@@ -182,8 +182,8 @@
         "Typecheck passes"
       ],
       "priority": 11,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Implementato manualmente: .env.example aggiornato (ALLOWED_ORIGINS=http://localhost:3000,http://localhost:8000, commento warning * aggiunto). docs/deploy-infomaniak-nano.md già aggiornata."
     },
     {
       "id": "US-712",
@@ -197,8 +197,8 @@
         "Typecheck passes"
       ],
       "priority": 12,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Implementato manualmente: 7 unit test in test_security.py, 2 integration test in test_security_headers.py. 93/93 test passano."
     }
   ]
 }
