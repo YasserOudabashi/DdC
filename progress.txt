@@ -103,6 +103,17 @@
 - 93 test passano, nessuna regressione.
 - Prossima: US-804 (lookup ARCOBALENO nel calculator — _arcobaleno_annual_cost() in calculator.py)
 
+## 2026-06-25 — US-804 DONE
+- app/core/calculator.py: aggiunta funzione privata _arcobaleno_annual_cost(zones, class_, rules) -> float | None
+  che legge i prezzi da rules.cantonal_TI.public_transport_subscriptions e mappa zones 1-7 ai campi
+  zones_1..zones_7, zones>=8 -> zones_8_plus.
+- _cantonal_transport() e _federal_transport(): quando arcobaleno_zones is not None e transport_mode==PUBLIC_TRANSPORT,
+  passa il costo ARCOBALENO come annual_public_transport_cost_chf al motore; aggiorna lines[0].label e
+  lines[0].basis con la descrizione ufficiale (zona/zone, classe, CHF, fonte flyer dic. 2025).
+- Fallback invariato: se arcobaleno_zones is None, usa req.annual_public_transport_cost_chf (o stima km).
+- 93 test passano, nessuna regressione.
+- Prossima: US-805 (endpoint GET /v1/locations/search per autocomplete città via transport.opendata.ch)
+
 ## 2026-06-25 — FASE 8 AVVIATA
 - Scopo: ARCOBALENO zone lookup + autocomplete indirizzi + UI costo abbonamento TP
 - PRD: US-801..US-808 (8 storie, tutte passes: false)

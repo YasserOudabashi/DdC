@@ -137,6 +137,18 @@ def _build_federal(
     )
 
 
+def _arcobaleno_annual_cost(zones: int, class_: str, rules: FiscalYearRules) -> float | None:
+    subs = rules.cantonal_TI.public_transport_subscriptions
+    if subs is None:
+        return None
+    rates = subs.arcobaleno_annual_adult_2cl if class_ == "2" else subs.arcobaleno_annual_adult_1cl
+    if rates is None:
+        return None
+    zone_map = {1: rates.zones_1, 2: rates.zones_2, 3: rates.zones_3, 4: rates.zones_4,
+                5: rates.zones_5, 6: rates.zones_6, 7: rates.zones_7}
+    return zone_map.get(zones, rates.zones_8_plus)
+
+
 def _cantonal_transport(
     req: DeductionRequest, one_way_km: float | None, rules: FiscalYearRules,
 ) -> TransportResult:
@@ -159,15 +171,27 @@ def _cantonal_transport(
             )],
         )
 
+    arcobaleno_cost: float | None = None
+    if req.arcobaleno_zones is not None and req.transport_mode == TransportMode.PUBLIC_TRANSPORT:
+        arcobaleno_cost = _arcobaleno_annual_cost(req.arcobaleno_zones, req.arcobaleno_class, rules)
+
     result = cantonal_engine.calculate_transport(
         transport_mode=req.transport_mode,
         one_way_km=one_way_km,
         work_schedule=req.work_schedule,
         rules=rules,
-        annual_public_transport_cost_chf=req.annual_public_transport_cost_chf,
+        annual_public_transport_cost_chf=arcobaleno_cost if arcobaleno_cost is not None else req.annual_public_transport_cost_chf,
         car_distance_km_mixed=req.car_distance_km_mixed,
         public_transport_cost_mixed_chf=req.public_transport_cost_mixed_chf,
     )
+
+    if arcobaleno_cost is not None and result.lines:
+        z = req.arcobaleno_zones
+        result.lines[0].label = f'Mezzi pubblici — Abbonamento ARCOBALENO ({z} {"zona" if z == 1 else "zone"})'
+        result.lines[0].basis = (
+            f"Abbonamento annuale ARCOBALENO {z} zona/zone, {req.arcobaleno_class}a cl. — "
+            f"CHF {arcobaleno_cost:.2f} (Fonte: flyer ARCOBALENO dicembre 2025)"
+        )
 
     if req.employer_pays_transport:
         return _zero_transport(result)
@@ -202,15 +226,27 @@ def _federal_transport(
             )],
         )
 
+    arcobaleno_cost: float | None = None
+    if req.arcobaleno_zones is not None and req.transport_mode == TransportMode.PUBLIC_TRANSPORT:
+        arcobaleno_cost = _arcobaleno_annual_cost(req.arcobaleno_zones, req.arcobaleno_class, rules)
+
     result = federal_engine.calculate_transport(
         transport_mode=req.transport_mode,
         one_way_km=one_way_km,
         work_schedule=req.work_schedule,
         rules=rules,
-        annual_public_transport_cost_chf=req.annual_public_transport_cost_chf,
+        annual_public_transport_cost_chf=arcobaleno_cost if arcobaleno_cost is not None else req.annual_public_transport_cost_chf,
         car_distance_km_mixed=req.car_distance_km_mixed,
         public_transport_cost_mixed_chf=req.public_transport_cost_mixed_chf,
     )
+
+    if arcobaleno_cost is not None and result.lines:
+        z = req.arcobaleno_zones
+        result.lines[0].label = f'Mezzi pubblici — Abbonamento ARCOBALENO ({z} {"zona" if z == 1 else "zone"})'
+        result.lines[0].basis = (
+            f"Abbonamento annuale ARCOBALENO {z} zona/zone, {req.arcobaleno_class}a cl. — "
+            f"CHF {arcobaleno_cost:.2f} (Fonte: flyer ARCOBALENO dicembre 2025)"
+        )
 
     if req.employer_pays_transport:
         return _zero_transport(result)
