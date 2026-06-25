@@ -154,6 +154,15 @@
 - 96 test passano, nessuna regressione backend.
 - Prossima: US-808 (Test suite Fase 8 — test arcobaleno lookup + test locations)
 
+## 2026-06-25 — US-808 DONE
+- tests/unit/test_arcobaleno_lookup.py: 9 test che coprono tutti i casi ARCOBALENO:
+  zones 1/3/8 (2a cl.), zone 2 (1a cl.), federal no-cap (1074 e 3829 sopra soglia IFD),
+  stringa basis con 'ARCOBALENO' e '1074', validazione 422 con private_car, fallback manuale.
+- tests/integration/test_locations.py: già presente dalla US-805 con 3 test (query corta,
+  senza q, query valida).
+- 105 test passano (96 precedenti + 9 nuovi arcobaleno), nessuna regressione.
+- FASE 8 COMPLETATA: tutte le storie US-801..US-808 hanno passes: true.
+
 ## 2026-06-25 — FASE 8 AVVIATA
 - Scopo: ARCOBALENO zone lookup + autocomplete indirizzi + UI costo abbonamento TP
 - PRD: US-801..US-808 (8 storie, tutte passes: false)

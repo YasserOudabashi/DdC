@@ -313,7 +313,7 @@
         "uv run pytest tests/ -v — 93+ test passano senza regressioni."
       ],
       "priority": 8,
-      "passes": false
+      "passes": true
     }
   ]
 }
