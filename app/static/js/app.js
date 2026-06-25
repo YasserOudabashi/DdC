@@ -15,7 +15,12 @@
   const mealSituationGroup = document.getElementById('meal-situation-group');
 
   const includeOtherExpensesChk = document.getElementById('include_other_expenses');
-  const salaryGroup = document.getElementById('salary-group');
+  const otherExpensesDetails = document.getElementById('other-expenses-details');
+
+  const includeSecondaryChk = document.getElementById('include_secondary_activity');
+  const secondaryDetails = document.getElementById('secondary-activity-details');
+
+  const accommodationCard = document.getElementById('accommodation-card');
 
   const companyCarGroup = document.getElementById('company-car-group');
   const ptCostSection = document.getElementById('pt-cost-section');
@@ -25,6 +30,15 @@
 
   const ARCOBALENO_2CL = { 1: 485, 2: 732, 3: 1074, 4: 1387, 5: 1691, 6: 1986, 7: 2157, 8: 2252 };
   const ARCOBALENO_1CL = { 1: 827, 2: 1245, 3: 1834, 4: 2366, 5: 2879, 6: 3382, 7: 3667, 8: 3829 };
+
+  function fillNpa(cityValue, npaFieldId, countryFieldId) {
+    if (!cityValue || !npaFieldId) return;
+    var country = document.getElementById(countryFieldId).value || 'CH';
+    fetch('/v1/locations/npa?city=' + encodeURIComponent(cityValue) + '&country=' + encodeURIComponent(country))
+      .then(function (r) { return r.json(); })
+      .then(function (data) { if (data && data.npa) { document.getElementById(npaFieldId).value = data.npa; } })
+      .catch(function () {});
+  }
 
   function makeTomSelectConfig(npaFieldId, countryFieldId) {
     return {
@@ -41,18 +55,7 @@
           .then(callback)
           .catch(function () { callback([]); });
       },
-      onChange: function (value) {
-        if (!value || !npaFieldId) return;
-        var country = document.getElementById(countryFieldId).value || 'CH';
-        fetch('/v1/locations/npa?city=' + encodeURIComponent(value) + '&country=' + encodeURIComponent(country))
-          .then(function (r) { return r.json(); })
-          .then(function (data) {
-            if (data && data.npa) {
-              document.getElementById(npaFieldId).value = data.npa;
-            }
-          })
-          .catch(function () {});
-      },
+      onItemAdd: function (value) { fillNpa(value, npaFieldId, countryFieldId); },
     };
   }
 
@@ -101,14 +104,41 @@
   }
 
   function updateOtherExpensesVisibility() {
-    salaryGroup.classList.toggle('hidden', !includeOtherExpensesChk.checked);
-    const salaryInput = document.getElementById('annual_net_salary_chf');
-    salaryInput.required = includeOtherExpensesChk.checked;
+    otherExpensesDetails.classList.toggle('hidden', !includeOtherExpensesChk.checked);
+  }
+
+  function updateSecondaryVisibility() {
+    secondaryDetails.classList.toggle('hidden', !includeSecondaryChk.checked);
+  }
+
+  function updateOtherExpensesMethod() {
+    const radio = document.querySelector('input[name=other_expenses_method]:checked');
+    const isEffettive = radio && radio.value === 'effettive';
+    document.getElementById('actual-other-expenses-group').classList.toggle('hidden', !isEffettive);
+  }
+
+  function updateSecondaryMethod() {
+    const radio = document.querySelector('input[name=secondary_method]:checked');
+    const isEffettive = radio && radio.value === 'effettive';
+    document.getElementById('actual-secondary-group').classList.toggle('hidden', !isEffettive);
+  }
+
+  function updateAccommodationVisibility() {
+    const residency = document.getElementById('residency_type').value;
+    accommodationCard.classList.toggle('hidden', residency !== 'weekly_resident');
   }
 
   transportSelect.addEventListener('change', updateTransportVisibility);
   includeMealsChk.addEventListener('change', updateMealVisibility);
   includeOtherExpensesChk.addEventListener('change', updateOtherExpensesVisibility);
+  includeSecondaryChk.addEventListener('change', updateSecondaryVisibility);
+  document.getElementById('residency_type').addEventListener('change', updateAccommodationVisibility);
+  document.querySelectorAll('input[name=other_expenses_method]').forEach(function (r) {
+    r.addEventListener('change', updateOtherExpensesMethod);
+  });
+  document.querySelectorAll('input[name=secondary_method]').forEach(function (r) {
+    r.addEventListener('change', updateSecondaryMethod);
+  });
 
   document.querySelectorAll('input[name=pt_cost_type]').forEach(function (radio) {
     radio.addEventListener('change', updatePtCostVisibility);
@@ -120,6 +150,10 @@
   updateTransportVisibility();
   updateMealVisibility();
   updateOtherExpensesVisibility();
+  updateSecondaryVisibility();
+  updateOtherExpensesMethod();
+  updateSecondaryMethod();
+  updateAccommodationVisibility();
   updatePtCostVisibility();
   updateArcobalenoCostPreview();
 
@@ -210,6 +244,29 @@
     if (includeOtherExpensesChk.checked) {
       const salary = document.getElementById('annual_net_salary_chf').value;
       if (salary) payload.annual_net_salary_chf = parseFloat(salary);
+      const otherMethod = document.querySelector('input[name=other_expenses_method]:checked');
+      if (otherMethod && otherMethod.value === 'effettive') {
+        const actual = document.getElementById('actual_other_expenses_chf').value;
+        if (actual) payload.actual_other_expenses_chf = parseFloat(actual);
+      }
+    }
+
+    // Attività accessoria
+    payload.include_secondary_activity = includeSecondaryChk.checked;
+    if (includeSecondaryChk.checked) {
+      const secMethod = document.querySelector('input[name=secondary_method]:checked');
+      if (secMethod && secMethod.value === 'effettive') {
+        const actual = document.getElementById('actual_secondary_activity_chf').value;
+        if (actual) payload.actual_secondary_activity_chf = parseFloat(actual);
+      }
+    }
+
+    // Alloggio residente settimanale
+    if (document.getElementById('residency_type').value === 'weekly_resident') {
+      const accType = document.querySelector('input[name=accommodation_type]:checked');
+      if (accType) payload.accommodation_type = accType.value;
+      const monthly = document.getElementById('accommodation_monthly_chf').value;
+      if (monthly) payload.accommodation_monthly_chf = parseFloat(monthly);
     }
 
     // Campi Lohnausweis
@@ -484,5 +541,9 @@
     updateTransportVisibility();
     updateMealVisibility();
     updateOtherExpensesVisibility();
+    updateSecondaryVisibility();
+    updateOtherExpensesMethod();
+    updateSecondaryMethod();
+    updateAccommodationVisibility();
   });
 })();

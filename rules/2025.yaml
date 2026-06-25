@@ -44,8 +44,16 @@ cantonal_TI:
       rate_chf_per_day: 22.50        # rientro settimanale con mensa, 2 pasti
       annual_max_chf: 4800
     weekly_resident_accommodation:
-      mode: actual_cost              # alloggio residente settimanale: costo effettivo 1 camera
-      cap_chf: null                  # CONFERMATO: Tabella_deduzioni_PF_2025.pdf sez. 9
+      mode: actual_cost
+      without_kitchen_cap_monthly_chf: 800   # 4.1 Modulo 4 TI 2025 — senza cucina max CHF 800/mese
+      with_kitchen_cap_monthly_chf: 1000     # 4.3 Modulo 4 TI 2025 — con cucina max CHF 1'000/mese
+    # 4.4 Modulo 4 — con cucina: vitto ridotto (stessa tariffa pasto normale)
+    weekly_resident_with_kitchen:
+      rate_chf_per_day: 15.00        # 4.4: con cucina → stessa tariffa Art. 6 (senza mensa)
+      annual_max_chf: 3200
+    weekly_resident_with_kitchen_cafeteria:
+      rate_chf_per_day: 7.50         # 4.4: con cucina e mensa → CHF 7.50/giorno
+      annual_max_chf: 1600
 
   other_expenses:
     method: flat_rate
@@ -111,8 +119,15 @@ federal_IFD:
       rate_chf_per_day: 22.50        # rientro settimanale con mensa, 2 pasti
       annual_max_chf: 4800
     weekly_resident_accommodation:
-      mode: actual_cost              # alloggio residente settimanale: costo effettivo 1 camera
-      cap_chf: null                  # CONFERMATO: Tabella_deduzioni_PF_2025.pdf sez. 9
+      mode: actual_cost
+      without_kitchen_cap_monthly_chf: 800   # 4.1 Modulo 4 TI 2025 — senza cucina max CHF 800/mese
+      with_kitchen_cap_monthly_chf: 1000     # 4.3 Modulo 4 TI 2025 — con cucina max CHF 1'000/mese
+    weekly_resident_with_kitchen:
+      rate_chf_per_day: 15.00
+      annual_max_chf: 3200
+    weekly_resident_with_kitchen_cafeteria:
+      rate_chf_per_day: 7.50
+      annual_max_chf: 1600
 
   other_expenses:
     method: percentage_of_net_salary

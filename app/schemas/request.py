@@ -19,12 +19,15 @@ class ResidencyType(str, Enum):
 
 
 class MealSituation(str, Enum):
-    HOME                         = "home"                          # nessuna deduzione
-    WITHOUT_CAFETERIA            = "without_cafeteria"             # Art. 6 cpv. 1: CHF 15/giorno
-    WITH_CAFETERIA               = "with_cafeteria"                # Art. 6 cpv. 2: CHF 7.50/giorno (mezza)
-    SHIFT_WORK                   = "shift_work"                    # lavori a turni: CHF 15/giorno, max 3'200
-    WEEKLY_RESIDENT              = "weekly_resident"               # Art. 9: CHF 30/giorno
-    WEEKLY_RESIDENT_WITH_CAFETERIA = "weekly_resident_with_cafeteria"  # Art. 9+6: CHF 22.50/giorno
+    HOME                                   = "home"
+    WITHOUT_CAFETERIA                      = "without_cafeteria"
+    WITH_CAFETERIA                         = "with_cafeteria"
+    SHIFT_WORK                             = "shift_work"
+    WEEKLY_RESIDENT                        = "weekly_resident"
+    WEEKLY_RESIDENT_WITH_CAFETERIA         = "weekly_resident_with_cafeteria"
+    # Modulo 4 sez. 4.3/4.4: residente settimanale con alloggio dotato di cucina
+    WEEKLY_RESIDENT_WITH_KITCHEN           = "weekly_resident_with_kitchen"
+    WEEKLY_RESIDENT_WITH_KITCHEN_CAFETERIA = "weekly_resident_with_kitchen_cafeteria"
 
 
 class Address(BaseModel):
@@ -89,11 +92,17 @@ class DeductionRequest(BaseModel):
     employer_has_cafeteria: bool = Field(default=False)
     company_car_monthly_chf: Optional[float] = Field(default=None, ge=0.0)
 
+    # Alloggio residente settimanale (Modulo 4 sez. 4.1 / 4.3)
     annual_accommodation_cost_chf: Optional[float] = Field(default=None, ge=0.0)
+    accommodation_type: str = Field(default="without_kitchen", pattern=r"^(without_kitchen|with_kitchen)$")
+    accommodation_monthly_chf: Optional[float] = Field(default=None, ge=0.0, description="Costo mensile alloggio (alternativa ad annual_accommodation_cost_chf)")
 
     include_meals: bool = Field(default=False)
     include_other_expenses: bool = Field(default=False)
+    # Spese effettive in sostituzione del forfait IC (Modulo 4 sez. 5.2 / 6.2)
+    actual_other_expenses_chf: Optional[float] = Field(default=None, ge=0.0)
     include_secondary_activity: bool = Field(default=False)
+    actual_secondary_activity_chf: Optional[float] = Field(default=None, ge=0.0)
 
     @model_validator(mode="after")
     def validate_arcobaleno_requires_public_transport(self) -> DeductionRequest:

@@ -8,6 +8,7 @@ from app.config import settings
 router = APIRouter()
 
 _OPENDATA_URL = "https://transport.opendata.ch/v1/locations"
+_GEO_ADMIN_URL = "https://api3.geo.admin.ch/rest/services/api/SearchServer"
 _NOMINATIM_URL = "https://nominatim.openstreetmap.org/search"
 
 _COUNTRY_CODES = {"CH": "ch", "IT": "it", "DE": "de", "FR": "fr", "AT": "at"}
@@ -48,18 +49,58 @@ async def lookup_npa(
 ) -> dict:
     if not city or len(city) < 2:
         return {"npa": None}
-    cc = _COUNTRY_CODES.get(country.upper(), "ch")
+    if country.upper() == "CH":
+        npa = await _lookup_npa_ch(city)
+        if npa:
+            return {"npa": npa}
+    # Fallback Nominatim per tutti i paesi
+    cc = _COUNTRY_CODES.get(country.upper(), country.lower())
+    npa = await _lookup_npa_nominatim(city, cc)
+    return {"npa": npa}
+
+
+async def _lookup_npa_ch(city: str) -> Optional[str]:
+    """geo.admin.ch SearchServer — fonte autorevole per NPA Svizzera."""
+    try:
+        async with httpx.AsyncClient(timeout=4.0) as client:
+            resp = await client.get(
+                _GEO_ADMIN_URL,
+                params={
+                    "type": "locations",
+                    "searchText": city,
+                    "origins": "gg25",
+                    "limit": "3",
+                    "returnGeometry": "false",
+                    "lang": "it",
+                },
+            )
+            data = resp.json()
+    except Exception:
+        return None
+    for result in data.get("results", []):
+        attrs = result.get("attrs", {})
+        npa = attrs.get("zipp") or attrs.get("postalcode") or attrs.get("zip")
+        if npa:
+            return str(npa)
+    return None
+
+
+async def _lookup_npa_nominatim(city: str, countrycode: str) -> Optional[str]:
+    """Nominatim fallback per paesi non CH."""
     headers = {"User-Agent": f"DdC-Trasferta-Service/1.0 ({settings.nominatim_contact_email})"}
     try:
-        async with httpx.AsyncClient(timeout=4.0, headers=headers) as client:
+        async with httpx.AsyncClient(timeout=5.0, headers=headers) as client:
             resp = await client.get(
                 _NOMINATIM_URL,
-                params={"q": city, "countrycodes": cc, "format": "json", "addressdetails": "1", "limit": "1"},
+                params={
+                    "q": city, "countrycodes": countrycode,
+                    "format": "json", "addressdetails": "1", "limit": "1",
+                },
             )
             results = resp.json()
     except Exception:
-        return {"npa": None}
+        return None
     if not results:
-        return {"npa": None}
-    postcode = results[0].get("address", {}).get("postcode")
-    return {"npa": postcode}
+        return None
+    addr = results[0].get("address", {})
+    return addr.get("postcode") or addr.get("postal_code")

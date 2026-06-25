@@ -50,8 +50,15 @@ cantonal_TI:
       rate_chf_per_day: 22.50        # rientro settimanale con mensa, 2 pasti
       annual_max_chf: 4800
     weekly_resident_accommodation:
-      mode: actual_cost              # alloggio residente settimanale: costo effettivo 1 camera
-      cap_chf: null                  # per analogia con 2025 (Tabella_deduzioni_PF_2025.pdf sez. 9)
+      mode: actual_cost
+      without_kitchen_cap_monthly_chf: 800
+      with_kitchen_cap_monthly_chf: 1000
+    weekly_resident_with_kitchen:
+      rate_chf_per_day: 15.00
+      annual_max_chf: 3200
+    weekly_resident_with_kitchen_cafeteria:
+      rate_chf_per_day: 7.50
+      annual_max_chf: 1600
 
   other_expenses:
     method: flat_rate
@@ -119,8 +126,15 @@ federal_IFD:
       rate_chf_per_day: 22.50        # rientro settimanale con mensa, 2 pasti
       annual_max_chf: 4800
     weekly_resident_accommodation:
-      mode: actual_cost              # alloggio residente settimanale: costo effettivo 1 camera
-      cap_chf: null                  # per analogia con 2025 (Tabella_deduzioni_PF_2025.pdf sez. 9)
+      mode: actual_cost
+      without_kitchen_cap_monthly_chf: 800
+      with_kitchen_cap_monthly_chf: 1000
+    weekly_resident_with_kitchen:
+      rate_chf_per_day: 15.00
+      annual_max_chf: 3200
+    weekly_resident_with_kitchen_cafeteria:
+      rate_chf_per_day: 7.50
+      annual_max_chf: 1600
 
   other_expenses:
     method: percentage_of_net_salary

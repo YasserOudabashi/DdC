@@ -19,9 +19,10 @@ async def calculate(req: DeductionRequest, distance_km: float | None = None) -> 
     geocoding_provider: str | None = None  # verrà impostato dal resolver
 
     effective_meal_situation = _resolve_meal_situation(req, warnings)
+    annual_accommodation = _resolve_accommodation_cost(req)
 
-    cantonal = _build_cantonal(req, one_way_km, rules, effective_meal_situation)
-    federal  = _build_federal(req, one_way_km, rules, effective_meal_situation)
+    cantonal = _build_cantonal(req, one_way_km, rules, effective_meal_situation, annual_accommodation)
+    federal  = _build_federal(req, one_way_km, rules, effective_meal_situation, annual_accommodation)
 
     return DeductionResponse(
         fiscal_year=req.fiscal_year,
@@ -35,14 +36,24 @@ async def calculate(req: DeductionRequest, distance_km: float | None = None) -> 
     )
 
 
+def _resolve_accommodation_cost(req: DeductionRequest) -> float | None:
+    """Ritorna il costo annuo alloggio, dando priorità all'input mensile × 12."""
+    if req.residency_type != ResidencyType.WEEKLY_RESIDENT:
+        return None
+    if req.accommodation_monthly_chf is not None:
+        return round(req.accommodation_monthly_chf * 12, 2)
+    return req.annual_accommodation_cost_chf
+
+
 def _resolve_meal_situation(req: DeductionRequest, warnings: list[str]) -> MealSituation:
     """US-402: campo F Lohnausweis — forza la tariffa ridotta pasti se mensa aziendale disponibile."""
     if not req.employer_has_cafeteria or not req.include_meals:
         return req.meal_situation
 
     override_map = {
-        MealSituation.WITHOUT_CAFETERIA: MealSituation.WITH_CAFETERIA,
-        MealSituation.WEEKLY_RESIDENT:   MealSituation.WEEKLY_RESIDENT_WITH_CAFETERIA,
+        MealSituation.WITHOUT_CAFETERIA:          MealSituation.WITH_CAFETERIA,
+        MealSituation.WEEKLY_RESIDENT:            MealSituation.WEEKLY_RESIDENT_WITH_CAFETERIA,
+        MealSituation.WEEKLY_RESIDENT_WITH_KITCHEN: MealSituation.WEEKLY_RESIDENT_WITH_KITCHEN_CAFETERIA,
     }
     overridden = override_map.get(req.meal_situation, req.meal_situation)
     if overridden != req.meal_situation:
@@ -56,6 +67,7 @@ def _resolve_meal_situation(req: DeductionRequest, warnings: list[str]) -> MealS
 def _build_cantonal(
     req: DeductionRequest, one_way_km: float | None,
     rules: FiscalYearRules, effective_meal_situation: MealSituation,
+    annual_accommodation: float | None = None,
 ) -> TaxLevelResult:
     transport = _cantonal_transport(req, one_way_km, rules)
 
@@ -64,18 +76,25 @@ def _build_cantonal(
         meals_chf = meals_engine.calculate_meals_cantonal(effective_meal_situation, req.work_schedule, rules)
 
     accommodation_chf: float | None = None
-    if (req.residency_type == ResidencyType.WEEKLY_RESIDENT
-            and req.annual_accommodation_cost_chf is not None):
-        accommodation_chf = round(req.annual_accommodation_cost_chf, 2)
+    if req.residency_type == ResidencyType.WEEKLY_RESIDENT and annual_accommodation is not None:
+        accommodation_chf = _apply_accommodation_cap(
+            annual_accommodation, req.accommodation_type,
+            rules.cantonal_TI.meals.weekly_resident_accommodation,
+        )
 
     other_chf: float | None = None
     if req.include_other_expenses:
         # IC uses flat_rate (salary ignored); pass 0.0 safely when salary not provided
-        other_chf = other_expenses.calculate_other_cantonal(req.annual_net_salary_chf or 0.0, rules)
+        other_chf = other_expenses.calculate_other_cantonal(
+            req.annual_net_salary_chf or 0.0, rules,
+            actual_chf=req.actual_other_expenses_chf,
+        )
 
     secondary_chf: float | None = None
     if req.include_secondary_activity:
-        secondary_chf = other_expenses.calculate_secondary_cantonal(rules)
+        secondary_chf = other_expenses.calculate_secondary_cantonal(
+            rules, actual_chf=req.actual_secondary_activity_chf,
+        )
 
     total = (transport.net_deduction_chf + (meals_chf or 0.0) + (accommodation_chf or 0.0)
              + (other_chf or 0.0) + (secondary_chf or 0.0))
@@ -103,6 +122,7 @@ def _build_cantonal(
 def _build_federal(
     req: DeductionRequest, one_way_km: float | None,
     rules: FiscalYearRules, effective_meal_situation: MealSituation,
+    annual_accommodation: float | None = None,
 ) -> TaxLevelResult:
     transport = _federal_transport(req, one_way_km, rules)
 
@@ -111,9 +131,11 @@ def _build_federal(
         meals_chf = meals_engine.calculate_meals_federal(effective_meal_situation, req.work_schedule, rules)
 
     accommodation_chf: float | None = None
-    if (req.residency_type == ResidencyType.WEEKLY_RESIDENT
-            and req.annual_accommodation_cost_chf is not None):
-        accommodation_chf = round(req.annual_accommodation_cost_chf, 2)
+    if req.residency_type == ResidencyType.WEEKLY_RESIDENT and annual_accommodation is not None:
+        accommodation_chf = _apply_accommodation_cap(
+            annual_accommodation, req.accommodation_type,
+            rules.federal_IFD.meals.weekly_resident_accommodation,
+        )
 
     other_chf: float | None = None
     if req.include_other_expenses and req.annual_net_salary_chf is not None:
@@ -136,6 +158,24 @@ def _build_federal(
         total_deduction_chf=round(total, 2),
         notes=_federal_notes(rules),
     )
+
+
+def _apply_accommodation_cap(
+    annual_cost: float,
+    accommodation_type: str,
+    rule: "AccommodationRule | None",
+) -> float:
+    """Applica il tetto mensile × 12 all'alloggio residente settimanale (Modulo 4 sez. 4.1/4.3)."""
+    from ..rules.models import AccommodationRule as _Acc  # noqa: F401 — local import
+    if rule is None:
+        return round(annual_cost, 2)
+    if accommodation_type == "with_kitchen":
+        monthly_cap = rule.with_kitchen_cap_monthly_chf
+    else:
+        monthly_cap = rule.without_kitchen_cap_monthly_chf
+    if monthly_cap is not None:
+        return round(min(annual_cost, monthly_cap * 12), 2)
+    return round(annual_cost, 2)
 
 
 def _arcobaleno_annual_cost(zones: int, class_: str, rules: FiscalYearRules) -> float | None:

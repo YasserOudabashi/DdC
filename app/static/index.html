@@ -248,9 +248,35 @@
             <option value="without_cafeteria" selected>Senza mensa aziendale (CHF 15.00/giorno)</option>
             <option value="with_cafeteria">Con mensa aziendale (CHF 7.50/giorno)</option>
             <option value="home">Rientro a casa</option>
-            <option value="weekly_resident">Residente settimanale senza mensa (CHF 30.00/giorno)</option>
-            <option value="weekly_resident_with_cafeteria">Residente settimanale con mensa (CHF 22.50/giorno)</option>
+            <option value="weekly_resident">Residente settimanale, senza cucina, senza mensa (CHF 30.00/giorno)</option>
+            <option value="weekly_resident_with_cafeteria">Residente settimanale, senza cucina, con mensa (CHF 22.50/giorno)</option>
+            <option value="weekly_resident_with_kitchen">Residente settimanale, con cucina, senza mensa (CHF 15.00/giorno)</option>
+            <option value="weekly_resident_with_kitchen_cafeteria">Residente settimanale, con cucina, con mensa (CHF 7.50/giorno)</option>
           </select>
+        </div>
+      </div>
+
+      <!-- Card: Alloggio settimanale (Modulo 4 sez. 4.1/4.3) — visibile solo per weekly_resident -->
+      <div class="card hidden" id="accommodation-card">
+        <h2 class="card-title">Alloggio settimanale</h2>
+        <p class="field-hint" style="margin-bottom:0.75rem">Modulo 4 sez. 4.1/4.3 — inserire il costo mensile effettivo dell'alloggio presso il luogo di lavoro</p>
+        <div class="form-group">
+          <label>Tipo di alloggio</label>
+          <div class="radio-group">
+            <label class="radio-label">
+              <input type="radio" name="accommodation_type" value="without_kitchen" checked>
+              Senza cucina — max CHF 800/mese (sez. 4.1)
+            </label>
+            <label class="radio-label">
+              <input type="radio" name="accommodation_type" value="with_kitchen">
+              Con cucina — max CHF 1&#x2019;000/mese (sez. 4.3)
+            </label>
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="accommodation_monthly_chf">Costo mensile alloggio (CHF)</label>
+          <input type="number" id="accommodation_monthly_chf" name="accommodation_monthly_chf" min="0" step="10" placeholder="Es. 650">
+          <p class="field-hint">Il tetto mensile (800 o 1&#x2019;000 CHF) viene applicato automaticamente</p>
         </div>
       </div>
 
@@ -260,13 +286,60 @@
         <div class="form-group checkbox-group">
           <label class="checkbox-label">
             <input type="checkbox" id="include_other_expenses" name="include_other_expenses">
-            Includi altre spese professionali
+            Includi altre spese professionali (Modulo 4 sez. 5)
           </label>
         </div>
-        <div id="salary-group" class="form-group hidden">
-          <label for="annual_net_salary_chf">Salario netto annuo (CHF) <span class="field-optional">(per calcolo IFD)</span></label>
-          <input type="number" id="annual_net_salary_chf" name="annual_net_salary_chf" min="0" step="100" placeholder="Es. 75000">
-          <p class="field-hint">IC: forfait fisso CHF 3'000 (non serve il salario) · IFD: 3% del reddito netto, min CHF 2'000, max CHF 4'000</p>
+        <div id="other-expenses-details" class="hidden">
+          <div class="form-group">
+            <label>Metodo IC (Canton Ticino)</label>
+            <div class="radio-group">
+              <label class="radio-label">
+                <input type="radio" name="other_expenses_method" value="forfait" checked>
+                Forfait CHF 3&#x2019;000 (sez. 5.1)
+              </label>
+              <label class="radio-label">
+                <input type="radio" name="other_expenses_method" value="effettive">
+                Spese effettive in sostituzione (sez. 5.2)
+              </label>
+            </div>
+          </div>
+          <div id="actual-other-expenses-group" class="form-group hidden">
+            <label for="actual_other_expenses_chf">Spese effettive (CHF)</label>
+            <input type="number" id="actual_other_expenses_chf" name="actual_other_expenses_chf" min="0" step="50" placeholder="Es. 4500">
+            <p class="field-hint">Verrà applicato il valore più alto tra spese effettive e forfait CHF 3&#x2019;000</p>
+          </div>
+          <div id="salary-group" class="form-group">
+            <label for="annual_net_salary_chf">Salario netto annuo (CHF) <span class="field-optional">(per calcolo IFD)</span></label>
+            <input type="number" id="annual_net_salary_chf" name="annual_net_salary_chf" min="0" step="100" placeholder="Es. 75000">
+            <p class="field-hint">IC: forfait fisso CHF 3&#x2019;000 (salario non necessario) &middot; IFD: 3% del reddito netto, min CHF 2&#x2019;000, max CHF 4&#x2019;000</p>
+          </div>
+        </div>
+
+        <div class="form-group checkbox-group" style="margin-top:1rem;border-top:1px solid #e8e8e8;padding-top:1rem">
+          <label class="checkbox-label">
+            <input type="checkbox" id="include_secondary_activity" name="include_secondary_activity">
+            Attività accessoria dipendente (Modulo 4 sez. 6)
+          </label>
+        </div>
+        <div id="secondary-activity-details" class="hidden">
+          <p class="field-hint" style="margin-bottom:0.5rem">IC: forfait CHF 800 &middot; IFD: 20% salario netto, min CHF 800, max CHF 2&#x2019;400</p>
+          <div class="form-group">
+            <label>Metodo IC</label>
+            <div class="radio-group">
+              <label class="radio-label">
+                <input type="radio" name="secondary_method" value="forfait" checked>
+                Forfait CHF 800 (sez. 6.1)
+              </label>
+              <label class="radio-label">
+                <input type="radio" name="secondary_method" value="effettive">
+                Spese effettive (sez. 6.2)
+              </label>
+            </div>
+          </div>
+          <div id="actual-secondary-group" class="form-group hidden">
+            <label for="actual_secondary_activity_chf">Spese effettive attività accessoria (CHF)</label>
+            <input type="number" id="actual_secondary_activity_chf" name="actual_secondary_activity_chf" min="0" step="50" placeholder="Es. 1200">
+          </div>
         </div>
       </div>
 

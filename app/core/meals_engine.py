@@ -46,11 +46,15 @@ def _calculate(
         return round(min(gross, rule.annual_max_chf), 2)
 
     rule_map = {
-        MealSituation.WITHOUT_CAFETERIA:             meals.without_cafeteria,
-        MealSituation.WITH_CAFETERIA:                meals.with_cafeteria,
-        MealSituation.WEEKLY_RESIDENT:               meals.weekly_resident,
-        MealSituation.WEEKLY_RESIDENT_WITH_CAFETERIA: meals.weekly_resident_with_cafeteria,
+        MealSituation.WITHOUT_CAFETERIA:                      meals.without_cafeteria,
+        MealSituation.WITH_CAFETERIA:                         meals.with_cafeteria,
+        MealSituation.WEEKLY_RESIDENT:                        meals.weekly_resident,
+        MealSituation.WEEKLY_RESIDENT_WITH_CAFETERIA:         meals.weekly_resident_with_cafeteria,
+        MealSituation.WEEKLY_RESIDENT_WITH_KITCHEN:           meals.weekly_resident_with_kitchen,
+        MealSituation.WEEKLY_RESIDENT_WITH_KITCHEN_CAFETERIA: meals.weekly_resident_with_kitchen_cafeteria,
     }
-    rule = rule_map[meal_situation]
+    rule = rule_map.get(meal_situation)
+    if rule is None:
+        raise ValueError(f"Situazione pasti non configurata nelle regole: {meal_situation}")
     gross = rule.rate_chf_per_day * effective_days
     return round(min(gross, rule.annual_max_chf), 2)

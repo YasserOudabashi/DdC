@@ -3,9 +3,17 @@ from __future__ import annotations
 from ..rules.models import FiscalYearRules, OtherExpensesRule, SecondaryActivityRule
 
 
-def calculate_other_cantonal(annual_net_salary_chf: float, rules: FiscalYearRules) -> float:
+def calculate_other_cantonal(
+    annual_net_salary_chf: float,
+    rules: FiscalYearRules,
+    actual_chf: float | None = None,
+) -> float:
+    """IC: forfait CHF 3'000 o spese effettive se superiori (Modulo 4 sez. 5.1/5.2)."""
     rule = rules.cantonal_TI.other_expenses
-    return _calculate(annual_net_salary_chf, rule)
+    forfait = _calculate(annual_net_salary_chf, rule)
+    if actual_chf is not None:
+        return round(max(forfait, actual_chf), 2)
+    return forfait
 
 
 def calculate_other_federal(annual_net_salary_chf: float, rules: FiscalYearRules) -> float:
@@ -13,12 +21,15 @@ def calculate_other_federal(annual_net_salary_chf: float, rules: FiscalYearRules
     return _calculate(annual_net_salary_chf, rule)
 
 
-def calculate_secondary_cantonal(rules: FiscalYearRules) -> float:
-    """Spese per attività accessoria dipendente (IC): forfait CHF 800 o effettive."""
+def calculate_secondary_cantonal(rules: FiscalYearRules, actual_chf: float | None = None) -> float:
+    """IC attività accessoria: forfait CHF 800 o spese effettive se superiori (Modulo 4 sez. 6.1/6.2)."""
     rule = rules.cantonal_TI.other_expenses.secondary_activity
     if rule is None:
         return 0.0
-    return round(rule.flat_rate_chf or 0.0, 2)
+    forfait = round(rule.flat_rate_chf or 0.0, 2)
+    if actual_chf is not None:
+        return round(max(forfait, actual_chf), 2)
+    return forfait
 
 
 def calculate_secondary_federal(annual_net_salary_chf: float | None, rules: FiscalYearRules) -> float:

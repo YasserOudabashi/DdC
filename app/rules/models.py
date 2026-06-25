@@ -35,8 +35,10 @@ class MealRule(BaseModel):
 
 
 class AccommodationRule(BaseModel):
-    mode: str                                # "actual_cost"
-    cap_chf: Optional[float]
+    mode: str                                           # "actual_cost"
+    cap_chf: Optional[float] = None                    # legacy — annual cap (unused)
+    without_kitchen_cap_monthly_chf: Optional[float] = None   # 4.1 Modulo 4: max CHF 800/mese
+    with_kitchen_cap_monthly_chf: Optional[float] = None      # 4.3 Modulo 4: max CHF 1'000/mese
 
 
 class MealsRules(BaseModel):
@@ -46,6 +48,9 @@ class MealsRules(BaseModel):
     weekly_resident: MealRule                # Art. 9 cpv. 2 — soggiorno fuori domicilio
     weekly_resident_with_cafeteria: MealRule # Art. 9 + 6 cpv. 2 — residente settimanale con mensa
     weekly_resident_accommodation: Optional[AccommodationRule] = None  # alloggio 1 camera, costo effettivo
+    # Art. 4.4 Modulo 4 — residente settimanale CON CUCINA (vitto ridotto a CHF 15/giorno)
+    weekly_resident_with_kitchen: Optional[MealRule] = None
+    weekly_resident_with_kitchen_cafeteria: Optional[MealRule] = None
 
 
 class SecondaryActivityRule(BaseModel):
