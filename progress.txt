@@ -92,6 +92,17 @@
 - 93 test passano, nessuna regressione.
 - Prossima: US-803 (campi arcobaleno_zones e arcobaleno_class nel request schema)
 
+## 2026-06-25 — US-803 DONE
+- app/schemas/request.py: aggiunti due campi in DeductionRequest dopo annual_public_transport_cost_chf:
+  arcobaleno_zones: Optional[int] = Field(default=None, ge=1, le=8)
+  arcobaleno_class: str = Field(default='2', pattern='^[12]$')
+- Aggiunto model_validator validate_arcobaleno_requires_public_transport: solleva ValueError
+  se arcobaleno_zones is not None AND transport_mode != PUBLIC_TRANSPORT.
+- Aggiornato example in model_config: rimosso annual_public_transport_cost_chf, aggiunti
+  arcobaleno_zones=3, arcobaleno_class='2'.
+- 93 test passano, nessuna regressione.
+- Prossima: US-804 (lookup ARCOBALENO nel calculator — _arcobaleno_annual_cost() in calculator.py)
+
 ## 2026-06-25 — FASE 8 AVVIATA
 - Scopo: ARCOBALENO zone lookup + autocomplete indirizzi + UI costo abbonamento TP
 - PRD: US-801..US-808 (8 storie, tutte passes: false)

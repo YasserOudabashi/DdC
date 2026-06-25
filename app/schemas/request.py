@@ -63,7 +63,8 @@ class DeductionRequest(BaseModel):
         "residency_type": "resident_TI",
         "work_schedule": {"days_per_week": 5.0, "home_office_days_per_week": 0.0},
         "meal_situation": "without_cafeteria",
-        "annual_public_transport_cost_chf": 1800.0,
+        "arcobaleno_zones": 3,
+        "arcobaleno_class": "2",
         "include_meals": True,
         "include_other_expenses": False,
     }})
@@ -80,6 +81,8 @@ class DeductionRequest(BaseModel):
     car_distance_km_mixed: Optional[float] = Field(default=None, ge=0.0)
     public_transport_cost_mixed_chf: Optional[float] = Field(default=None, ge=0.0)
     annual_public_transport_cost_chf: Optional[float] = Field(default=None, ge=0.0)
+    arcobaleno_zones: Optional[int] = Field(default=None, ge=1, le=8, description="Numero zone Arcobaleno (1-7, usa 8 per da 8 zone). Solo per transport_mode=public_transport.")
+    arcobaleno_class: str = Field(default="2", pattern=r"^[12]$", description="Classe abbonamento ARCOBALENO: '1' = prima classe, '2' = seconda classe.")
     annual_net_salary_chf: Optional[float] = Field(default=None, ge=0.0)
 
     employer_pays_transport: bool = Field(default=False)
@@ -91,6 +94,12 @@ class DeductionRequest(BaseModel):
     include_meals: bool = Field(default=False)
     include_other_expenses: bool = Field(default=False)
     include_secondary_activity: bool = Field(default=False)
+
+    @model_validator(mode="after")
+    def validate_arcobaleno_requires_public_transport(self) -> DeductionRequest:
+        if self.arcobaleno_zones is not None and self.transport_mode != TransportMode.PUBLIC_TRANSPORT:
+            raise ValueError("arcobaleno_zones richiede transport_mode=public_transport")
+        return self
 
     @model_validator(mode="after")
     def validate_other_expenses_requires_salary(self) -> DeductionRequest:
