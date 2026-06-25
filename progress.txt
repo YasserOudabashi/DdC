@@ -114,6 +114,18 @@
 - 93 test passano, nessuna regressione.
 - Prossima: US-805 (endpoint GET /v1/locations/search per autocomplete città via transport.opendata.ch)
 
+## 2026-06-25 — US-806 DONE
+- app/static/index.html: aggiunto Tom Select v2 via CDN (CSS + JS) prima di </head>.
+  Campi paese home_country e work_country trasformati da <input type="text"> a <select>
+  con opzioni CH/IT/DE/FR/AT. Rimosso pattern/maxlength="4" dai campi NPA (ora maxlength="10").
+- app/static/js/app.js: inizializzazione TomSelect su #home_city e #work_city con
+  load callback -> /v1/locations/search, create:true, placeholder 'Cerca città…'.
+  Funzione helper validateNpa() per validazione per-paese (CH=4 cifre, IT=5 cifre, altri=3-10 char).
+  validateForm() e getFormPayload() aggiornati per leggere il valore da tomSelectHome/Work.getValue().
+  btnReset aggiornato con tomSelectHome.clear() + tomSelectWork.clear().
+- 96 test passano (nessuna regressione backend).
+- Prossima: US-807 (Frontend — sezione scelta costo abbonamento mezzi pubblici con 3 radio option)
+
 ## 2026-06-25 — US-805 DONE
 - app/api/v1/endpoints/locations.py: nuovo endpoint GET /v1/locations/search?q=<text>&limit=10
   che proxia transport.opendata.ch/v1/locations. Ritorna [] se q < 2 caratteri o in caso di

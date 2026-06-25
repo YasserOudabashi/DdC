@@ -19,6 +19,26 @@
 
   const companyCarGroup = document.getElementById('company-car-group');
 
+  function makeTomSelectConfig() {
+    return {
+      valueField: 'name',
+      labelField: 'name',
+      searchField: 'name',
+      create: true,
+      placeholder: 'Cerca città…',
+      load: function (query, callback) {
+        if (query.length < 2) { callback([]); return; }
+        fetch('/v1/locations/search?q=' + encodeURIComponent(query) + '&limit=10')
+          .then(function (r) { return r.json(); })
+          .then(callback)
+          .catch(function () { callback([]); });
+      },
+    };
+  }
+
+  const tomSelectHome = new TomSelect('#home_city', makeTomSelectConfig());
+  const tomSelectWork = new TomSelect('#work_city', makeTomSelectConfig());
+
   function updateTransportVisibility() {
     const mode = transportSelect.value;
     const needsDistance = mode === 'private_car' || mode === 'motorcycle';
@@ -78,12 +98,12 @@
     const daysPerWeek = parseInt(document.getElementById('days_per_week').value, 10);
     const homeOfficeDays = parseInt(document.getElementById('home_office_days_per_week').value, 10);
 
-    const homeCity = document.getElementById('home_city').value.trim();
+    const homeCity = (tomSelectHome.getValue() || document.getElementById('home_city').value).trim();
     const homeNpa = document.getElementById('home_npa').value.trim();
-    const homeCountry = document.getElementById('home_country').value.trim() || 'CH';
-    const workCity = document.getElementById('work_city').value.trim();
+    const homeCountry = document.getElementById('home_country').value || 'CH';
+    const workCity = (tomSelectWork.getValue() || document.getElementById('work_city').value).trim();
     const workNpa = document.getElementById('work_npa').value.trim();
-    const workCountry = document.getElementById('work_country').value.trim() || 'CH';
+    const workCountry = document.getElementById('work_country').value || 'CH';
 
     const payload = {
       fiscal_year: fiscalYear,
@@ -140,16 +160,27 @@
     return payload;
   }
 
+  function validateNpa(npa, country, label) {
+    if (country === 'CH' && !/^[0-9]{4}$/.test(npa)) return 'Il NPA CH ' + label + ' deve essere di 4 cifre.';
+    if (country === 'IT' && !/^[0-9]{5}$/.test(npa)) return 'Il CAP italiano ' + label + ' deve essere di 5 cifre.';
+    if (country !== 'CH' && country !== 'IT' && !/^[0-9A-Z -]{3,10}$/.test(npa)) return 'NPA ' + label + ' non valido.';
+    return null;
+  }
+
   function validateForm() {
-    const homeCity = document.getElementById('home_city').value.trim();
+    const homeCity = (tomSelectHome.getValue() || document.getElementById('home_city').value).trim();
     const homeNpa = document.getElementById('home_npa').value.trim();
-    const workCity = document.getElementById('work_city').value.trim();
+    const homeCountry = document.getElementById('home_country').value || 'CH';
+    const workCity = (tomSelectWork.getValue() || document.getElementById('work_city').value).trim();
     const workNpa = document.getElementById('work_npa').value.trim();
+    const workCountry = document.getElementById('work_country').value || 'CH';
 
     if (!homeCity) return 'Inserire la città del domicilio.';
-    if (!/^[0-9]{4}$/.test(homeNpa)) return 'Il NPA del domicilio deve essere di 4 cifre.';
+    const homeNpaErr = validateNpa(homeNpa, homeCountry, 'del domicilio');
+    if (homeNpaErr) return homeNpaErr;
     if (!workCity) return 'Inserire la città del luogo di lavoro.';
-    if (!/^[0-9]{4}$/.test(workNpa)) return 'Il NPA del luogo di lavoro deve essere di 4 cifre.';
+    const workNpaErr = validateNpa(workNpa, workCountry, 'del luogo di lavoro');
+    if (workNpaErr) return workNpaErr;
 
     const mode = transportSelect.value;
     if (mode === 'mixed') {
@@ -376,6 +407,8 @@
 
   btnReset.addEventListener('click', function () {
     form.reset();
+    tomSelectHome.clear();
+    tomSelectWork.clear();
     hideError();
     clearResults();
     updateTransportVisibility();

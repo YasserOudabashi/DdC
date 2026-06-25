@@ -227,7 +227,7 @@
         "uv run pytest tests/ -v — 93+ test passano senza regressioni backend."
       ],
       "priority": 6,
-      "passes": false
+      "passes": true
     },
     {
       "id": "US-807",
