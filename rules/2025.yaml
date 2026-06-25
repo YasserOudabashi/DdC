@@ -55,6 +55,26 @@ cantonal_TI:
       flat_rate_chf: 800             # CONFERMATO: Tabella_deduzioni_PF_2025.pdf sez. 9
       method: flat_rate_or_actual    # 800 CHF o spese effettive se superiori
 
+  public_transport_subscriptions:   # FONTE: flyer ARCOBALENO "Piano zone e tariffe", dicembre 2025, valido dal 14.12.2025
+    arcobaleno_annual_adult_2cl:    # Adulti >=25 anni, 2a classe
+      zones_1: 485
+      zones_2: 732
+      zones_3: 1074
+      zones_4: 1387
+      zones_5: 1691
+      zones_6: 1986
+      zones_7: 2157
+      zones_8_plus: 2252
+    arcobaleno_annual_adult_1cl:    # Adulti >=25 anni, 1a classe
+      zones_1: 827
+      zones_2: 1245
+      zones_3: 1834
+      zones_4: 2366
+      zones_5: 2879
+      zones_6: 3382
+      zones_7: 3667
+      zones_8_plus: 3829
+
   flat_rate_all_expenses_chf: null   # forfait globale 2025 — non previsto (solo dal 2026, Art. 25 cpv. 2 LT)
 
 # ─── IMPOSTA FEDERALE DIRETTA (Art. 26 LIFD) ─────────────────────────────────

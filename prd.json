@@ -1,204 +1,319 @@
 {
   "project": "DdC Trasferta TI",
-  "branchName": "ralph/security-hardening",
-  "description": "Security Review & Hardening — fixes vulnerabilities and adds defense-in-depth for public internet deployment (Infomaniak VPS). No breaking API changes.",
+  "branchName": "ralph/fase-8-arcobaleno-ux",
+  "description": "Fase 8 — Costo abbonamento TP via tabella ARCOBALENO + autocomplete indirizzi. Introduce: lookup automatico costo abbonamento annuale ARCOBALENO per rotte TI (tabella YAML da flyer dicembre 2025), campo manuale alternativo, link SBB per rotte extra-TI, campi città con autocomplete via transport.opendata.ch, campi paese come select, validazione NPA per-paese.",
   "userStories": [
     {
       "id": "US-701",
       "title": "Constant-time API key comparison",
-      "description": "As a security engineer, I want the API key comparison to be timing-safe so that an attacker cannot recover the key by measuring response times.",
-      "acceptanceCriteria": [
-        "In app/security.py: import `secrets` from stdlib",
-        "Replace `api_key != settings.api_key` with `not secrets.compare_digest(api_key or \"\", settings.api_key or \"\")` in verify_api_key()",
-        "If settings.api_key is empty string (no auth configured), behavior is unchanged: all requests pass",
-        "If settings.api_key is set, wrong key returns HTTP 401, correct key returns HTTP 200",
-        "Typecheck passes",
-        "Tests pass"
-      ],
-      "priority": 1,
-      "passes": true,
-      "notes": "secrets.compare_digest implementato in app/security.py"
+      "passes": true
     },
     {
       "id": "US-702",
       "title": "Rate limiting on /v1/health endpoint",
-      "description": "As an operator, I want the health endpoint to be rate-limited so it cannot be used for reconnaissance or amplification attacks.",
-      "acceptanceCriteria": [
-        "In app/api/v1/endpoints/health.py: add `@limiter.limit(f\"{settings.rate_limit_per_minute}/minute\")` decorator on the health() function",
-        "Import `limiter` from `app.security` and `settings` from `app.config`",
-        "Import `Request` from `fastapi` and add `request: Request` as first parameter to health()",
-        "GET /v1/health still returns HTTP 200 with {\"status\": \"ok\", ...} for normal requests",
-        "Typecheck passes",
-        "Tests pass"
-      ],
-      "priority": 2,
-      "passes": true,
-      "notes": "limiter.limit decorator aggiunto su health(); request: Request come primo param"
+      "passes": true
     },
     {
       "id": "US-703",
       "title": "Toggle /docs and /redoc via DOCS_ENABLED env var",
-      "description": "As an operator, I want to disable Swagger UI and ReDoc in production via an environment variable so the API schema is not publicly visible.",
-      "acceptanceCriteria": [
-        "In app/config.py: add `docs_enabled: bool = True` to Settings class",
-        "In app/main.py: pass `docs_url=\"/docs\" if settings.docs_enabled else None` and `redoc_url=\"/redoc\" if settings.docs_enabled else None` to FastAPI() constructor",
-        "Default `docs_enabled=True` preserves current behavior for local development",
-        "In .env.example: add `DOCS_ENABLED=false  # false in produzione` line",
-        "Typecheck passes",
-        "Tests pass"
-      ],
-      "priority": 3,
-      "passes": true,
-      "notes": "docs_enabled: bool = True in config.py; docs_url/redoc_url condizionali in main.py; DOCS_ENABLED=false in .env.example"
+      "passes": true
     },
     {
       "id": "US-704",
       "title": "Add CSP, HSTS, and Permissions-Policy security headers",
-      "description": "As a user, I want the browser to receive Content-Security-Policy, HSTS, and Permissions-Policy headers so the frontend is protected against injection and downgrade attacks.",
-      "acceptanceCriteria": [
-        "In app/security.py add_security_headers(): add `Content-Security-Policy: default-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; script-src 'self'; img-src 'self' data:; connect-src 'self'; frame-ancestors 'none'`",
-        "Add `Strict-Transport-Security: max-age=31536000; includeSubDomains`",
-        "Add `Permissions-Policy: geolocation=(), camera=(), microphone=()`",
-        "Add `X-Permitted-Cross-Domain-Policies: none`",
-        "All previously existing headers (X-Content-Type-Options, X-Frame-Options, X-XSS-Protection, Referrer-Policy, Cache-Control) are preserved unchanged",
-        "Typecheck passes",
-        "Tests pass"
-      ],
-      "priority": 4,
-      "passes": true,
-      "notes": "CSP, HSTS, Permissions-Policy, X-Permitted-Cross-Domain-Policies aggiunti in add_security_headers() in app/security.py"
+      "passes": true
     },
     {
       "id": "US-705",
       "title": "Proxy-aware rate limiting via TRUSTED_PROXIES",
-      "description": "As an operator behind Nginx, I want the rate limiter to read the real client IP from X-Forwarded-For so that all users are not counted as the same proxy IP.",
-      "acceptanceCriteria": [
-        "In app/config.py: add `trusted_proxies: str = \"\"` to Settings (comma-separated IPs, empty = direct connection)",
-        "In app/security.py: add function `get_real_ip(request: Request) -> str` — if request.client.host is in the configured trusted_proxies list AND X-Forwarded-For header is present, return first IP from X-Forwarded-For; otherwise return get_remote_address(request)",
-        "Replace `key_func=get_remote_address` with `key_func=get_real_ip` in the Limiter() instantiation",
-        "In .env.example: add `TRUSTED_PROXIES=  # IP del reverse proxy, es: 127.0.0.1` line",
-        "Existing rate limiting behavior is unchanged when TRUSTED_PROXIES is empty",
-        "Typecheck passes",
-        "Tests pass"
-      ],
-      "priority": 5,
-      "passes": true,
-      "notes": "get_real_ip() aggiunta in app/security.py; trusted_proxies: str = '' in config.py; TRUSTED_PROXIES in .env.example; limiter usa get_real_ip come key_func"
+      "passes": true
     },
     {
       "id": "US-706",
       "title": "Remove filesystem info disclosure from YAML loader error",
-      "description": "As an operator, I want error messages to not reveal which fiscal year files exist on the server so that attackers cannot enumerate the filesystem.",
-      "acceptanceCriteria": [
-        "In app/rules/loader.py: remove the `available` variable and the `f'Disponibili: ...'` clause from the FileNotFoundError message",
-        "New error message is only: `f'Anno fiscale {fiscal_year} non supportato.'`",
-        "The HTTP status code returned by the endpoint (422 for calculate, 404 for rules) is unchanged",
-        "POST /v1/deduction/calculate with fiscal_year=1900 returns 422; response body does NOT contain the word 'Disponibili'",
-        "Typecheck passes",
-        "Tests pass"
-      ],
-      "priority": 6,
-      "passes": true,
-      "notes": "Rimossa variabile 'available' e clausola 'Disponibili:' da loader.py; messaggio ora solo 'Anno fiscale {fiscal_year} non supportato.'"
+      "passes": true
     },
     {
       "id": "US-707",
       "title": "Input length and format validation on Address fields",
-      "description": "As an operator, I want address fields to have length limits so that excessively long strings are rejected before being forwarded to external geocoding APIs.",
-      "acceptanceCriteria": [
-        "In app/schemas/request.py Address model: city gets `Field(..., min_length=1, max_length=100)`",
-        "street gets `Field(default=None, max_length=200)`",
-        "postal_code gets `Field(..., min_length=3, max_length=10)` (no regex, to stay compatible with both CH NPA 4-digit and IT CAP 5-digit formats)",
-        "country gets `Field(default='CH', min_length=2, max_length=2)` so only 2-char codes are accepted",
-        "POST with city containing 200 characters returns HTTP 422",
-        "POST with country='SVIZZERA' (7 chars) returns HTTP 422",
-        "All existing test fixtures (Lugano 6900, Bellinzona 6500, etc.) continue to return HTTP 200",
-        "Typecheck passes",
-        "Tests pass"
-      ],
-      "priority": 7,
-      "passes": true,
-      "notes": "Field constraints aggiunti su Address: city max_length=100, street max_length=200, postal_code min_length=3 max_length=10, country min_length=2 max_length=2"
+      "passes": true
     },
     {
       "id": "US-708",
       "title": "Make Nominatim contact email configurable",
-      "description": "As a developer, I want the personal email in the Nominatim User-Agent to be set via environment variable so it is not hardcoded in the public source code.",
-      "acceptanceCriteria": [
-        "In app/config.py: add `nominatim_contact_email: str = \"admin@example.com\"` to Settings",
-        "In app/geo/providers/nominatim.py: remove the hardcoded email from `_HEADERS`; build User-Agent header dynamically at call time reading `settings.nominatim_contact_email`",
-        "Import `settings` from `app.config` in nominatim.py",
-        "In .env.example: add `NOMINATIM_CONTACT_EMAIL=tua@email.com  # per User-Agent Nominatim` line",
-        "Geocoding still works: User-Agent header is still present, just with configurable email",
-        "Typecheck passes",
-        "Tests pass"
-      ],
-      "priority": 8,
-      "passes": true,
-      "notes": "nominatim_contact_email: str = 'admin@example.com' in config.py; _HEADERS rimosso da nominatim.py, header costruito dinamicamente con settings.nominatim_contact_email; NOMINATIM_CONTACT_EMAIL in .env.example"
+      "passes": true
     },
     {
       "id": "US-709",
       "title": "Run Docker container as non-root user",
-      "description": "As an operator, I want the Docker container to run as a non-privileged user so that a container escape or RCE does not give root access to the host.",
-      "acceptanceCriteria": [
-        "In Dockerfile: add `RUN addgroup --system appgroup && adduser --system --ingroup appgroup --no-create-home appuser` before CMD",
-        "Add `USER appuser` immediately after the adduser line",
-        "The existing Dockerfile structure (COPY, uv setup, site-packages workaround, EXPOSE 8000, CMD) is preserved",
-        "`docker build -t ddc-test .` from D:\\006-Documenti\\Lavori\\DdC\\002_Applicativo completes without errors",
-        "`docker run --rm -p 8099:8000 ddc-test` → GET http://localhost:8099/v1/health returns HTTP 200",
-        "Typecheck passes (no Python changes)"
-      ],
-      "priority": 9,
-      "passes": true,
-      "notes": "Implementato manualmente: aggiunte 2 righe in Dockerfile (addgroup/adduser + USER appuser). Docker build/run verificato fuori sandbox."
+      "passes": true
     },
     {
       "id": "US-710",
       "title": "Add pip-audit for dependency vulnerability scanning",
-      "description": "As a developer, I want a documented command to audit dependencies for known CVEs so that vulnerabilities are caught before deployment.",
-      "acceptanceCriteria": [
-        "In pyproject.toml [dependency-groups] dev: add `\"pip-audit>=2.7\"` entry",
-        "Run `uv run pip-audit` from D:\\006-Documenti\\Lavori\\DdC\\002_Applicativo; if vulnerabilities are found, update the affected packages to fixed versions in pyproject.toml and regenerate uv.lock with `uv lock`",
-        "Create docs/security.md with: `# Security` heading, `## Dependency audit` section, command `uv run pip-audit`, one-sentence description",
-        "`uv run pip-audit` exits with code 0 (zero known vulnerabilities)",
-        "All existing 69+ tests still pass with updated dependencies",
-        "Typecheck passes"
-      ],
-      "priority": 10,
-      "passes": true,
-      "notes": "Implementato manualmente: pip-audit>=2.7 aggiunto a pyproject.toml, creato docs/security.md. pip-audit da verificare in locale con internet (sandbox blocca rete)."
+      "passes": true
     },
     {
       "id": "US-711",
       "title": "Fix ALLOWED_ORIGINS wildcard warning in .env.example",
-      "description": "As an operator following the deployment guide, I want .env.example to warn against ALLOWED_ORIGINS=* so I do not accidentally expose the API to all origins in production.",
-      "acceptanceCriteria": [
-        "In .env.example: change the ALLOWED_ORIGINS value from `*` to `http://localhost:8000`",
-        "Add comment line above: `# CORS — NON usare * in produzione! Esempio: https://tuo-dominio.ch`",
-        "If docs/deploy-infomaniak-nano.md exists: add a warning paragraph near the .env configuration step explaining that ALLOWED_ORIGINS=* exposes the API to cross-origin requests from any website",
-        "If docs/deploy-infomaniak-nano.md does not exist: only update .env.example",
-        "No Python code changes",
-        "Typecheck passes"
-      ],
-      "priority": 11,
-      "passes": true,
-      "notes": "Implementato manualmente: .env.example aggiornato (ALLOWED_ORIGINS=http://localhost:3000,http://localhost:8000, commento warning * aggiunto). docs/deploy-infomaniak-nano.md già aggiornata."
+      "passes": true
     },
     {
       "id": "US-712",
       "title": "Security test suite",
-      "description": "As a developer, I want automated tests for all critical security behaviors so that regressions are caught immediately in CI.",
+      "passes": true
+    },
+    {
+      "id": "US-801",
+      "title": "Tabella prezzi ARCOBALENO annuale nel YAML",
+      "description": "As a developer, I want the official ARCOBALENO annual subscription prices in the YAML rules files so that the calculator can look up the exact cost without estimation.",
       "acceptanceCriteria": [
-        "Create tests/unit/test_security.py with tests: test_api_key_empty_allows_all (settings.api_key='' → verify_api_key does not raise), test_api_key_wrong_raises_401 (wrong key → HTTPException 401), test_api_key_correct_passes (correct key → no exception), test_get_real_ip_direct (no trusted proxies → client.host returned), test_get_real_ip_from_xfwd (client.host in trusted list + X-Forwarded-For header → forwarded IP returned), test_postal_code_too_long_invalid (postal_code 20 chars → ValidationError), test_country_too_long_invalid (country='CHE' → ValidationError)",
-        "Create tests/integration/test_security_headers.py with tests: test_security_headers_present (GET / → response has Content-Security-Policy, X-Frame-Options, X-Content-Type-Options, Strict-Transport-Security, Permissions-Policy), test_health_endpoint_responds (GET /v1/health → status 200)",
-        "All new tests pass: `uv run pytest tests/unit/test_security.py tests/integration/test_security_headers.py -v`",
-        "All existing 69+ tests still pass: `uv run pytest tests/ -v`",
-        "Typecheck passes"
+        "In rules/2025.yaml e rules/2026.yaml, aggiungere sotto cantonal_TI: la sezione public_transport_subscriptions con i prezzi ufficiali del flyer ARCOBALENO dicembre 2025 (valido dal 14.12.2025).",
+        "La struttura YAML da aggiungere è la seguente (sotto cantonal_TI:, allo stesso livello di transport:, meals:, other_expenses:):",
+        "  public_transport_subscriptions:",
+        "    arcobaleno_annual_adult_2cl:  # Adulti >=25 anni, 2a classe",
+        "      zones_1: 485",
+        "      zones_2: 732",
+        "      zones_3: 1074",
+        "      zones_4: 1387",
+        "      zones_5: 1691",
+        "      zones_6: 1986",
+        "      zones_7: 2157",
+        "      zones_8_plus: 2252",
+        "    arcobaleno_annual_adult_1cl:  # Adulti >=25 anni, 1a classe",
+        "      zones_1: 827",
+        "      zones_2: 1245",
+        "      zones_3: 1834",
+        "      zones_4: 2366",
+        "      zones_5: 2879",
+        "      zones_6: 3382",
+        "      zones_7: 3667",
+        "      zones_8_plus: 3829",
+        "I valori sono identici per 2025 e 2026 (nessun aumento tariffario tra le due edizioni del flyer).",
+        "uv run pytest tests/ -v — 93 test passano senza regressioni."
       ],
-      "priority": 12,
-      "passes": true,
-      "notes": "Implementato manualmente: 7 unit test in test_security.py, 2 integration test in test_security_headers.py. 93/93 test passano."
+      "priority": 1,
+      "passes": true
+    },
+    {
+      "id": "US-802",
+      "title": "Modelli Pydantic per ARCOBALENO",
+      "description": "As a developer, I want Pydantic models for the ARCOBALENO subscription data so that the YAML section is strongly typed.",
+      "acceptanceCriteria": [
+        "In app/rules/models.py, aggiungere le seguenti classi PRIMA di CantonalRules:",
+        "  class ArcobalenovAnnualRates(BaseModel):",
+        "      zones_1: float",
+        "      zones_2: float",
+        "      zones_3: float",
+        "      zones_4: float",
+        "      zones_5: float",
+        "      zones_6: float",
+        "      zones_7: float",
+        "      zones_8_plus: float",
+        "  class PublicTransportSubscriptions(BaseModel):",
+        "      arcobaleno_annual_adult_2cl: Optional[ArcobalenovAnnualRates] = None",
+        "      arcobaleno_annual_adult_1cl: Optional[ArcobalenovAnnualRates] = None",
+        "In CantonalRules, aggiungere il campo: public_transport_subscriptions: Optional[PublicTransportSubscriptions] = None",
+        "Il loader YAML esistente (app/rules/loader.py) carica già tutto automaticamente via Pydantic — nessuna modifica al loader.",
+        "Typecheck/lint passa.",
+        "uv run pytest tests/ -v — 93 test passano senza regressioni."
+      ],
+      "priority": 2,
+      "passes": false
+    },
+    {
+      "id": "US-803",
+      "title": "Campi arcobaleno_zones e arcobaleno_class nel request schema",
+      "description": "As a user, I want to specify the number of ARCOBALENO zones and the class so the API can look up the exact subscription cost.",
+      "acceptanceCriteria": [
+        "In app/schemas/request.py nella classe DeductionRequest, aggiungere dopo annual_public_transport_cost_chf:",
+        "  arcobaleno_zones: Optional[int] = Field(default=None, ge=1, le=8, description='Numero zone Arcobaleno (1-7, usa 8 per da 8 zone). Solo per transport_mode=public_transport.')",
+        "  arcobaleno_class: str = Field(default='2', pattern='^[12]$', description=\"Classe abbonamento ARCOBALENO: '1' = prima classe, '2' = seconda classe.\")",
+        "Aggiungere model_validator (mode='after') che solleva ValueError se arcobaleno_zones is not None AND transport_mode != TransportMode.PUBLIC_TRANSPORT: messaggio 'arcobaleno_zones richiede transport_mode=public_transport'.",
+        "Aggiornare l'example in model_config: rimuovere annual_public_transport_cost_chf dall'example e aggiungere 'arcobaleno_zones': 3, 'arcobaleno_class': '2'.",
+        "Test: POST /v1/deduction/calculate con arcobaleno_zones=3 e transport_mode='private_car' ritorna HTTP 422.",
+        "Test: POST con arcobaleno_zones=None (omesso) continua a funzionare come prima.",
+        "Typecheck/lint passa.",
+        "uv run pytest tests/ -v — 93+ test passano senza regressioni."
+      ],
+      "priority": 3,
+      "passes": false
+    },
+    {
+      "id": "US-804",
+      "title": "Lookup ARCOBALENO nel calculator",
+      "description": "As a user, when I provide arcobaleno_zones, I want the calculator to return the exact annual subscription cost instead of the km-estimate.",
+      "acceptanceCriteria": [
+        "In app/core/calculator.py, aggiungere funzione privata _arcobaleno_annual_cost(zones: int, class_: str, rules: FiscalYearRules) -> float | None:",
+        "  - Se rules.cantonal_TI.public_transport_subscriptions is None, ritorna None.",
+        "  - Seleziona rates = arcobaleno_annual_adult_2cl se class_=='2', altrimenti arcobaleno_annual_adult_1cl.",
+        "  - Se rates is None, ritorna None.",
+        "  - Mappa: zones==1 -> rates.zones_1, zones==2 -> rates.zones_2, ..., zones==7 -> rates.zones_7, zones>=8 -> rates.zones_8_plus.",
+        "  - Ritorna il valore CHF come float.",
+        "In _cantonal_transport(): se req.arcobaleno_zones is not None E req.transport_mode == TransportMode.PUBLIC_TRANSPORT:",
+        "  - Chiamare _arcobaleno_annual_cost(req.arcobaleno_zones, req.arcobaleno_class, rules)",
+        "  - Se il risultato non è None, passarlo come annual_public_transport_cost_chf a cantonal_engine.calculate_transport()",
+        "  - Dopo aver ricevuto il TransportResult, aggiornare result.lines[0].basis con: f'Abbonamento annuale ARCOBALENO {req.arcobaleno_zones} zona/zone, {req.arcobaleno_class}a cl. — CHF {costo:.2f} (Fonte: flyer ARCOBALENO dicembre 2025)'",
+        "  - Aggiornare result.lines[0].label con: f'Mezzi pubblici — Abbonamento ARCOBALENO ({req.arcobaleno_zones} {\"zona\" if req.arcobaleno_zones == 1 else \"zone\"})'",
+        "Stessa logica in _federal_transport() — per IFD i mezzi pubblici NON hanno cap (rules.federal_IFD.transport.public_transport.cap_chf è null, già corretto).",
+        "Se arcobaleno_zones is None, il comportamento esistente (stima 0.065/km o annual_public_transport_cost_chf manuale) è invariato.",
+        "Test: POST con arcobaleno_zones=1, arcobaleno_class='2' -> cantonal_TI.transport_deduction.net_deduction_chf == 485.0",
+        "Test: POST con arcobaleno_zones=3, arcobaleno_class='2' -> cantonal_TI.transport_deduction.net_deduction_chf == 1074.0",
+        "Test: POST con arcobaleno_zones=8, arcobaleno_class='2' -> cantonal_TI.transport_deduction.net_deduction_chf == 2252.0",
+        "Test: POST con arcobaleno_zones=2, arcobaleno_class='1' -> cantonal_TI.transport_deduction.net_deduction_chf == 1245.0",
+        "Test: federal con arcobaleno_zones=3 -> federal_IFD.transport_deduction.net_deduction_chf == 1074.0 (no cap su MP)",
+        "Typecheck/lint passa.",
+        "uv run pytest tests/ -v — 93+ test passano."
+      ],
+      "priority": 4,
+      "passes": false
+    },
+    {
+      "id": "US-805",
+      "title": "Endpoint ricerca località /v1/locations/search",
+      "description": "As a frontend developer, I want a backend endpoint that searches Swiss transport locations so the city autocomplete can work without CORS issues.",
+      "acceptanceCriteria": [
+        "Creare app/api/v1/endpoints/locations.py con endpoint: GET /v1/locations/search?q=<text>&limit=10",
+        "  - Se q ha meno di 2 caratteri, ritorna immediatamente [] (HTTP 200, array vuoto).",
+        "  - Altrimenti: chiama https://transport.opendata.ch/v1/locations?query=<q>&type=station&limit=<limit> via httpx.AsyncClient (timeout=3.0 secondi).",
+        "  - Se la chiamata fallisce o va in timeout, ritorna [] (HTTP 200, mai HTTP 5xx verso il client).",
+        "  - Parsea la risposta: estrae stations[].name e stations[].id.",
+        "  - Ritorna: [{\"name\": str, \"id\": str}, ...]",
+        "  - Response model: List[dict] con campi name e id.",
+        "httpx è già in pyproject.toml come dipendenza (verificare; se mancante, aggiungere 'httpx>=0.27').",
+        "Registrare il router in app/api/v1/router.py: from .endpoints.locations import router as locations_router; app.include_router(locations_router, prefix='/v1/locations', tags=['Locations'])",
+        "Aggiungere il rate limiter (@limiter.limit) sulla route: '60/minute' (importare limiter e Request come negli altri endpoint).",
+        "Test di integrazione: GET /v1/locations/search?q=Lu -> HTTP 200 con array (anche vuoto se rete non disponibile in test).",
+        "Test: GET /v1/locations/search?q=L -> HTTP 200 con [] (q troppo corta).",
+        "Test: GET /v1/locations/search (senza q) -> HTTP 200 con [] oppure HTTP 422.",
+        "Typecheck/lint passa.",
+        "uv run pytest tests/ -v — 93+ test passano."
+      ],
+      "priority": 5,
+      "passes": false
+    },
+    {
+      "id": "US-806",
+      "title": "Frontend — autocomplete città e select paese",
+      "description": "As a user, I want to search for my city using a searchable dropdown and have the country auto-set so I don't need to type it manually.",
+      "acceptanceCriteria": [
+        "In app/static/index.html, aggiungere Tom Select via CDN prima di </head>:",
+        "  <link href='https://cdn.jsdelivr.net/npm/tom-select@2/dist/css/tom-select.css' rel='stylesheet'>",
+        "  <script src='https://cdn.jsdelivr.net/npm/tom-select@2/dist/js/tom-select.complete.min.js'></script>",
+        "Lasciare invariati gli input home_city e work_city (tipo text, id e name invariati). Tom Select li trasformerà in autocomplete.",
+        "Cambiare i campi paese da <input type='text'> a <select> per home_country e work_country con opzioni:",
+        "  <option value='CH' selected>CH — Svizzera</option>",
+        "  <option value='IT'>IT — Italia</option>",
+        "  <option value='DE'>DE — Germania</option>",
+        "  <option value='FR'>FR — Francia</option>",
+        "  <option value='AT'>AT — Austria</option>",
+        "In app/static/js/app.js, inizializzare Tom Select su home_city e work_city con:",
+        "  - valueField: 'name', labelField: 'name', searchField: 'name'",
+        "  - load(query, callback): se query.length < 2, callback([]); altrimenti fetch('/v1/locations/search?q=' + encodeURIComponent(query) + '&limit=10').then(r => r.json()).then(callback).catch(() => callback([]))",
+        "  - minChars: 2",
+        "  - create: true (permette di digitare un valore libero non in lista, per città straniere o piccoli comuni)",
+        "  - placeholder: 'Cerca città…'",
+        "Salvare riferimenti: const tomSelectHome = new TomSelect('#home_city', {...}); const tomSelectWork = new TomSelect('#work_city', {...})",
+        "In btnReset handler: aggiungere tomSelectHome.clear(); tomSelectWork.clear(); dopo form.reset()",
+        "In getFormPayload(): leggere homeCountry da document.getElementById('home_country').value (ora è select, non input — funziona uguale con .value)",
+        "In validateForm(): aggiornare il check NPA:",
+        "  const homeCountry = document.getElementById('home_country').value;",
+        "  const workCountry = document.getElementById('work_country').value;",
+        "  if (homeCountry === 'CH' && !/^[0-9]{4}$/.test(homeNpa)) return 'Il NPA CH deve essere di 4 cifre.';",
+        "  if (homeCountry === 'IT' && !/^[0-9]{5}$/.test(homeNpa)) return 'Il CAP italiano deve essere di 5 cifre.';",
+        "  if (homeCountry !== 'CH' && homeCountry !== 'IT' && !/^[0-9A-Z -]{3,10}$/.test(homeNpa)) return 'NPA non valido.';",
+        "  (stessa logica per workNpa / workCountry)",
+        "Typecheck/lint passa (frontend — verificare che non ci siano errori JS in console aprendo il browser).",
+        "uv run pytest tests/ -v — 93+ test passano senza regressioni backend."
+      ],
+      "priority": 6,
+      "passes": false
+    },
+    {
+      "id": "US-807",
+      "title": "Frontend — sezione scelta costo abbonamento mezzi pubblici",
+      "description": "As a user selecting public transport, I want a clear UI to choose between ARCOBALENO zone lookup (TI), manual cost entry, or a link to the SBB calculator for other regions.",
+      "acceptanceCriteria": [
+        "In app/static/index.html, dentro il blocco trasporto (dopo il select transport_mode), aggiungere un div id='pt-cost-section' class='hidden' con tre radio option e relative sezioni:",
+        "  RADIO 1 — value='arcobaleno', checked by default, label='Abbonamento ARCOBALENO (Canton Ticino)':",
+        "    <div id='arcobaleno-fields'>",
+        "      <div class='form-group'>",
+        "        <label>Zone ARCOBALENO</label>",
+        "        <select id='arcobaleno_zones'>",
+        "          <option value='1'>1 zona — CHF 485</option>",
+        "          <option value='2'>2 zone — CHF 732</option>",
+        "          <option value='3' selected>3 zone — CHF 1'074</option>",
+        "          <option value='4'>4 zone — CHF 1'387</option>",
+        "          <option value='5'>5 zone — CHF 1'691</option>",
+        "          <option value='6'>6 zone — CHF 1'986</option>",
+        "          <option value='7'>7 zone — CHF 2'157</option>",
+        "          <option value='8'>8+ zone — CHF 2'252</option>",
+        "        </select>",
+        "      </div>",
+        "      <div class='form-group'>",
+        "        <label>Classe</label>",
+        "        <select id='arcobaleno_class'>",
+        "          <option value='2' selected>2ª classe</option>",
+        "          <option value='1'>1ª classe</option>",
+        "        </select>",
+        "      </div>",
+        "      <p class='field-hint' id='arcobaleno-cost-preview'>Costo annuo stimato: CHF 1'074.00</p>",
+        "    </div>",
+        "  RADIO 2 — value='manuale', label='Inserisci costo abbonamento (tutte le reti)':",
+        "    <div id='manual-pt-fields' class='hidden'>",
+        "      <div class='form-group'>",
+        "        <label for='annual_public_transport_cost_chf'>Costo abbonamento annuale (CHF)</label>",
+        "        <input type='number' id='annual_public_transport_cost_chf' min='0' step='0.01' placeholder='Es. 1800.00'>",
+        "      </div>",
+        "    </div>",
+        "  RADIO 3 — value='sbb-link', label='Calcola su SBB.ch (rotte fuori TI)':",
+        "    <div id='sbb-link-fields' class='hidden'>",
+        "      <p class='field-hint'>Per abbonamenti fuori dal Canton Ticino (ZVV, BLS, Libero, ecc.), calcola il costo annuo sul sito SBB e inseriscilo qui sotto.</p>",
+        "      <a href='https://www.sbb.ch/it/offerte/acquisto-abbo-percorso-modulari-comunita?validityDuration=YEAR' target='_blank' rel='noopener noreferrer' class='btn-link'>Apri calcolatore SBB →</a>",
+        "      <div class='form-group' style='margin-top:0.75rem'>",
+        "        <label for='annual_public_transport_cost_chf_sbb'>Costo abbonamento annuale trovato (CHF)</label>",
+        "        <input type='number' id='annual_public_transport_cost_chf_sbb' min='0' step='0.01' placeholder='Inserisci il costo trovato su SBB.ch'>",
+        "      </div>",
+        "    </div>",
+        "In app/static/js/app.js:",
+        "  - In updateTransportVisibility(): mostrare pt-cost-section quando mode == 'public_transport'; nasconderlo altrimenti.",
+        "  - Aggiungere listener sui radio buttons per mostrare/nascondere arcobaleno-fields, manual-pt-fields, sbb-link-fields.",
+        "  - Aggiungere listener su arcobaleno_zones e arcobaleno_class per aggiornare il testo #arcobaleno-cost-preview. Tabelle JS (same as YAML): adult2cl = {1:485,2:732,3:1074,4:1387,5:1691,6:1986,7:2157,8:2252}, adult1cl = {1:827,2:1245,3:1834,4:2366,5:2879,6:3382,7:3667,8:3829}.",
+        "  - In getFormPayload():",
+        "      const ptRadio = document.querySelector('input[name=pt_cost_type]:checked')?.value;",
+        "      if (ptRadio === 'arcobaleno') { payload.arcobaleno_zones = parseInt(document.getElementById('arcobaleno_zones').value); payload.arcobaleno_class = document.getElementById('arcobaleno_class').value; }",
+        "      if (ptRadio === 'manuale') { const c = document.getElementById('annual_public_transport_cost_chf').value; if (c) payload.annual_public_transport_cost_chf = parseFloat(c); }",
+        "      if (ptRadio === 'sbb-link') { const c = document.getElementById('annual_public_transport_cost_chf_sbb').value; if (c) payload.annual_public_transport_cost_chf = parseFloat(c); }",
+        "  - In validateForm(): se mode == 'public_transport' && ptRadio == 'manuale': annual_public_transport_cost_chf deve essere > 0; se ptRadio == 'sbb-link': annual_public_transport_cost_chf_sbb deve essere > 0.",
+        "Typecheck/lint passa.",
+        "uv run pytest tests/ -v — 93+ test passano senza regressioni backend."
+      ],
+      "priority": 7,
+      "passes": false
+    },
+    {
+      "id": "US-808",
+      "title": "Test suite per Fase 8",
+      "description": "As a developer, I want automated tests for all Fase 8 functionality so regressions are caught immediately.",
+      "acceptanceCriteria": [
+        "Creare tests/unit/test_arcobaleno_lookup.py con test:",
+        "  test_arcobaleno_2cl_zones_1: POST calculate con transport_mode='public_transport', arcobaleno_zones=1, arcobaleno_class='2', fiscal_year=2026 -> cantonal_TI.transport_deduction.net_deduction_chf == 485.0",
+        "  test_arcobaleno_2cl_zones_3: arcobaleno_zones=3 -> cantonal_TI net == 1074.0",
+        "  test_arcobaleno_2cl_zones_8: arcobaleno_zones=8 -> cantonal_TI net == 2252.0",
+        "  test_arcobaleno_1cl_zones_2: arcobaleno_class='1', arcobaleno_zones=2 -> cantonal_TI net == 1245.0",
+        "  test_arcobaleno_federal_no_cap: arcobaleno_zones=3 -> federal_IFD.transport_deduction.net_deduction_chf == 1074.0 (mezzi pubblici non soggetti a cap IFD)",
+        "  test_arcobaleno_federal_no_cap_large: arcobaleno_zones=8, arcobaleno_class='1' -> federal_IFD net == 3829.0 (sopra 3300 IFD ma non cappato perche MP)",
+        "  test_arcobaleno_basis_string: arcobaleno_zones=3 -> cantonal_TI.transport_deduction.lines[0].basis contiene 'ARCOBALENO' e '1074'",
+        "  test_arcobaleno_invalid_with_private_car: transport_mode='private_car', arcobaleno_zones=3 -> HTTP 422",
+        "  test_arcobaleno_zones_none_fallback: transport_mode='public_transport', arcobaleno_zones=None, annual_public_transport_cost_chf=1800.0 -> cantonal_TI net == 1800.0 (fallback manuale funziona ancora)",
+        "Aggiornare tests/integration/test_locations.py (nuovo file) con:",
+        "  test_locations_search_short_query: GET /v1/locations/search?q=L -> HTTP 200 con [] (q troppo corta)",
+        "  test_locations_search_valid_query: GET /v1/locations/search?q=Lugano -> HTTP 200 con lista (può essere vuota se rete non disponibile, non deve sollevare eccezioni)",
+        "uv run pytest tests/unit/test_arcobaleno_lookup.py tests/integration/test_locations.py -v — tutti i test passano.",
+        "uv run pytest tests/ -v — 93+ test passano senza regressioni."
+      ],
+      "priority": 8,
+      "passes": false
     }
   ]
 }

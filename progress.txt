@@ -75,3 +75,23 @@
 - 93/93 test passano.
 - FASE 7 COMPLETATA: tutte le storie US-701..US-712 hanno passes: true.
 
+## 2026-06-25 — US-801 DONE
+- rules/2025.yaml e rules/2026.yaml: aggiunta sezione public_transport_subscriptions
+  sotto cantonal_TI: (stesso livello di transport:, meals:, other_expenses:).
+  Prezzi ARCOBALENO adulti >=25 anni: 2a cl. (485..2252 CHF), 1a cl. (827..3829 CHF).
+  Fonte: flyer ARCOBALENO "Piano zone e tariffe", dicembre 2025, valido dal 14.12.2025.
+  Valori identici per 2025 e 2026 (nessun aumento tariffario).
+- 93 test passano, nessuna regressione.
+- Prossima: US-802 (modelli Pydantic ArcobalenovAnnualRates + PublicTransportSubscriptions in app/rules/models.py)
+
+## 2026-06-25 — FASE 8 AVVIATA
+- Scopo: ARCOBALENO zone lookup + autocomplete indirizzi + UI costo abbonamento TP
+- PRD: US-801..US-808 (8 storie, tutte passes: false)
+- branchName: ralph/fase-8-arcobaleno-ux
+- Prezzi ARCOBALENO adulti >=25 anni, 2a cl.: 1z=485, 2z=732, 3z=1074, 4z=1387, 5z=1691, 6z=1986, 7z=2157, 8z+=2252
+- Prezzi ARCOBALENO adulti >=25 anni, 1a cl.: 1z=827, 2z=1245, 3z=1834, 4z=2366, 5z=2879, 6z=3382, 7z=3667, 8z+=3829
+- Fonte: flyer ARCOBALENO "Piano zone e tariffe", dicembre 2025, valido dal 14.12.2025
+- Autocomplete: Tom Select v2 via CDN + backend /v1/locations/search -> transport.opendata.ch
+- UI abbonamento TP: 3 opzioni (ARCOBALENO select, manuale, link SBB https://www.sbb.ch/it/offerte/acquisto-abbo-percorso-modulari-comunita?validityDuration=YEAR)
+- REGOLA D'ORO: nessun valore CHF nel codice Python — tutti nel YAML
+
