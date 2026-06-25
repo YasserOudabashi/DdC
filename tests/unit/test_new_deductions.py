@@ -20,19 +20,19 @@ class TestShiftWork:
     def test_cantonal_max_3200(self):
         rules = load_rules(2025)
         # 15 CHF/giorno × 220 giorni = 3'300 → cappato a 3'200
-        result = meals_engine.calculate_meals_cantonal(MealSituation.SHIFT_WORK, SCHEDULE_5_0, rules)
+        result, _ = meals_engine.calculate_meals_cantonal(MealSituation.SHIFT_WORK, SCHEDULE_5_0, rules)
         assert result == 3200.0
 
     def test_federal_max_3200(self):
         rules = load_rules(2025)
-        result = meals_engine.calculate_meals_federal(MealSituation.SHIFT_WORK, SCHEDULE_5_0, rules)
+        result, _ = meals_engine.calculate_meals_federal(MealSituation.SHIFT_WORK, SCHEDULE_5_0, rules)
         assert result == 3200.0
 
     def test_partial_days_no_cap(self):
         # 2 giorni/settimana × 44 settimane = 88 giorni × 15 = 1'320 → sotto il cap
         rules = load_rules(2025)
         schedule = WorkSchedule(days_per_week=2, home_office_days_per_week=0)
-        result = meals_engine.calculate_meals_cantonal(MealSituation.SHIFT_WORK, schedule, rules)
+        result, _ = meals_engine.calculate_meals_cantonal(MealSituation.SHIFT_WORK, schedule, rules)
         assert result == 1320.0
 
     def test_same_rate_as_without_cafeteria(self):

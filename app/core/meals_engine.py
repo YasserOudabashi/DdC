@@ -11,7 +11,7 @@ def calculate_meals_cantonal(
     meal_situation: MealSituation,
     work_schedule: WorkSchedule,
     rules: FiscalYearRules,
-) -> float:
+) -> tuple[float, str]:
     return _calculate(meal_situation, work_schedule, rules.cantonal_TI.meals,
                       rules.working_days.standard_annual)
 
@@ -20,7 +20,7 @@ def calculate_meals_federal(
     meal_situation: MealSituation,
     work_schedule: WorkSchedule,
     rules: FiscalYearRules,
-) -> float:
+) -> tuple[float, str]:
     return _calculate(meal_situation, work_schedule, rules.federal_IFD.meals,
                       rules.working_days.standard_annual)
 
@@ -30,9 +30,9 @@ def _calculate(
     work_schedule: WorkSchedule,
     meals: MealsRules,
     standard_annual: int,
-) -> float:
+) -> tuple[float, str]:
     if meal_situation == MealSituation.HOME:
-        return 0.0
+        return (0.0, '')
 
     weeks = standard_annual / 5.0
     office_days = work_schedule.days_per_week - work_schedule.home_office_days_per_week
@@ -43,7 +43,11 @@ def _calculate(
             raise ValueError("shift_work non configurato nelle regole per questo anno fiscale")
         rule = meals.shift_work
         gross = rule.rate_chf_per_day * effective_days
-        return round(min(gross, rule.annual_max_chf), 2)
+        amount = round(min(gross, rule.annual_max_chf), 2)
+        basis = f'CHF {rule.rate_chf_per_day:.2f}/giorno × {effective_days} giorni'
+        if gross > rule.annual_max_chf:
+            basis += f' → tetto CHF {rule.annual_max_chf:.0f}/anno applicato'
+        return (amount, basis)
 
     rule_map = {
         MealSituation.WITHOUT_CAFETERIA:                      meals.without_cafeteria,
@@ -57,4 +61,8 @@ def _calculate(
     if rule is None:
         raise ValueError(f"Situazione pasti non configurata nelle regole: {meal_situation}")
     gross = rule.rate_chf_per_day * effective_days
-    return round(min(gross, rule.annual_max_chf), 2)
+    amount = round(min(gross, rule.annual_max_chf), 2)
+    basis = f'CHF {rule.rate_chf_per_day:.2f}/giorno × {effective_days} giorni'
+    if gross > rule.annual_max_chf:
+        basis += f' → tetto CHF {rule.annual_max_chf:.0f}/anno applicato'
+    return (amount, basis)

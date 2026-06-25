@@ -72,8 +72,9 @@ def _build_cantonal(
     transport = _cantonal_transport(req, one_way_km, rules)
 
     meals_chf: float | None = None
+    meals_basis: str | None = None
     if req.include_meals:
-        meals_chf = meals_engine.calculate_meals_cantonal(effective_meal_situation, req.work_schedule, rules)
+        meals_chf, meals_basis = meals_engine.calculate_meals_cantonal(effective_meal_situation, req.work_schedule, rules)
 
     accommodation_chf: float | None = None
     if req.residency_type == ResidencyType.WEEKLY_RESIDENT and annual_accommodation is not None:
@@ -109,6 +110,7 @@ def _build_cantonal(
         level="cantonal_TI",
         transport_deduction=transport,
         meals_deduction_chf=meals_chf,
+        meals_basis_text=meals_basis,
         accommodation_deduction_chf=accommodation_chf,
         other_expenses_deduction_chf=other_chf,
         secondary_activity_deduction_chf=secondary_chf,
@@ -127,8 +129,9 @@ def _build_federal(
     transport = _federal_transport(req, one_way_km, rules)
 
     meals_chf: float | None = None
+    meals_basis: str | None = None
     if req.include_meals:
-        meals_chf = meals_engine.calculate_meals_federal(effective_meal_situation, req.work_schedule, rules)
+        meals_chf, meals_basis = meals_engine.calculate_meals_federal(effective_meal_situation, req.work_schedule, rules)
 
     accommodation_chf: float | None = None
     if req.residency_type == ResidencyType.WEEKLY_RESIDENT and annual_accommodation is not None:
@@ -152,6 +155,7 @@ def _build_federal(
         level="federal_IFD",
         transport_deduction=transport,
         meals_deduction_chf=meals_chf,
+        meals_basis_text=meals_basis,
         accommodation_deduction_chf=accommodation_chf,
         other_expenses_deduction_chf=other_chf,
         secondary_activity_deduction_chf=secondary_chf,

@@ -355,7 +355,7 @@
         "uv run pytest tests/ -v — tutti i test passano"
       ],
       "priority": 3,
-      "passes": false
+      "passes": true
     },
     {
       "id": "US-904",

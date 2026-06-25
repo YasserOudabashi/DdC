@@ -163,6 +163,23 @@
 - 105 test passano (96 precedenti + 9 nuovi arcobaleno), nessuna regressione.
 - FASE 8 COMPLETATA: tutte le storie US-801..US-808 hanno passes: true.
 
+## 2026-06-25 — US-903 DONE
+- app/core/meals_engine.py: cambiato tipo di ritorno da float a tuple[float, str] per
+  calculate_meals_cantonal, calculate_meals_federal e _calculate(). La stringa basis ha
+  formato 'CHF {rate:.2f}/giorno × {effective_days} giorni' con suffisso
+  ' → tetto CHF {annual_max:.0f}/anno applicato' se il tetto è stato raggiunto.
+  Caso HOME ritorna (0.0, '').
+- app/schemas/response.py: aggiunto campo meals_basis_text: Optional[str] = None in TaxLevelResult.
+- app/core/calculator.py: _build_cantonal() e _build_federal() ora decompattano la tupla
+  (meals_chf, meals_basis) e passano meals_basis_text al TaxLevelResult.
+- app/static/js/app.js: buildDeductionTable() ora mostra escapeHtml(level.meals_basis_text || '—')
+  invece di '—' nella colonna basis della riga pasti.
+- tests/unit/test_new_deductions.py: aggiornati 3 test che chiamano meals_engine direttamente
+  per decompattare la tupla (result, _).
+- tests/unit/test_fase4_lohnausweis.py: aggiornata helper _meals_cantonal per restituire solo il float.
+- 105 test passano, nessuna regressione.
+- Prossima: US-904 (Warning prossimità fermata TP — distanza ≤ 200m)
+
 ## 2026-06-25 — US-902 DONE
 - app/core/cantonal_engine.py: reso work_schedule opzionale (default=None per compat test).
   Aggiunta helper _ho_suffix(work_schedule, standard_annual) -> str che ritorna

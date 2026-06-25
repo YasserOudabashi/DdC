@@ -198,4 +198,5 @@ def _meals_cantonal(req: DeductionRequest) -> float | None:
     effective = _resolve_meal_situation(req, warnings)
     if not req.include_meals:
         return None
-    return meals_engine.calculate_meals_cantonal(effective, req.work_schedule, rules)
+    chf, _ = meals_engine.calculate_meals_cantonal(effective, req.work_schedule, rules)
+    return chf

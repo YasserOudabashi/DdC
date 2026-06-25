@@ -384,7 +384,7 @@
         '<tr>' +
           '<td>Pasti fuori domicilio</td>' +
           '<td class="amount">' + formatChf(level.meals_deduction_chf) + '</td>' +
-          '<td class="basis">—</td>' +
+          '<td class="basis">' + escapeHtml(level.meals_basis_text || '—') + '</td>' +
         '</tr>';
     }
 
