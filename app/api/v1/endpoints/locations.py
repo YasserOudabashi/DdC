@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Request
 from typing import Optional
+import re
 import httpx
 
 from app.security import limiter
@@ -60,7 +61,7 @@ async def lookup_npa(
 
 
 async def _lookup_npa_ch(city: str) -> Optional[str]:
-    """geo.admin.ch SearchServer — fonte autorevole per NPA Svizzera."""
+    """geo.admin.ch SearchServer — estrae NPA dal campo detail (origins=address)."""
     try:
         async with httpx.AsyncClient(timeout=4.0) as client:
             resp = await client.get(
@@ -68,8 +69,8 @@ async def _lookup_npa_ch(city: str) -> Optional[str]:
                 params={
                     "type": "locations",
                     "searchText": city,
-                    "origins": "gg25",
-                    "limit": "3",
+                    "origins": "address",
+                    "limit": "1",
                     "returnGeometry": "false",
                     "lang": "it",
                 },
@@ -78,10 +79,10 @@ async def _lookup_npa_ch(city: str) -> Optional[str]:
     except Exception:
         return None
     for result in data.get("results", []):
-        attrs = result.get("attrs", {})
-        npa = attrs.get("zipp") or attrs.get("postalcode") or attrs.get("zip")
-        if npa:
-            return str(npa)
+        detail = result.get("attrs", {}).get("detail", "")
+        m = re.search(r"#\s*(\d{4})", detail)
+        if m:
+            return m.group(1)
     return None
 
 
