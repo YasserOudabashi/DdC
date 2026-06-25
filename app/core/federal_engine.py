@@ -8,10 +8,17 @@ from ..schemas.request import TransportMode, WorkSchedule
 from ..schemas.response import TransportResult, DeductionLine
 
 
+def _ho_suffix(work_schedule: WorkSchedule | None, standard_annual: int) -> str:
+    if work_schedule is None or work_schedule.home_office_days_per_week <= 0:
+        return ""
+    office_days = work_schedule.days_per_week - work_schedule.home_office_days_per_week
+    return f" ({standard_annual}/5 sett. × {office_days:.0f} gg/sett. in ufficio)"
+
+
 def calculate_transport(
     transport_mode: TransportMode,
     one_way_km: float | None,
-    work_schedule: WorkSchedule,
+    work_schedule: WorkSchedule | None,
     rules: FiscalYearRules,
     annual_public_transport_cost_chf: float | None = None,
     car_distance_km_mixed: float | None = None,
@@ -19,6 +26,8 @@ def calculate_transport(
 ) -> TransportResult:
     r: TaxLevelRules = rules.federal_IFD
     standard_annual = rules.working_days.standard_annual
+    if work_schedule is None:
+        work_schedule = WorkSchedule()
     weeks = standard_annual / 5.0
     office_days = work_schedule.days_per_week - work_schedule.home_office_days_per_week
     effective_days = max(0, round(weeks * office_days))
@@ -27,7 +36,7 @@ def calculate_transport(
         return _public_transport_federal(r, effective_days, annual_public_transport_cost_chf, one_way_km)
 
     if transport_mode == TransportMode.PRIVATE_CAR:
-        return _private_car_federal(r, effective_days, one_way_km, rules)
+        return _private_car_federal(r, effective_days, one_way_km, rules, work_schedule, standard_annual)
 
     if transport_mode == TransportMode.BICYCLE:
         amount = r.transport.bicycle.flat_rate_chf_per_year
@@ -46,10 +55,10 @@ def calculate_transport(
         )
 
     if transport_mode == TransportMode.MIXED:
-        return _mixed_federal(r, effective_days, car_distance_km_mixed, public_transport_cost_mixed_chf, rules)
+        return _mixed_federal(r, effective_days, car_distance_km_mixed, public_transport_cost_mixed_chf, rules, work_schedule, standard_annual)
 
     if transport_mode == TransportMode.MOTORCYCLE:
-        return _motorcycle_federal(r, effective_days, one_way_km, rules)
+        return _motorcycle_federal(r, effective_days, one_way_km, rules, work_schedule, standard_annual)
 
     raise ValueError(f"TransportMode non supportato: {transport_mode}")
 
@@ -89,6 +98,7 @@ def _public_transport_federal(
 def _private_car_federal(
     r: TaxLevelRules, effective_days: int,
     one_way_km: float | None, rules: FiscalYearRules,
+    work_schedule: WorkSchedule | None = None, standard_annual: int = 220,
 ) -> TransportResult:
     if one_way_km is None:
         raise ValueError("one_way_km obbligatorio per PRIVATE_CAR")
@@ -100,6 +110,8 @@ def _private_car_federal(
     gross = federal_rate * one_way_km * 2 * effective_days
     cap = r.transport.private_car.cap_chf
     net = min(gross, cap) if cap else gross
+    basis = f"CHF {federal_rate}/km × {one_way_km:.1f}km × 2 × {effective_days} giorni → cap CHF {cap:.0f}"
+    basis += _ho_suffix(work_schedule, standard_annual)
 
     return TransportResult(
         mode="private_car",
@@ -110,7 +122,7 @@ def _private_car_federal(
         lines=[DeductionLine(
             label="Auto privata (IFD — soggetta a tetto massimo)",
             amount_chf=round(net, 2),
-            basis=f"CHF {federal_rate}/km × {one_way_km:.1f}km × 2 × {effective_days} giorni → cap CHF {cap:.0f}",
+            basis=basis,
             legal_reference="Art. 26 LIFD + RS 642.118.1",
             capped=cap is not None and gross > cap,
             cap_amount_chf=cap,
@@ -121,6 +133,7 @@ def _private_car_federal(
 def _motorcycle_federal(
     r: TaxLevelRules, effective_days: int,
     one_way_km: float | None, rules: FiscalYearRules,
+    work_schedule: WorkSchedule | None = None, standard_annual: int = 220,
 ) -> TransportResult:
     if one_way_km is None:
         raise ValueError("one_way_km obbligatorio per TransportMode.MOTORCYCLE")
@@ -133,6 +146,8 @@ def _motorcycle_federal(
     gross = rate * one_way_km * 2 * effective_days
     cap = r.transport.private_car.cap_chf
     net = min(gross, cap) if cap else gross
+    basis = f"CHF {rate}/km × {one_way_km:.1f}km × 2 × {effective_days} giorni → cap CHF {cap:.0f}"
+    basis += _ho_suffix(work_schedule, standard_annual)
 
     return TransportResult(
         mode="motorcycle",
@@ -143,7 +158,7 @@ def _motorcycle_federal(
         lines=[DeductionLine(
             label="Motocicletta targa bianca (IFD — soggetta a tetto massimo)",
             amount_chf=round(net, 2),
-            basis=f"CHF {rate}/km × {one_way_km:.1f}km × 2 × {effective_days} giorni → cap CHF {cap:.0f}",
+            basis=basis,
             legal_reference="Art. 26 LIFD + RS 642.118.1 Appendice",
             capped=cap is not None and gross > cap,
             cap_amount_chf=cap,
@@ -155,6 +170,7 @@ def _mixed_federal(
     r: TaxLevelRules, effective_days: int,
     car_km: float | None, pt_cost: float | None,
     rules: FiscalYearRules,
+    work_schedule: WorkSchedule | None = None, standard_annual: int = 220,
 ) -> TransportResult:
     lines: list[DeductionLine] = []
     total = 0.0
@@ -165,10 +181,12 @@ def _mixed_federal(
         cap = r.transport.private_car.cap_chf
         car_net = min(car_gross, cap) if cap else car_gross
         total += car_net
+        basis = f"CHF {rate}/km × {car_km:.1f}km × 2 × {effective_days} giorni → max CHF {cap:.0f}"
+        basis += _ho_suffix(work_schedule, standard_annual)
         lines.append(DeductionLine(
             label="Auto (tratto park & ride) — IFD",
             amount_chf=round(car_net, 2),
-            basis=f"CHF {rate}/km × {car_km:.1f}km × 2 × {effective_days} giorni → max CHF {cap:.0f}",
+            basis=basis,
             legal_reference="Art. 26 LIFD + RS 642.118.1",
             capped=cap is not None and car_gross > cap,
             cap_amount_chf=cap,

@@ -12,34 +12,44 @@ from ..schemas.response import TransportResult, DeductionLine
 def calculate_transport(
     transport_mode: TransportMode,
     one_way_km: float | None,
-    work_schedule: WorkSchedule,
+    work_schedule: WorkSchedule | None,
     rules: FiscalYearRules,
     annual_public_transport_cost_chf: float | None = None,
     car_distance_km_mixed: float | None = None,
     public_transport_cost_mixed_chf: float | None = None,
 ) -> TransportResult:
     r: CantonalRules = rules.cantonal_TI
-    effective_days = _effective_days(work_schedule, rules.working_days.standard_annual)
+    standard_annual = rules.working_days.standard_annual
+    if work_schedule is None:
+        work_schedule = WorkSchedule()
+    effective_days = _effective_days(work_schedule, standard_annual)
 
     if transport_mode == TransportMode.PUBLIC_TRANSPORT:
         return _public_transport(r, effective_days, annual_public_transport_cost_chf, one_way_km)
 
     if transport_mode == TransportMode.PRIVATE_CAR:
-        return _private_car(r, effective_days, one_way_km)
+        return _private_car(r, effective_days, one_way_km, work_schedule, standard_annual)
 
     if transport_mode == TransportMode.BICYCLE:
         return _bicycle(r, effective_days)
 
     if transport_mode == TransportMode.MIXED:
-        return _mixed(r, effective_days, car_distance_km_mixed, public_transport_cost_mixed_chf)
+        return _mixed(r, effective_days, car_distance_km_mixed, public_transport_cost_mixed_chf, work_schedule, standard_annual)
 
     if transport_mode == TransportMode.MOTORCYCLE:
-        return _motorcycle(r, effective_days, one_way_km, rules)
+        return _motorcycle(r, effective_days, one_way_km, rules, work_schedule, standard_annual)
 
     raise ValueError(f"TransportMode non supportato: {transport_mode}")
 
 
 # ─── Implementazioni ──────────────────────────────────────────────────────────
+
+def _ho_suffix(work_schedule: WorkSchedule | None, standard_annual: int) -> str:
+    if work_schedule is None or work_schedule.home_office_days_per_week <= 0:
+        return ""
+    office_days = work_schedule.days_per_week - work_schedule.home_office_days_per_week
+    return f" ({standard_annual}/5 sett. × {office_days:.0f} gg/sett. in ufficio)"
+
 
 def _effective_days(schedule: WorkSchedule, standard_annual: int) -> int:
     weeks = standard_annual / 5.0
@@ -81,7 +91,10 @@ def _public_transport(
     )
 
 
-def _private_car(r: CantonalRules, effective_days: int, one_way_km: float | None) -> TransportResult:
+def _private_car(
+    r: CantonalRules, effective_days: int, one_way_km: float | None,
+    work_schedule: WorkSchedule | None = None, standard_annual: int = 220,
+) -> TransportResult:
     if one_way_km is None:
         raise ValueError("one_way_km obbligatorio per TransportMode.PRIVATE_CAR")
 
@@ -92,6 +105,8 @@ def _private_car(r: CantonalRules, effective_days: int, one_way_km: float | None
     gross = rate * one_way_km * 2 * effective_days
     cap = r.transport.private_car.cap_chf
     net = min(gross, cap) if cap else gross
+    basis = f"CHF {rate}/km × {one_way_km:.1f}km × 2 × {effective_days} giorni"
+    basis += _ho_suffix(work_schedule, standard_annual)
 
     return TransportResult(
         mode="private_car",
@@ -102,7 +117,7 @@ def _private_car(r: CantonalRules, effective_days: int, one_way_km: float | None
         lines=[DeductionLine(
             label="Auto privata",
             amount_chf=round(net, 2),
-            basis=f"CHF {rate}/km × {one_way_km:.1f}km × 2 × {effective_days} giorni",
+            basis=basis,
             legal_reference="Art. 25 cpv. 1 lett. a LT",
             capped=cap is not None and gross > cap,
             cap_amount_chf=cap,
@@ -130,6 +145,7 @@ def _bicycle(r: CantonalRules, effective_days: int) -> TransportResult:
 def _motorcycle(
     r: CantonalRules, effective_days: int,
     one_way_km: float | None, rules: FiscalYearRules,
+    work_schedule: WorkSchedule | None = None, standard_annual: int = 220,
 ) -> TransportResult:
     if one_way_km is None:
         raise ValueError("one_way_km obbligatorio per TransportMode.MOTORCYCLE")
@@ -142,6 +158,8 @@ def _motorcycle(
 
     rate = moto.rate_chf_per_km
     gross = rate * one_way_km * 2 * effective_days
+    basis = f"CHF {rate}/km × {one_way_km:.1f}km × 2 × {effective_days} giorni"
+    basis += _ho_suffix(work_schedule, standard_annual)
 
     return TransportResult(
         mode="motorcycle",
@@ -152,7 +170,7 @@ def _motorcycle(
         lines=[DeductionLine(
             label="Motocicletta (targa bianca)",
             amount_chf=round(gross, 2),
-            basis=f"CHF {rate}/km × {one_way_km:.1f}km × 2 × {effective_days} giorni",
+            basis=basis,
             legal_reference="Art. 25 cpv. 1 lett. a LT + RS 642.118.1 Appendice",
             capped=False,
         )],
@@ -162,6 +180,7 @@ def _motorcycle(
 def _mixed(
     r: CantonalRules, effective_days: int,
     car_km: float | None, pt_cost: float | None,
+    work_schedule: WorkSchedule | None = None, standard_annual: int = 220,
 ) -> TransportResult:
     lines: list[DeductionLine] = []
     total = 0.0
@@ -170,10 +189,12 @@ def _mixed(
         rate = r.transport.private_car.rate_chf_per_km
         car_amount = rate * car_km * 2 * effective_days
         total += car_amount
+        basis = f"CHF {rate}/km × {car_km:.1f}km × 2 × {effective_days} giorni"
+        basis += _ho_suffix(work_schedule, standard_annual)
         lines.append(DeductionLine(
             label="Auto (tratto fino al parcheggio)",
             amount_chf=round(car_amount, 2),
-            basis=f"CHF {rate}/km × {car_km:.1f}km × 2 × {effective_days} giorni",
+            basis=basis,
             legal_reference="Art. 25 cpv. 1 lett. a LT",
         ))
 

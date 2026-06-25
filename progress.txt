@@ -163,6 +163,17 @@
 - 105 test passano (96 precedenti + 9 nuovi arcobaleno), nessuna regressione.
 - FASE 8 COMPLETATA: tutte le storie US-801..US-808 hanno passes: true.
 
+## 2026-06-25 — US-902 DONE
+- app/core/cantonal_engine.py: reso work_schedule opzionale (default=None per compat test).
+  Aggiunta helper _ho_suffix(work_schedule, standard_annual) -> str che ritorna
+  " ({standard_annual}/5 sett. × {office_days:.0f} gg/sett. in ufficio)" quando HO > 0.
+  Aggiornate _private_car, _motorcycle, _mixed: ricevono work_schedule e standard_annual;
+  appendono il suffisso alla basis string quando home_office_days_per_week > 0.
+- app/core/federal_engine.py: stessa modifica per _private_car_federal, _motorcycle_federal,
+  _mixed_federal. Aggiunta _ho_suffix identica.
+- 105 test passano, nessuna regressione.
+- Prossima: US-903 (Meals basis text — ritornare formula CHF/giorno × giorni nella risposta)
+
 ## 2026-06-25 — US-901 DONE
 - app/static/js/app.js, getFormPayload(): rimossi i campi flat days_per_week e
   home_office_days_per_week dal root del payload; sostituiti con oggetto annidato:
