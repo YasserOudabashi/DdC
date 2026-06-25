@@ -163,6 +163,18 @@
 - 105 test passano (96 precedenti + 9 nuovi arcobaleno), nessuna regressione.
 - FASE 8 COMPLETATA: tutte le storie US-801..US-808 hanno passes: true.
 
+## 2026-06-25 — FASE 9 COMPLETATA (US-901..US-905)
+- US-901: fix work_schedule nesting nel frontend (giorni HO ora applicati al calcolo)
+- US-902: basis string trasparente con suffisso HO per auto/moto/misto
+- US-903: meals_basis_text nella risposta API e nel frontend
+- US-904: app/geo/tp_proximity.py — find_nearest_stop() via transport.opendata.ch + Haversine;
+  resolver.py ora ritorna 3-tuple (km, provider, home_coords);
+  deduction.py aggiunge warning se fermata TP ≤ 200m dal domicilio (solo informativo)
+- US-905: tests/unit/test_fase9_homeoffice.py — 8 test (HO, basis, meals, TP proximity)
+- 113 test passano, nessuna regressione
+- Deploy VPS: git rebase origin/master + systemctl restart trasferta-api (OK)
+- FASE 9 COMPLETATA: tutte le storie US-901..US-905 hanno passes: true
+
 ## 2026-06-25 — US-903 DONE
 - app/core/meals_engine.py: cambiato tipo di ritorno da float a tuple[float, str] per
   calculate_meals_cantonal, calculate_meals_federal e _calculate(). La stringa basis ha
