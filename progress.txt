@@ -135,6 +135,25 @@
 - 96 test passano (93 originali + 3 nuovi), nessuna regressione.
 - Prossima: US-806 (Frontend — autocomplete città Tom Select + select paese)
 
+## 2026-06-25 — US-807 DONE
+- app/static/index.html: aggiunto div#pt-cost-section (hidden) dentro la Card Trasporto,
+  dopo il select transport_mode. Contiene 3 radio buttons (pt_cost_type):
+  - 'arcobaleno' (default): select zone (1-8) + select classe (1ª/2ª) + preview costo
+  - 'manuale': input annual_public_transport_cost_chf
+  - 'sbb-link': link SBB + input annual_public_transport_cost_chf_sbb
+- app/static/css/style.css: aggiunte classi .radio-group, .radio-label, .btn-link.
+- app/static/js/app.js:
+  - Costanti ARCOBALENO_2CL e ARCOBALENO_1CL per preview live.
+  - updateArcobalenoCostPreview(): aggiorna testo #arcobaleno-cost-preview.
+  - updatePtCostVisibility(): mostra/nasconde i sotto-blocchi in base al radio selezionato.
+  - updateTransportVisibility(): mostra/nasconde pt-cost-section quando mode='public_transport'.
+  - Listener su radio pt_cost_type, arcobaleno_zones, arcobaleno_class.
+  - getFormPayload(): legge ptRadio e include arcobaleno_zones/arcobaleno_class oppure
+    annual_public_transport_cost_chf nel payload secondo selezione.
+  - validateForm(): validazione manuale e sbb-link richiedono costo > 0.
+- 96 test passano, nessuna regressione backend.
+- Prossima: US-808 (Test suite Fase 8 — test arcobaleno lookup + test locations)
+
 ## 2026-06-25 — FASE 8 AVVIATA
 - Scopo: ARCOBALENO zone lookup + autocomplete indirizzi + UI costo abbonamento TP
 - PRD: US-801..US-808 (8 storie, tutte passes: false)

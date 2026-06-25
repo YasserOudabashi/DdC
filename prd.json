@@ -232,6 +232,7 @@
     {
       "id": "US-807",
       "title": "Frontend — sezione scelta costo abbonamento mezzi pubblici",
+      "passes": true,
       "description": "As a user selecting public transport, I want a clear UI to choose between ARCOBALENO zone lookup (TI), manual cost entry, or a link to the SBB calculator for other regions.",
       "acceptanceCriteria": [
         "In app/static/index.html, dentro il blocco trasporto (dopo il select transport_mode), aggiungere un div id='pt-cost-section' class='hidden' con tre radio option e relative sezioni:",
@@ -288,8 +289,7 @@
         "Typecheck/lint passa.",
         "uv run pytest tests/ -v — 93+ test passano senza regressioni backend."
       ],
-      "priority": 7,
-      "passes": false
+      "priority": 7
     },
     {
       "id": "US-808",

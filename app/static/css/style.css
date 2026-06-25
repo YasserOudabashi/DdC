@@ -283,6 +283,41 @@ fieldset legend {
   cursor: pointer;
 }
 
+/* ── Radio groups PT cost ── */
+.radio-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.radio-label {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 0.9rem;
+  font-weight: 400;
+  cursor: pointer;
+  line-height: 1.4;
+}
+
+.radio-label input[type="radio"] {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  margin-top: 2px;
+  accent-color: var(--ct-blue);
+  cursor: pointer;
+}
+
+.btn-link {
+  display: inline-block;
+  color: var(--ct-blue);
+  font-weight: 600;
+  text-decoration: underline;
+  font-size: 0.9rem;
+}
+
 /* ── Tooltip CSS puro ── */
 .card-title {
   position: relative;

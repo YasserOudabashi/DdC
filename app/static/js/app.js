@@ -18,6 +18,13 @@
   const salaryGroup = document.getElementById('salary-group');
 
   const companyCarGroup = document.getElementById('company-car-group');
+  const ptCostSection = document.getElementById('pt-cost-section');
+  const arcobalenovFields = document.getElementById('arcobaleno-fields');
+  const manualPtFields = document.getElementById('manual-pt-fields');
+  const sbbLinkFields = document.getElementById('sbb-link-fields');
+
+  const ARCOBALENO_2CL = { 1: 485, 2: 732, 3: 1074, 4: 1387, 5: 1691, 6: 1986, 7: 2157, 8: 2252 };
+  const ARCOBALENO_1CL = { 1: 827, 2: 1245, 3: 1834, 4: 2366, 5: 2879, 6: 3382, 7: 3667, 8: 3829 };
 
   function makeTomSelectConfig() {
     return {
@@ -39,15 +46,36 @@
   const tomSelectHome = new TomSelect('#home_city', makeTomSelectConfig());
   const tomSelectWork = new TomSelect('#work_city', makeTomSelectConfig());
 
+  function updateArcobalenoCostPreview() {
+    const zones = parseInt(document.getElementById('arcobaleno_zones').value, 10);
+    const cls = document.getElementById('arcobaleno_class').value;
+    const table = cls === '1' ? ARCOBALENO_1CL : ARCOBALENO_2CL;
+    const cost = table[zones] || table[8];
+    const preview = document.getElementById('arcobaleno-cost-preview');
+    if (preview) {
+      preview.textContent = 'Costo annuo stimato: CHF ' + cost.toLocaleString('de-CH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+  }
+
+  function updatePtCostVisibility() {
+    const ptRadio = document.querySelector('input[name=pt_cost_type]:checked');
+    const val = ptRadio ? ptRadio.value : 'arcobaleno';
+    arcobalenovFields.classList.toggle('hidden', val !== 'arcobaleno');
+    manualPtFields.classList.toggle('hidden', val !== 'manuale');
+    sbbLinkFields.classList.toggle('hidden', val !== 'sbb-link');
+  }
+
   function updateTransportVisibility() {
     const mode = transportSelect.value;
     const needsDistance = mode === 'private_car' || mode === 'motorcycle';
     const isMixed = mode === 'mixed';
+    const isPublicTransport = mode === 'public_transport';
     const isPrivateCar = mode === 'private_car';
 
     distanceOverrideGroup.classList.toggle('hidden', !needsDistance);
     mixedFields.classList.toggle('hidden', !isMixed);
     companyCarGroup.classList.toggle('hidden', !isPrivateCar);
+    ptCostSection.classList.toggle('hidden', !isPublicTransport);
 
     const carMixed = document.getElementById('car_distance_km_mixed');
     const ptMixed = document.getElementById('public_transport_cost_mixed_chf');
@@ -69,9 +97,18 @@
   includeMealsChk.addEventListener('change', updateMealVisibility);
   includeOtherExpensesChk.addEventListener('change', updateOtherExpensesVisibility);
 
+  document.querySelectorAll('input[name=pt_cost_type]').forEach(function (radio) {
+    radio.addEventListener('change', updatePtCostVisibility);
+  });
+
+  document.getElementById('arcobaleno_zones').addEventListener('change', updateArcobalenoCostPreview);
+  document.getElementById('arcobaleno_class').addEventListener('change', updateArcobalenoCostPreview);
+
   updateTransportVisibility();
   updateMealVisibility();
   updateOtherExpensesVisibility();
+  updatePtCostVisibility();
+  updateArcobalenoCostPreview();
 
   // Tooltip: close on Escape
   document.addEventListener('keydown', function (e) {
@@ -126,6 +163,21 @@
     const overrideKm = document.getElementById('override_distance_km').value;
     if (overrideKm) {
       payload.override_distance_km = parseFloat(overrideKm);
+    }
+
+    if (mode === 'public_transport') {
+      const ptRadio = document.querySelector('input[name=pt_cost_type]:checked');
+      const ptVal = ptRadio ? ptRadio.value : 'arcobaleno';
+      if (ptVal === 'arcobaleno') {
+        payload.arcobaleno_zones = parseInt(document.getElementById('arcobaleno_zones').value, 10);
+        payload.arcobaleno_class = document.getElementById('arcobaleno_class').value;
+      } else if (ptVal === 'manuale') {
+        const c = document.getElementById('annual_public_transport_cost_chf').value;
+        if (c) payload.annual_public_transport_cost_chf = parseFloat(c);
+      } else if (ptVal === 'sbb-link') {
+        const c = document.getElementById('annual_public_transport_cost_chf_sbb').value;
+        if (c) payload.annual_public_transport_cost_chf = parseFloat(c);
+      }
     }
 
     if (mode === 'mixed') {
@@ -183,6 +235,17 @@
     if (workNpaErr) return workNpaErr;
 
     const mode = transportSelect.value;
+    if (mode === 'public_transport') {
+      const ptRadio = document.querySelector('input[name=pt_cost_type]:checked');
+      const ptVal = ptRadio ? ptRadio.value : 'arcobaleno';
+      if (ptVal === 'manuale') {
+        const c = document.getElementById('annual_public_transport_cost_chf').value;
+        if (!c || parseFloat(c) <= 0) return 'Inserire il costo abbonamento annuale in CHF.';
+      } else if (ptVal === 'sbb-link') {
+        const c = document.getElementById('annual_public_transport_cost_chf_sbb').value;
+        if (!c || parseFloat(c) <= 0) return 'Inserire il costo abbonamento trovato su SBB.ch.';
+      }
+    }
     if (mode === 'mixed') {
       const carKm = document.getElementById('car_distance_km_mixed').value;
       const ptCost = document.getElementById('public_transport_cost_mixed_chf').value;

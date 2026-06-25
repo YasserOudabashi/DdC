@@ -120,6 +120,67 @@
           </select>
         </div>
 
+        <!-- Sezione costo abbonamento (solo mezzi pubblici) -->
+        <div id="pt-cost-section" class="hidden">
+          <div class="form-group">
+            <label>Tipo di abbonamento mezzi pubblici</label>
+            <div class="radio-group">
+              <label class="radio-label">
+                <input type="radio" name="pt_cost_type" value="arcobaleno" checked>
+                Abbonamento ARCOBALENO (Canton Ticino)
+              </label>
+              <label class="radio-label">
+                <input type="radio" name="pt_cost_type" value="manuale">
+                Inserisci costo abbonamento (tutte le reti)
+              </label>
+              <label class="radio-label">
+                <input type="radio" name="pt_cost_type" value="sbb-link">
+                Calcola su SBB.ch (rotte fuori TI)
+              </label>
+            </div>
+          </div>
+
+          <div id="arcobaleno-fields">
+            <div class="form-group">
+              <label for="arcobaleno_zones">Zone ARCOBALENO</label>
+              <select id="arcobaleno_zones">
+                <option value="1">1 zona — CHF 485</option>
+                <option value="2">2 zone — CHF 732</option>
+                <option value="3" selected>3 zone — CHF 1&#x2019;074</option>
+                <option value="4">4 zone — CHF 1&#x2019;387</option>
+                <option value="5">5 zone — CHF 1&#x2019;691</option>
+                <option value="6">6 zone — CHF 1&#x2019;986</option>
+                <option value="7">7 zone — CHF 2&#x2019;157</option>
+                <option value="8">8+ zone — CHF 2&#x2019;252</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="arcobaleno_class">Classe</label>
+              <select id="arcobaleno_class">
+                <option value="2" selected>2&#xAA; classe</option>
+                <option value="1">1&#xAA; classe</option>
+              </select>
+            </div>
+            <p class="field-hint" id="arcobaleno-cost-preview">Costo annuo stimato: CHF 1&#x2019;074.00</p>
+          </div>
+
+          <div id="manual-pt-fields" class="hidden">
+            <div class="form-group">
+              <label for="annual_public_transport_cost_chf">Costo abbonamento annuale (CHF)</label>
+              <input type="number" id="annual_public_transport_cost_chf" min="0" step="0.01" placeholder="Es. 1800.00">
+            </div>
+          </div>
+
+          <div id="sbb-link-fields" class="hidden">
+            <p class="field-hint">Per abbonamenti fuori dal Canton Ticino (ZVV, BLS, Libero, ecc.), calcola il costo annuo sul sito SBB e inseriscilo qui sotto.</p>
+            <a href="https://www.sbb.ch/it/offerte/acquisto-abbo-percorso-modulari-comunita?validityDuration=YEAR" target="_blank" rel="noopener noreferrer" class="btn-link">Apri calcolatore SBB &#x2192;</a>
+            <div class="form-group" style="margin-top:0.75rem">
+              <label for="annual_public_transport_cost_chf_sbb">Costo abbonamento annuale trovato (CHF)</label>
+              <input type="number" id="annual_public_transport_cost_chf_sbb" min="0" step="0.01" placeholder="Inserisci il costo trovato su SBB.ch">
+            </div>
+          </div>
+        </div>
+
         <!-- Distanza override (auto privata / moto) -->
         <div id="distance-override-group" class="form-group hidden">
           <label for="override_distance_km">Distanza effettiva (km)</label>
