@@ -239,6 +239,12 @@ fieldset legend {
   margin-top: 2px;
 }
 
+.field-optional {
+  font-size: 0.78rem;
+  color: #999;
+  font-weight: 400;
+}
+
 /* ── Form actions ── */
 .form-actions {
   display: flex;

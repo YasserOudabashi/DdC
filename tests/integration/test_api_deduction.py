@@ -106,12 +106,14 @@ async def test_weekly_resident():
 
 
 @pytest.mark.asyncio
-async def test_other_expenses_without_salary_returns_422():
-    # include_other_expenses: true senza annual_net_salary_chf → 422
+async def test_other_expenses_without_salary_ic_flat_rate():
+    # IC: flat-rate CHF 3'000 senza salary; IFD: altre spese None (salary assente)
     payload = json.loads((FIXTURES / "request_base.json").read_text())
     payload["include_other_expenses"] = True
-    status, _ = await _post(payload)
-    assert status == 422
+    status, body = await _post(payload)
+    assert status == 200
+    assert body["cantonal_TI"]["other_expenses_deduction_chf"] == pytest.approx(3000.0, rel=0.01)
+    assert body["federal_IFD"]["other_expenses_deduction_chf"] is None
 
 
 @pytest.mark.asyncio

@@ -26,12 +26,13 @@
   const ARCOBALENO_2CL = { 1: 485, 2: 732, 3: 1074, 4: 1387, 5: 1691, 6: 1986, 7: 2157, 8: 2252 };
   const ARCOBALENO_1CL = { 1: 827, 2: 1245, 3: 1834, 4: 2366, 5: 2879, 6: 3382, 7: 3667, 8: 3829 };
 
-  function makeTomSelectConfig() {
+  function makeTomSelectConfig(npaFieldId, countryFieldId) {
     return {
       valueField: 'name',
       labelField: 'name',
       searchField: 'name',
       create: true,
+      maxItems: 1,
       placeholder: 'Cerca città…',
       load: function (query, callback) {
         if (query.length < 2) { callback([]); return; }
@@ -40,11 +41,23 @@
           .then(callback)
           .catch(function () { callback([]); });
       },
+      onChange: function (value) {
+        if (!value || !npaFieldId) return;
+        var country = document.getElementById(countryFieldId).value || 'CH';
+        fetch('/v1/locations/npa?city=' + encodeURIComponent(value) + '&country=' + encodeURIComponent(country))
+          .then(function (r) { return r.json(); })
+          .then(function (data) {
+            if (data && data.npa) {
+              document.getElementById(npaFieldId).value = data.npa;
+            }
+          })
+          .catch(function () {});
+      },
     };
   }
 
-  const tomSelectHome = new TomSelect('#home_city', makeTomSelectConfig());
-  const tomSelectWork = new TomSelect('#work_city', makeTomSelectConfig());
+  const tomSelectHome = new TomSelect('#home_city', makeTomSelectConfig('home_npa', 'home_country'));
+  const tomSelectWork = new TomSelect('#work_city', makeTomSelectConfig('work_npa', 'work_country'));
 
   function updateArcobalenoCostPreview() {
     const zones = parseInt(document.getElementById('arcobaleno_zones').value, 10);
@@ -136,26 +149,25 @@
     const homeOfficeDays = parseInt(document.getElementById('home_office_days_per_week').value, 10);
 
     const homeCity = (tomSelectHome.getValue() || document.getElementById('home_city').value).trim();
+    const homeStreet = document.getElementById('home_street').value.trim();
     const homeNpa = document.getElementById('home_npa').value.trim();
     const homeCountry = document.getElementById('home_country').value || 'CH';
     const workCity = (tomSelectWork.getValue() || document.getElementById('work_city').value).trim();
+    const workStreet = document.getElementById('work_street').value.trim();
     const workNpa = document.getElementById('work_npa').value.trim();
     const workCountry = document.getElementById('work_country').value || 'CH';
+
+    const homeAddress = { city: homeCity, postal_code: homeNpa, country: homeCountry };
+    if (homeStreet) homeAddress.street = homeStreet;
+    const workAddress = { city: workCity, postal_code: workNpa, country: workCountry };
+    if (workStreet) workAddress.street = workStreet;
 
     const payload = {
       fiscal_year: fiscalYear,
       residency_type: residencyType,
       transport_mode: mode,
-      home_address: {
-        city: homeCity,
-        postal_code: homeNpa,
-        country: homeCountry,
-      },
-      work_address: {
-        city: workCity,
-        postal_code: workNpa,
-        country: workCountry,
-      },
+      home_address: homeAddress,
+      work_address: workAddress,
       days_per_week: daysPerWeek,
       home_office_days_per_week: homeOfficeDays,
     };
@@ -254,12 +266,7 @@
       }
     }
 
-    if (includeOtherExpensesChk.checked) {
-      const salary = document.getElementById('annual_net_salary_chf').value;
-      if (!salary || parseFloat(salary) <= 0) {
-        return 'Inserire il salario netto annuo per calcolare le altre spese professionali.';
-      }
-    }
+    // salary is optional: IC uses flat-rate CHF 3'000 regardless; IFD needs salary for 3% calc
 
     return null;
   }

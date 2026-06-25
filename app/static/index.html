@@ -66,6 +66,10 @@
               <input type="text" id="home_city" name="home_city" required aria-required="true" autocomplete="address-level2">
             </div>
             <div class="form-group">
+              <label for="home_street">Via e numero civico <span class="field-optional">(opzionale)</span></label>
+              <input type="text" id="home_street" name="home_street" maxlength="200" placeholder="Es. Via Campagna 32" autocomplete="street-address">
+            </div>
+            <div class="form-group">
               <label for="home_npa">NPA</label>
               <input type="text" id="home_npa" name="home_npa" required aria-required="true" inputmode="numeric" maxlength="10" placeholder="6900">
             </div>
@@ -86,6 +90,10 @@
             <div class="form-group">
               <label for="work_city">Città</label>
               <input type="text" id="work_city" name="work_city" required aria-required="true" autocomplete="off">
+            </div>
+            <div class="form-group">
+              <label for="work_street">Via e numero civico <span class="field-optional">(opzionale)</span></label>
+              <input type="text" id="work_street" name="work_street" maxlength="200" placeholder="Es. Via Luganetto 15" autocomplete="off">
             </div>
             <div class="form-group">
               <label for="work_npa">NPA</label>
@@ -252,12 +260,13 @@
         <div class="form-group checkbox-group">
           <label class="checkbox-label">
             <input type="checkbox" id="include_other_expenses" name="include_other_expenses">
-            Includi altre spese professionali (3% del salario netto)
+            Includi altre spese professionali
           </label>
         </div>
         <div id="salary-group" class="form-group hidden">
-          <label for="annual_net_salary_chf">Salario netto annuo (CHF)</label>
-          <input type="number" id="annual_net_salary_chf" name="annual_net_salary_chf" min="0" step="100">
+          <label for="annual_net_salary_chf">Salario netto annuo (CHF) <span class="field-optional">(per calcolo IFD)</span></label>
+          <input type="number" id="annual_net_salary_chf" name="annual_net_salary_chf" min="0" step="100" placeholder="Es. 75000">
+          <p class="field-hint">IC: forfait fisso CHF 3'000 (non serve il salario) · IFD: 3% del reddito netto, min CHF 2'000, max CHF 4'000</p>
         </div>
       </div>
 

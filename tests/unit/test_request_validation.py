@@ -17,13 +17,11 @@ def _base_request(**kwargs) -> dict:
 
 
 class TestOtherExpensesValidation:
-    def test_other_expenses_without_salary_raises_422(self):
-        with pytest.raises(ValidationError) as exc_info:
-            DeductionRequest(**_base_request(include_other_expenses=True))
-        errors = exc_info.value.errors()
-        assert any(
-            "annual_net_salary_chf" in str(e["msg"]) for e in errors
-        )
+    def test_other_expenses_without_salary_accepted(self):
+        # IC uses flat-rate CHF 3'000 (salary not needed); IFD skips altri spese if salary absent
+        req = DeductionRequest(**_base_request(include_other_expenses=True))
+        assert req.include_other_expenses is True
+        assert req.annual_net_salary_chf is None
 
     def test_other_expenses_with_salary_accepted(self):
         req = DeductionRequest(**_base_request(

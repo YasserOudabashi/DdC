@@ -69,8 +69,9 @@ def _build_cantonal(
         accommodation_chf = round(req.annual_accommodation_cost_chf, 2)
 
     other_chf: float | None = None
-    if req.include_other_expenses and req.annual_net_salary_chf is not None:
-        other_chf = other_expenses.calculate_other_cantonal(req.annual_net_salary_chf, rules)
+    if req.include_other_expenses:
+        # IC uses flat_rate (salary ignored); pass 0.0 safely when salary not provided
+        other_chf = other_expenses.calculate_other_cantonal(req.annual_net_salary_chf or 0.0, rules)
 
     secondary_chf: float | None = None
     if req.include_secondary_activity:

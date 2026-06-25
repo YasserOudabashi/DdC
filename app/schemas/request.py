@@ -102,14 +102,6 @@ class DeductionRequest(BaseModel):
         return self
 
     @model_validator(mode="after")
-    def validate_other_expenses_requires_salary(self) -> DeductionRequest:
-        if self.include_other_expenses and self.annual_net_salary_chf is None:
-            raise ValueError(
-                "annual_net_salary_chf è obbligatorio quando include_other_expenses è true"
-            )
-        return self
-
-    @model_validator(mode="after")
     def validate_mixed_transport_requires_data(self) -> DeductionRequest:
         if (
             self.transport_mode == TransportMode.MIXED
