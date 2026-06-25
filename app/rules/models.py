@@ -66,6 +66,22 @@ class OtherExpensesRule(BaseModel):
     secondary_activity: Optional[SecondaryActivityRule] = None  # attività accessoria dipendente
 
 
+class ArcobalenovAnnualRates(BaseModel):
+    zones_1: float
+    zones_2: float
+    zones_3: float
+    zones_4: float
+    zones_5: float
+    zones_6: float
+    zones_7: float
+    zones_8_plus: float
+
+
+class PublicTransportSubscriptions(BaseModel):
+    arcobaleno_annual_adult_2cl: Optional[ArcobalenovAnnualRates] = None
+    arcobaleno_annual_adult_1cl: Optional[ArcobalenovAnnualRates] = None
+
+
 class TaxLevelRules(BaseModel):
     transport: TransportRules
     meals: MealsRules
@@ -74,6 +90,7 @@ class TaxLevelRules(BaseModel):
 
 class CantonalRules(TaxLevelRules):
     flat_rate_all_expenses_chf: Optional[float] = None
+    public_transport_subscriptions: Optional[PublicTransportSubscriptions] = None
 
 
 class WorkingDaysConfig(BaseModel):

@@ -84,6 +84,14 @@
 - 93 test passano, nessuna regressione.
 - Prossima: US-802 (modelli Pydantic ArcobalenovAnnualRates + PublicTransportSubscriptions in app/rules/models.py)
 
+## 2026-06-25 — US-802 DONE
+- app/rules/models.py: aggiunte classi ArcobalenovAnnualRates (zones_1..zones_8_plus: float)
+  e PublicTransportSubscriptions (arcobaleno_annual_adult_2cl, arcobaleno_annual_adult_1cl: Optional).
+  Aggiunto campo public_transport_subscriptions: Optional[PublicTransportSubscriptions] = None in CantonalRules.
+  Il loader YAML carica già tutto automaticamente via Pydantic — nessuna modifica al loader.
+- 93 test passano, nessuna regressione.
+- Prossima: US-803 (campi arcobaleno_zones e arcobaleno_class nel request schema)
+
 ## 2026-06-25 — FASE 8 AVVIATA
 - Scopo: ARCOBALENO zone lookup + autocomplete indirizzi + UI costo abbonamento TP
 - PRD: US-801..US-808 (8 storie, tutte passes: false)
