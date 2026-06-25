@@ -114,6 +114,15 @@
 - 93 test passano, nessuna regressione.
 - Prossima: US-805 (endpoint GET /v1/locations/search per autocomplete città via transport.opendata.ch)
 
+## 2026-06-25 — US-805 DONE
+- app/api/v1/endpoints/locations.py: nuovo endpoint GET /v1/locations/search?q=<text>&limit=10
+  che proxia transport.opendata.ch/v1/locations. Ritorna [] se q < 2 caratteri o in caso di
+  errore/timeout (httpx.AsyncClient timeout=3.0s). Rate limit 60/minute via @limiter.limit.
+- app/api/v1/router.py: registrato locations_router con prefix=/v1/locations, tags=['Locations'].
+- tests/integration/test_locations.py: 3 test (query corta -> [], senza q -> [], query valida -> lista).
+- 96 test passano (93 originali + 3 nuovi), nessuna regressione.
+- Prossima: US-806 (Frontend — autocomplete città Tom Select + select paese)
+
 ## 2026-06-25 — FASE 8 AVVIATA
 - Scopo: ARCOBALENO zone lookup + autocomplete indirizzi + UI costo abbonamento TP
 - PRD: US-801..US-808 (8 storie, tutte passes: false)
