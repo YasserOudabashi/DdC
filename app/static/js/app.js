@@ -202,8 +202,7 @@
       transport_mode: mode,
       home_address: homeAddress,
       work_address: workAddress,
-      days_per_week: daysPerWeek,
-      home_office_days_per_week: homeOfficeDays,
+      work_schedule: { days_per_week: daysPerWeek, home_office_days_per_week: homeOfficeDays },
     };
 
     const overrideKm = document.getElementById('override_distance_km').value;

@@ -163,6 +163,15 @@
 - 105 test passano (96 precedenti + 9 nuovi arcobaleno), nessuna regressione.
 - FASE 8 COMPLETATA: tutte le storie US-801..US-808 hanno passes: true.
 
+## 2026-06-25 — US-901 DONE
+- app/static/js/app.js, getFormPayload(): rimossi i campi flat days_per_week e
+  home_office_days_per_week dal root del payload; sostituiti con oggetto annidato:
+  work_schedule: { days_per_week: daysPerWeek, home_office_days_per_week: homeOfficeDays }
+  Questo era il bug che faceva ignorare i giorni HO nel calcolo (il backend si aspettava
+  work_schedule, non campi flat al root).
+- 105 test passano, nessuna regressione.
+- Prossima: US-902 (basis string trasparente per giorni effettivi — suffisso alla formula km)
+
 ## 2026-06-25 — FASE 8 AVVIATA
 - Scopo: ARCOBALENO zone lookup + autocomplete indirizzi + UI costo abbonamento TP
 - PRD: US-801..US-808 (8 storie, tutte passes: false)

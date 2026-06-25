@@ -314,6 +314,81 @@
       ],
       "priority": 8,
       "passes": true
+    },
+    {
+      "id": "US-901",
+      "title": "Fix work_schedule nesting nel frontend",
+      "description": "As a user, I want the home office days I select to actually affect the calculation so that I receive the correct deduction amount.",
+      "acceptanceCriteria": [
+        "In app/static/js/app.js, funzione getFormPayload(): rimuovere i campi flat days_per_week e home_office_days_per_week dal root del payload e sostituirli con l'oggetto annidato: work_schedule: { days_per_week: daysPerWeek, home_office_days_per_week: homeOfficeDays }",
+        "Test manuale: con 5 gg/sett, 1 gg HO, 1 km auto privata → cantonal net deve essere 0.6 × 1.0 × 2 × 176 = 211.20 CHF (non 264.00 CHF)",
+        "uv run pytest tests/ -v — tutti i test passano senza regressioni"
+      ],
+      "priority": 1,
+      "passes": true
+    },
+    {
+      "id": "US-902",
+      "title": "Basis string trasparente per giorni effettivi (auto, moto, misto)",
+      "description": "As a user, I want the calculation formula to show how working days were computed from home office days so that I can verify the deduction is correct.",
+      "acceptanceCriteria": [
+        "In app/core/cantonal_engine.py, aggiornare la firma di calculate_transport per ricevere anche work_schedule: WorkSchedule come parametro opzionale (default=None per retrocompatibilità test). In _effective_days, tenere la logica invariata.",
+        "In _private_car, _motorcycle e _mixed (tratto auto) di cantonal_engine.py: se work_schedule non è None e work_schedule.home_office_days_per_week > 0, aggiungere il suffisso alla basis: f' ({standard_annual}/5 sett. × {office_days:.0f} gg/sett. in ufficio)' dove office_days = work_schedule.days_per_week - work_schedule.home_office_days_per_week.",
+        "Stessa modifica in app/core/federal_engine.py per _private_car, _motorcycle, _mixed.",
+        "In app/core/calculator.py, aggiornare le chiamate a cantonal_engine.calculate_transport e federal_engine.calculate_transport passando work_schedule=req.work_schedule.",
+        "Esempio con 5 gg/sett e 1 HO: basis = 'CHF 0.6/km × 1.0km × 2 × 176 giorni (220/5 sett. × 4 gg/sett. in ufficio)'",
+        "Esempio con 0 HO: basis = 'CHF 0.6/km × 1.0km × 2 × 220 giorni' (nessun suffisso)",
+        "uv run pytest tests/ -v — tutti i test passano"
+      ],
+      "priority": 2,
+      "passes": false
+    },
+    {
+      "id": "US-903",
+      "title": "Meals basis text nella risposta e nel frontend",
+      "description": "As a user, I want to see the daily rate × days formula for meals so that I can verify that home office days were excluded.",
+      "acceptanceCriteria": [
+        "In app/schemas/response.py, aggiungere campo opzionale a TaxLevelResult: meals_basis_text: Optional[str] = None",
+        "In app/core/meals_engine.py, modificare calculate_meals_cantonal e calculate_meals_federal per ritornare anche la stringa basis: cambiare tipo di ritorno da float a tuple[float, str]. La stringa deve avere formato: f'CHF {rate:.2f}/giorno × {effective_days} giorni' con suffisso ' → tetto CHF {annual_max:.0f}/anno applicato' se il tetto è stato raggiunto.",
+        "In app/core/calculator.py, aggiornare _build_cantonal e _build_federal: decompattare la tupla (meals_chf, meals_basis) e popolare meals_basis_text nel TaxLevelResult.",
+        "In app/static/js/app.js, funzione buildDeductionTable: sostituire la basis hardcoded '—' per la riga pasti con: escapeHtml(level.meals_basis_text || '—')",
+        "uv run pytest tests/ -v — tutti i test passano"
+      ],
+      "priority": 3,
+      "passes": false
+    },
+    {
+      "id": "US-904",
+      "title": "Warning prossimità fermata TP (distanza ≤ 200m)",
+      "description": "As a user choosing private car, I want to be informed if there's a public transport stop within 200m of my home so that I can evaluate whether the car deduction is appropriate.",
+      "acceptanceCriteria": [
+        "Creare app/geo/tp_proximity.py con funzione asincrona: async def find_nearest_stop(lat: float, lon: float, timeout: float = 3.0) -> tuple[str, float] | None. Chiama https://transport.opendata.ch/v1/locations?x={lon}&y={lat}&type=station&limit=1 via httpx.AsyncClient(timeout=timeout). Se la risposta contiene almeno una stazione con coordinate, calcola la distanza in metri usando Haversine tra (lat, lon) e le coordinate della stazione. Ritorna (nome_stazione, distanza_m) oppure None se fallisce.",
+        "In app/api/v1/endpoints/deduction.py, dopo aver risolto le coordinate del domicilio: se req.transport_mode == TransportMode.PRIVATE_CAR e le coordinate del domicilio sono disponibili, chiamare await tp_proximity.find_nearest_stop(home_lat, home_lon). Se risultato non è None e distanza <= 200: aggiungere alle warnings della response: f\"Fermata TP '{nome}' a {distanza:.0f}m dal domicilio — valutare deduzione per mezzi pubblici (Art. 25 LT)\"",
+        "Se il geocoding del domicilio non è disponibile o la chiamata a TP fallisce: ignorare silenziosamente, nessun errore verso il client.",
+        "Il net_deduction_chf per l'auto viene calcolato normalmente anche se la fermata è vicina (warning solo informativo).",
+        "La street del domicilio NON è resa obbligatoria.",
+        "Test in tests/unit/test_fase9_homeoffice.py: mockare find_nearest_stop per ritornare ('Lugano, Piazza Dante', 150.0) → warnings contiene stringa con '150m'. Mockare per None → nessun warning. Mockare per ('Stazione', 250.0) → nessun warning.",
+        "uv run pytest tests/ -v — tutti i test passano"
+      ],
+      "priority": 4,
+      "passes": false
+    },
+    {
+      "id": "US-905",
+      "title": "Test suite Fase 9",
+      "description": "As a developer, I want automated tests for all Fase 9 fixes so regressions are caught immediately.",
+      "acceptanceCriteria": [
+        "Creare tests/unit/test_fase9_homeoffice.py con i seguenti test:",
+        "test_work_schedule_nested_payload: POST a /v1/deduction/calculate con payload che include work_schedule: {days_per_week: 5, home_office_days_per_week: 1} e transport_mode=private_car, override_distance_km=1.0, fiscal_year=2026 → cantonal_TI.transport_deduction.effective_working_days == 176",
+        "test_work_schedule_zero_ho: stessa richiesta con home_office_days_per_week: 0 → effective_working_days == 220",
+        "test_basis_text_with_ho: con home_office_days_per_week=1 → cantonal_TI.transport_deduction.lines[0].basis contiene '220/5' e '4 gg/sett'",
+        "test_basis_text_without_ho: con home_office_days_per_week=0 → basis NON contiene 'sett. in ufficio'",
+        "test_meals_basis_text: con include_meals=True, meal_situation=without_cafeteria, home_office_days_per_week=1 → cantonal_TI.meals_basis_text contiene '15.00' e '176 giorni'",
+        "uv run pytest tests/unit/test_fase9_homeoffice.py -v — tutti i nuovi test passano",
+        "uv run pytest tests/ -v — tutti i test passano senza regressioni"
+      ],
+      "priority": 5,
+      "passes": false
     }
   ]
 }
