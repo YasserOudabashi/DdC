@@ -200,6 +200,29 @@
 - 105 test passano, nessuna regressione.
 - Prossima: US-902 (basis string trasparente per giorni effettivi — suffisso alla formula km)
 
+## 2026-06-25 — US-904 DONE
+- app/geo/tp_proximity.py: nuovo modulo con find_nearest_stop(lat, lon, timeout=3.0) -> tuple[str, float] | None.
+  Chiama transport.opendata.ch/v1/locations?x={lon}&y={lat}&type=station&limit=1, calcola distanza Haversine
+  tra il domicilio e la stazione più vicina. Ritorna (nome, distanza_m) oppure None se fallisce/timeout.
+- app/geo/resolver.py: risolve_distance ora ritorna 3-tuple (distanza_km, provider, home_coords) invece di 2-tuple.
+  home_coords = (lat, lon) del domicilio oppure None se il geocoding fallisce.
+- app/api/v1/endpoints/deduction.py:
+  - Importa TransportMode e tp_proximity.
+  - Dopo geocoding, se transport_mode==PRIVATE_CAR e home_coords is not None:
+    chiama find_nearest_stop; se distanza <= 200m aggiunge warning all'utente (Art. 25 LT).
+  - Rimossa condizione errata req.home_address.street (street NON obbligatoria per il check).
+- tests/unit/test_fase9_homeoffice.py: già presente con 8 test (5 US-905 + 3 US-904 TP proximity).
+  Tutti e 8 passano con mock di resolve_distance e find_nearest_stop.
+- 113 test passano (105 precedenti + 8 nuovi), nessuna regressione.
+- FASE 9 COMPLETATA: tutte le storie US-901..US-905 hanno passes: true.
+
+## 2026-06-25 — US-905 DONE
+- tests/unit/test_fase9_homeoffice.py: già presente con tutti i test richiesti:
+  test_work_schedule_nested_payload_ho1, test_work_schedule_zero_ho, test_basis_text_with_ho,
+  test_basis_text_without_ho, test_meals_basis_text, test_tp_warning_stop_within_200m,
+  test_tp_warning_no_stop, test_tp_warning_stop_beyond_200m.
+- 113 test passano, nessuna regressione.
+
 ## 2026-06-25 — FASE 8 AVVIATA
 - Scopo: ARCOBALENO zone lookup + autocomplete indirizzi + UI costo abbonamento TP
 - PRD: US-801..US-808 (8 storie, tutte passes: false)
