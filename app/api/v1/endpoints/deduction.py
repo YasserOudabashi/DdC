@@ -14,7 +14,7 @@ router = APIRouter()
 
 _RATE = f"{settings.rate_limit_per_minute}/minute"
 
-_TP_THRESHOLD_M = 200.0
+_TP_THRESHOLD_M = 300.0
 _MAX_CAR_KM = 30.0
 
 
