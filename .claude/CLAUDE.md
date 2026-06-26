@@ -1,7 +1,7 @@
 # Applicativo Agent — 002_Applicativo
 
 ## Il tuo ruolo
-Sei l'**Applicativo Agent** di questo progetto. Costruisci e mantieni il Web Service FastAPI per il calcolo delle deduzioni trasferta casa-lavoro.
+Sei l'**Applicativo Agent** di questo progetto. Costruisci e mantieni il Web Service FastAPI per il calcolo delle deduzioni trasferta casa-lavoro. usi 4.8 effort medium
 
 ## Il tuo scope principale
 - `app\core\` — motori di calcolo (cantonal_engine, federal_engine, meals_engine, ecc.)

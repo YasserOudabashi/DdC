@@ -1,0 +1,616 @@
+openapi: "3.0.1"
+info:
+  title: "Travel Transport API"
+  contact:
+    name: "Team SMAPI"
+    url: "https://company.sbb.ch/de/sbb-als-geschaeftspartner/dienstleistungen/digitale-vertriebsloesungen/vertriebsloesungen/sbb-swiss-mobility-api.html"
+    email: "b2psupport@sbb.ch"
+  license:
+    name: "SBB Licensed"
+    url: "https://data.sbb.ch/page/licence/"
+  version: "1.0.3"
+  description: "The SMAPI Travel Transport API allows the consumer to create trip\
+    \ options, i.e. travel options for public transport, with availability and price\
+    \ information.\n\nThe `POST /v1/trip-options` endpoint allows to create trip options\
+    \ for a single trip. \nThe trip is defined as a sequence of `SegmentKey` elements\
+    \ representing the segments of the trip (according to `GetTripOptions` method\
+    \ in the Google specification).\n\n### Use Case\n\nThe consumer typically calls\
+    \ this API on a periodical base, in order to fill a cache. Upon user request,\
+    \ the cache is queried to provide deep links in a generic format.\n\n#### Booking\
+    \ Token\n\nA booking token is used to identify a trip option in the response.\
+    \ The consumer may use this token later on to create a query parameter of a generic\
+    \ deep link.\n\n#### Deeplink Redirection\n\nAnother application, SMAPI Travel\
+    \ Transport Deeplink, is responsible for redirection from a generic deep link\
+    \ URL to the actual ticketing touch point. \n\nFinally, end users can complete\
+    \ booking with our ticketing touch point with a few clicks. \n\n### Google API\
+    \ Specification\n\nSee the documentation of Google (access via Google account,\
+    \ limited to partners only):\n- https://developers.google.com/travel/transport\n\
+    \n### Disclaimer\n\nThe SMAPI Travel Transport API is implemented by the SMAPI\
+    \ team, exclusively for a specific business partner. It is not intended for broad\
+    \ distribution.\n"
+externalDocs:
+  description: "Swiss Mobility API"
+  url: "https://company.sbb.ch/de/sbb-als-geschaeftspartner/dienstleistungen/digitale-vertriebsloesungen/vertriebsloesungen/sbb-swiss-mobility-api.html"
+servers:
+- description: "External Endpoint"
+  url: "https://smapi-travel-transport.api.sbb.ch"
+paths:
+  /v1/bulk-trip-options:
+    post:
+      tags:
+      - "BulkTripOptions"
+      summary: "Create trip options for multiple trips of the same calendar day and\
+        \ origin/destination."
+      description: "See also description of /v1/trip-options."
+      operationId: "BulkTripOptions"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BulkTripOptionsRequest"
+      responses:
+        "200":
+          description: "Response received from partners."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BulkTripOptionsResult"
+        "400":
+          description: "Bad Request (400) "
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/BulkTripOptionsError"
+        "401":
+          description: "Unauthorized (401) "
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/BulkTripOptionsError"
+        "403":
+          description: "Forbidden (403) "
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/BulkTripOptionsError"
+        "404":
+          description: "Not Found (404) "
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/BulkTripOptionsError"
+        "406":
+          description: "Not Acceptable (406) "
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/BulkTripOptionsError"
+        "415":
+          description: "Unsupported Media Type (415) "
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/BulkTripOptionsError"
+        "500":
+          description: "Internal Server Error (500) "
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/BulkTripOptionsError"
+        "501":
+          description: "Not Implemented (501) "
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/BulkTripOptionsError"
+        "503":
+          description: "Service Unavailable (503) "
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/BulkTripOptionsError"
+        default:
+          description: "default error response "
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/BulkTripOptionsError"
+      security:
+      - oauth2-azure-ad:
+        - "api://eb881053-af04-48e2-bf20-85a83062e492/.default"
+  /v1/trip-options:
+    post:
+      tags:
+      - "TripOptions"
+      summary: "Create trip options for a trip."
+      description: "Provides high-level ticketing groups for a specified trip. These\
+        \ contain sets of segments with selected service classes that are bookable\
+        \ on the same ticket, as well as fare and availability information for the\
+        \ ticket as a whole."
+      operationId: "TripOptions"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TripOptionsRequest"
+      responses:
+        "200":
+          description: "Response received from partners."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TripOptionsResponse"
+        "400":
+          description: "Bad Request (400) "
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/TripOptionsError"
+        "401":
+          description: "Unauthorized (401) "
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/TripOptionsError"
+        "403":
+          description: "Forbidden (403) "
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/TripOptionsError"
+        "404":
+          description: "Not Found (404) "
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/TripOptionsError"
+        "406":
+          description: "Not Acceptable (406) "
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/TripOptionsError"
+        "415":
+          description: "Unsupported Media Type (415) "
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/TripOptionsError"
+        "500":
+          description: "Internal Server Error (500) "
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/TripOptionsError"
+        "501":
+          description: "Not Implemented (501) "
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/TripOptionsError"
+        "503":
+          description: "Service Unavailable (503) "
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/TripOptionsError"
+        default:
+          description: "default error response "
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/TripOptionsError"
+      security:
+      - oauth2-azure-ad:
+        - "api://eb881053-af04-48e2-bf20-85a83062e492/.default"
+components:
+  schemas:
+    BulkTripOptionsRequest:
+      type: "object"
+      properties:
+        market_dates:
+          type: "array"
+          description: "The MarketDates for which to return results. Initially, only\
+            \ a single value will be supplied, representing one-way trips."
+          items:
+            $ref: "#/components/schemas/MarketDate"
+        known_itineraries:
+          type: "array"
+          description: "Itineraries or trips."
+          items:
+            $ref: "#/components/schemas/KnownItinerary"
+    BulkTripOptionsResult:
+      type: "object"
+      properties:
+        bulk_trip_options_result:
+          $ref: "#/components/schemas/ItineraryResponses"
+    ItineraryResponses:
+      type: "object"
+      properties:
+        itinerary_responses:
+          type: "array"
+          items:
+            oneOf:
+            - $ref: "#/components/schemas/ItineraryResponse"
+            - $ref: "#/components/schemas/ItineraryErrorResponse"
+    ItineraryResponse:
+      type: "object"
+      properties:
+        itinerary:
+          $ref: "#/components/schemas/ItineraryKey"
+        trip_option_set:
+          $ref: "#/components/schemas/TripOptionSet"
+    ItineraryErrorResponse:
+      type: "object"
+      properties:
+        itinerary:
+          $ref: "#/components/schemas/ItineraryKey"
+        trip_options_error:
+          $ref: "#/components/schemas/TripOptionsError"
+    TripOptionSet:
+      type: "object"
+      description: "To reduce the amount of data transferred, segments.segment_key\
+        \ can be empty inside these trip_options, since the segment_key is already\
+        \ present in ItineraryResponse.itinerary.segment_keys. This requires the number\
+        \ of segments in to each TripOption to match exactly the number of segments\
+        \ inside ItineraryResponse.itinerary. We then assume that the n-th trip_options.segments.segment_key\
+        \ matches the n-th itinerary.segment_key."
+      properties:
+        trip_options:
+          type: "array"
+          items:
+            $ref: "#/components/schemas/TripOption"
+    ItineraryKey:
+      type: "object"
+      description: "A full end-to-end journey for a traveler, including all vehicles\
+        \ used."
+      properties:
+        segment_keys:
+          type: "array"
+          description: "All segments together should form a single trip for which\
+            \ a ticket can be booked."
+          items:
+            $ref: "#/components/schemas/SegmentKey"
+    BulkTripOptionsError:
+      type: "object"
+      properties:
+        error_type:
+          type: "string"
+          enum:
+          - "INTERNAL_ERROR"
+        error_message:
+          type: "string"
+          description: "This is not user-visible and is for logging and debugging\
+            \ purposes only."
+    MarketDate:
+      type: "object"
+      properties:
+        origin_ticketing_stop_id:
+          type: "string"
+          description: "UIC-Code of the origin stop place."
+        destination_ticketing_stop_id:
+          type: "string"
+          description: "UIC-Code of the destination stop place."
+        departure_date:
+          $ref: "#/components/schemas/ServiceDate"
+    KnownItinerary:
+      type: "object"
+      properties:
+        segment_keys:
+          type: "array"
+          description: "All segments together should form a single trip for which\
+            \ a ticket can be booked."
+          items:
+            $ref: "#/components/schemas/SegmentKey"
+    TripOptionsRequest:
+      type: "object"
+      properties:
+        segment_keys:
+          type: "array"
+          description: "All segments together should form a single trip for which\
+            \ a ticket can be booked."
+          items:
+            $ref: "#/components/schemas/SegmentKey"
+    SegmentKey:
+      type: "object"
+      description: "Identifies a segment of a trip. - service_date: Date of the service\
+        \ day. - boarding_time, arrival_time: Leap seconds are not supported. The\
+        \ time_offset will be a utc_offset of 0:00, i.e. times are specified in UTC."
+      properties:
+        ticketing_trip_id:
+          description: "Only populated if using GTFS-based integration."
+          type: "string"
+        from_ticketing_stop_time_id:
+          type: "string"
+          description: "UIC-Code of the origin stop place."
+          example: "8507000"
+        to_ticketing_stop_time_id:
+          type: "string"
+          description: "UIC-Code of the destination stop place."
+          example: "8503000"
+        service_date:
+          $ref: "#/components/schemas/ServiceDate"
+        boarding_time:
+          $ref: "#/components/schemas/ServiceTime"
+        arrival_time:
+          $ref: "#/components/schemas/ServiceTime"
+    ServiceDate:
+      description: "Specifies the date of a service."
+      type: "object"
+      properties:
+        year:
+          type: "integer"
+          description: "Integer number representing the year of the date."
+          format: "int32"
+          minimum: 2023
+          maximum: 2050
+          example: 2023
+        month:
+          type: "integer"
+          description: "Integer number representing the month of the year, values\
+            \ from 1 to 12."
+          format: "int32"
+          minimum: 1
+          maximum: 12
+          example: 12
+        day:
+          type: "integer"
+          description: "Integer number representing the day of the month, values from\
+            \ 1 to 31."
+          format: "int32"
+          minimum: 1
+          maximum: 31
+          example: 5
+    ServiceTime:
+      type: "object"
+      description: "Specifies the date/time of a service."
+      properties:
+        year:
+          type: "integer"
+          description: "Integer number representing the year of the date."
+          format: "int32"
+          minimum: 2023
+          maximum: 2050
+          example: 2023
+        month:
+          type: "integer"
+          description: "Integer number representing the month of the year, values\
+            \ from 1 to 12."
+          format: "int32"
+          minimum: 1
+          maximum: 12
+          example: 12
+        day:
+          type: "integer"
+          description: "Integer number representing the day of the month, values from\
+            \ 1 to 31."
+          format: "int32"
+          minimum: 1
+          maximum: 31
+          example: 5
+        hours:
+          type: "integer"
+          description: "Integer number representing the hour of the day, values from\
+            \ 0 to 23."
+          format: "int32"
+          minimum: 0
+          maximum: 23
+          example: 7
+        minutes:
+          type: "integer"
+          description: "Integer number representing the minute of the hour, values\
+            \ from 0 to 59."
+          format: "int32"
+          minimum: 0
+          maximum: 59
+          example: 32
+        seconds:
+          type: "integer"
+          description: "Integer number representing the second of the minute, values\
+            \ from 0 59."
+          format: "int32"
+          default: 0
+          minimum: 0
+          maximum: 59
+          example: 0
+        nanos:
+          type: "integer"
+          description: "Integer number representing nano seconds."
+          format: "int32"
+          default: 0
+          minimum: 0
+          example: 0
+        utc_offset:
+          type: "string"
+          description: "This property is currently ignored."
+    TripOptionsResponse:
+      type: "object"
+      properties:
+        trip_options_result:
+          $ref: "#/components/schemas/TripOptionsResult"
+    TripOptionsResult:
+      type: "object"
+      properties:
+        trip_options:
+          description: "Partners should also include options that are unavailable\
+            \ because they are fully booked, using the appropriate Unavailable message\
+            \ below."
+          type: "array"
+          items:
+            $ref: "#/components/schemas/TripOption"
+    TripOption:
+      type: "object"
+      description: "A travel option for users covering the whole end-to-end journey\
+        \ with the partner. - lowest_standard_fare: The Lowest possible fare is the\
+        \ lowest standard fare of all seats with the specified segments. This field\
+        \ is optional if the series of segments is unavailable. This \"standard fare\"\
+        \ should be the lowest seat price where no age or other booking restrictions\
+        \ apply. The currency should be the local currency of the origin of the first\
+        \ segment. - availability: The availability status for bookings of this trip\
+        \ option at the lowest_standard_fare."
+      properties:
+        segments:
+          description: "A series of Segments that cover the whole trip option, one\
+            \ for each SegmentKey in the request."
+          type: "array"
+          items:
+            $ref: "#/components/schemas/Segment"
+        lowest_standard_fare:
+          $ref: "#/components/schemas/Fare"
+        availability:
+          $ref: "#/components/schemas/Availability"
+        booking_token:
+          type: "string"
+          description: "This is used to receive optional extra data via the Travel\
+            \ Transport API and pass it into the ticketing deep link."
+    Segment:
+      type: "object"
+      properties:
+        segment_key:
+          $ref: "#/components/schemas/SegmentKey"
+        service_class:
+          $ref: "#/components/schemas/ServiceClass"
+    ServiceClass:
+      type: "object"
+      properties:
+        type:
+          type: "string"
+          enum:
+          - "SERVICE_CLASS_TYPE_UNSPECIFIED"
+          - "FIRST_CLASS"
+          - "SECOND_CLASS"
+          - "SINGLE_CLASS"
+    Fare:
+      type: "object"
+      description: "Represents a fare with a breakdown of the different amounts that\
+        \ compose its total price. - total_amount: Total amount of the fare. This\
+        \ is equal to the sum of all the line items."
+      properties:
+        total_amount:
+          $ref: "#/components/schemas/Money"
+        line_items:
+          type: "array"
+          items:
+            $ref: "#/components/schemas/LineItem"
+    LineItem:
+      type: "object"
+      description: "The line item type is used to provide a breakdown of the fare\
+        \ for display to the user. If additional line item types are required please\
+        \ reach out to the Google Transport team."
+      properties:
+        line_item_type:
+          type: "string"
+          enum:
+          - "LINE_ITEM_TYPE_UNSPECIFIED"
+          - "BASE_FARE"
+          - "SERVICE_CHARGE"
+          - "TAXES"
+        amount:
+          $ref: "#/components/schemas/Money"
+    Money:
+      description: "Amount and currency of a price."
+      type: "object"
+      properties:
+        units:
+          description: "Integer part of the amount."
+          type: "integer"
+          format: "int32"
+        nanos:
+          description: "Fractional part of the amount, scaled by 1'000'000'000."
+          type: "integer"
+          format: "int32"
+        currency_code:
+          description: "ISO-4217 currency code."
+          type: "string"
+    Availability:
+      type: "object"
+      description: "The availability status."
+      oneOf:
+      - $ref: "#/components/schemas/OneOfAvailabilityAvailable"
+      - $ref: "#/components/schemas/OneOfAvailabilityUnavailable"
+    OneOfAvailabilityAvailable:
+      type: "object"
+      description: "The trip is available."
+      properties:
+        available:
+          $ref: "#/components/schemas/Available"
+    OneOfAvailabilityUnavailable:
+      type: "object"
+      description: "The trip is unavailable."
+      properties:
+        unavailable:
+          $ref: "#/components/schemas/Unavailable"
+    Available:
+      type: "object"
+      description: "Message representing how many seats are still available in the\
+        \ specified service class. Partners can: - provide exact numbers for available,\
+        \ and optionally total seats - provide a relative availability estimate -\
+        \ leave the message empty, if all they only know is that at least one seat\
+        \ is still available"
+      properties:
+        available_seat_count:
+          type: "integer"
+          description: "The number of remaining seats. This is optional. You can pass\
+            \ an empty Available message to just indicate that at least one seat is\
+            \ available."
+          format: "int32"
+        total_seat_count:
+          type: "integer"
+          description: "The total number of seats."
+          format: "int32"
+        availability_estimate:
+          $ref: "#/components/schemas/AvailabilityEstimate"
+    AvailabilityEstimate:
+      type: "string"
+      description: "An estimate for the relative number of available seats."
+      enum:
+      - "AVAILABILITY_ESTIMATE_UNSPECIFIED"
+      - "MANY_SEATS_AVAILABLE"
+      - "HALF_OF_SEATS_AVAILABLE"
+      - "FAIR_NUMBER_OF_SEATS_AVAILABLE"
+      - "FEW_SEATS_AVAILABLE"
+      - "VERY_FEW_SEATS_AVAILABLE"
+    Unavailable:
+      type: "object"
+      description: "Different reasons why a ticket could be unavailable."
+      properties:
+        reason:
+          $ref: "#/components/schemas/UnavailableReason"
+    UnavailableReason:
+      type: "string"
+      description: "Different reasons why a ticket could be unavailable: * REASON_UNSPECIFIED\
+        \ - We don't know why the ticket is unavailable. * BOOKED - All tickets in\
+        \ this ServiceClass have been booked. * CANCELED - This particular service\
+        \ (e.g. train) was extraordinarily canceled."
+      enum:
+      - "REASON_UNSPECIFIED"
+      - "BOOKED"
+      - "CANCELED"
+    TripOptionsError:
+      type: "object"
+      description: "Payload returned in case of an error (problem json)."
+      properties:
+        error_type:
+          type: "string"
+          description: "This is not user-visible and is for logging and debugging\
+            \ purposes only."
+          enum:
+          - "TRIP_OPTIONS_ERROR_TYPE_UNSPECIFIED"
+          - "SEGMENT_KEY_NOT_FOUND"
+          - "TRIP_OPTION_CACHE_STALE"
+          - "INTERNAL_ERROR"
+          - "SUBOPTIMAL_ITINERARY"
+          - "TICKETING_PROHIBITED"
+        error_message:
+          type: "string"
+          description: "This is not user-visible and is for logging and debugging\
+            \ purposes only"
+  securitySchemes:
+    oauth2-azure-ad:
+      type: "oauth2"
+      flows:
+        clientCredentials:
+          scopes:
+            api://eb881053-af04-48e2-bf20-85a83062e492/.default: "required default\
+              \ scope"
+          tokenUrl: "https://login.microsoftonline.com/2cda5d11-f0ac-46b3-967d-af1b2e1bd01a/oauth2/v2.0/token"

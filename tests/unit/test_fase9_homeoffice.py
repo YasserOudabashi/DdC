@@ -95,11 +95,11 @@ async def test_meals_basis_text():
 
 @pytest.mark.asyncio
 async def test_tp_warning_stop_within_200m():
-    """Se la fermata è a 150m, warnings deve contenere il testo della fermata."""
+    """Fermata a 150m: deduzione auto bloccata e motivo in warnings."""
     payload = {**BASE_CAR, "override_distance_km": None}
     with patch(
         "app.geo.resolver.resolve_distance",
-        new=AsyncMock(return_value=(10.0, "swisstopo", (46.004, 8.952))),
+        new=AsyncMock(return_value=(10.0, "swisstopo", (46.004, 8.952), (46.012, 8.960))),
     ):
         with patch(
             "app.geo.tp_proximity.find_nearest_stop",
@@ -109,15 +109,18 @@ async def test_tp_warning_stop_within_200m():
     assert status == 200
     warnings = body.get("warnings") or []
     assert any("150m" in w for w in warnings), f"Atteso warning con '150m': {warnings}"
+    # Deduzione azzerata perché TP accessibile
+    assert body["cantonal_TI"]["transport_deduction"]["net_deduction_chf"] == 0.0
+    assert body["federal_IFD"]["transport_deduction"]["net_deduction_chf"] == 0.0
 
 
 @pytest.mark.asyncio
 async def test_tp_warning_no_stop():
-    """Se find_nearest_stop ritorna None, nessun warning TP deve essere aggiunto."""
+    """Se find_nearest_stop ritorna None, nessun blocco per fermata TP deve essere aggiunto."""
     payload = {**BASE_CAR, "override_distance_km": None}
     with patch(
         "app.geo.resolver.resolve_distance",
-        new=AsyncMock(return_value=(10.0, "swisstopo", (46.004, 8.952))),
+        new=AsyncMock(return_value=(10.0, "swisstopo", (46.004, 8.952), (46.012, 8.960))),
     ):
         with patch(
             "app.geo.tp_proximity.find_nearest_stop",
@@ -131,11 +134,11 @@ async def test_tp_warning_no_stop():
 
 @pytest.mark.asyncio
 async def test_tp_warning_stop_beyond_200m():
-    """Se la fermata è a 250m (> 200m), nessun warning TP deve essere aggiunto."""
+    """Fermata a 250m (> 200m): nessun blocco per TP, nessun warning fermata."""
     payload = {**BASE_CAR, "override_distance_km": None}
     with patch(
         "app.geo.resolver.resolve_distance",
-        new=AsyncMock(return_value=(10.0, "swisstopo", (46.004, 8.952))),
+        new=AsyncMock(return_value=(10.0, "swisstopo", (46.004, 8.952), (46.012, 8.960))),
     ):
         with patch(
             "app.geo.tp_proximity.find_nearest_stop",

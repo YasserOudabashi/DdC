@@ -105,6 +105,12 @@ class DeductionRequest(BaseModel):
     actual_secondary_activity_chf: Optional[float] = Field(default=None, ge=0.0)
 
     @model_validator(mode="after")
+    def validate_home_street_required(self) -> DeductionRequest:
+        if not self.home_address.street:
+            raise ValueError("home_address.street è obbligatorio (via e numero civico del domicilio)")
+        return self
+
+    @model_validator(mode="after")
     def validate_arcobaleno_requires_public_transport(self) -> DeductionRequest:
         if self.arcobaleno_zones is not None and self.transport_mode != TransportMode.PUBLIC_TRANSPORT:
             raise ValueError("arcobaleno_zones richiede transport_mode=public_transport")

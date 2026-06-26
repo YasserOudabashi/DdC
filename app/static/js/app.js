@@ -296,6 +296,8 @@
     const workCountry = document.getElementById('work_country').value || 'CH';
 
     if (!homeCity) return 'Inserire la città del domicilio.';
+    const homeStreet = document.getElementById('home_street').value.trim();
+    if (!homeStreet) return 'Inserire la via e il numero civico del domicilio (obbligatorio per il calcolo della distanza).';
     const homeNpaErr = validateNpa(homeNpa, homeCountry, 'del domicilio');
     if (homeNpaErr) return homeNpaErr;
     if (!workCity) return 'Inserire la città del luogo di lavoro.';

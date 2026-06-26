@@ -13,7 +13,7 @@ async def _post(payload: dict, headers: dict | None = None) -> tuple:
 
 BASE_PAYLOAD = {
     "fiscal_year": 2026,
-    "home_address": {"city": "Lugano", "postal_code": "6900"},
+    "home_address": {"street": "Via Nassa 10", "city": "Lugano", "postal_code": "6900"},
     "work_address": {"city": "Bellinzona", "postal_code": "6500"},
     "transport_mode": "public_transport",
     "override_distance_km": 30.0,

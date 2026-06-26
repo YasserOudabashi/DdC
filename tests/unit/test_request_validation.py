@@ -7,7 +7,7 @@ from app.schemas.request import DeductionRequest, TransportMode
 def _base_request(**kwargs) -> dict:
     base = {
         "fiscal_year": 2026,
-        "home_address": {"city": "Lugano", "postal_code": "6900"},
+        "home_address": {"street": "Via Nassa 10", "city": "Lugano", "postal_code": "6900"},
         "work_address": {"city": "Bellinzona", "postal_code": "6500"},
         "transport_mode": "public_transport",
         "annual_public_transport_cost_chf": 1200.0,

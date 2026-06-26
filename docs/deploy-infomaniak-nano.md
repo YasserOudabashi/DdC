@@ -255,6 +255,7 @@ DOCS_ENABLED=false
 ```
 
 Riavvia: `sudo systemctl restart trasferta-api`
+sito online su http://179.237.81.123:8000/
 
 ---
 

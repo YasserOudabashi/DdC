@@ -1,6 +1,7 @@
 {
   "fiscal_year": 2026,
   "home_address": {
+    "street": "Via Castel Grande 1",
     "city": "Mendrisio",
     "postal_code": "6850",
     "country": "CH"
