@@ -1,6 +1,5 @@
 from fastapi import APIRouter, Request
 from typing import Optional
-import re
 import httpx
 
 from app.security import limiter
@@ -8,6 +7,7 @@ from app.config import settings
 
 router = APIRouter()
 
+_OPENPLZ_URL = "https://openplzapi.org/ch/Localities"
 _GEO_ADMIN_URL = "https://api3.geo.admin.ch/rest/services/api/SearchServer"
 _NOMINATIM_URL = "https://nominatim.openstreetmap.org/search"
 
@@ -21,39 +21,28 @@ async def search_locations(
     q: Optional[str] = None,
     limit: int = 10,
 ) -> list[dict]:
-    """Cerca località svizzere per nome, restituisce {name, npa} con tutti gli NPA CH."""
+    """Cerca tutte le località svizzere per nome (openplzapi.org), restituisce {name, npa}."""
     if not q or len(q) < 2:
         return []
     try:
         async with httpx.AsyncClient(timeout=3.0) as client:
             resp = await client.get(
-                _GEO_ADMIN_URL,
-                params={
-                    "type": "locations",
-                    "searchText": q,
-                    "origins": "zipcode",
-                    "limit": str(limit),
-                    "returnGeometry": "false",
-                    "lang": "it",
-                },
+                _OPENPLZ_URL,
+                params={"name": q, "limit": str(limit)},
             )
             data = resp.json()
     except Exception:
         return []
-    results = []
     seen: set[str] = set()
-    for result in data.get("results", []):
-        attrs = result.get("attrs", {})
-        # label format: "<b>6900</b> Lugano"
-        label = attrs.get("label", "")
-        clean = re.sub(r"<[^>]+>", "", label).strip()
-        parts = clean.split(" ", 1)
-        if len(parts) == 2:
-            npa, city = parts[0], parts[1].strip()
-            key = f"{npa}|{city}"
+    results = []
+    for item in (data if isinstance(data, list) else []):
+        name = item.get("name", "")
+        npa = item.get("postalCode", "")
+        if name and npa:
+            key = f"{npa}|{name}"
             if key not in seen:
                 seen.add(key)
-                results.append({"name": city, "npa": npa})
+                results.append({"name": name, "npa": npa})
     return results
 
 
@@ -77,28 +66,15 @@ async def lookup_npa(
 
 
 async def _lookup_npa_ch(city: str) -> Optional[str]:
-    """geo.admin.ch SearchServer — estrae NPA dal campo detail (origins=address)."""
+    """openplzapi.org — cerca NPA per nome località svizzera."""
     try:
         async with httpx.AsyncClient(timeout=4.0) as client:
-            resp = await client.get(
-                _GEO_ADMIN_URL,
-                params={
-                    "type": "locations",
-                    "searchText": city,
-                    "origins": "address",
-                    "limit": "1",
-                    "returnGeometry": "false",
-                    "lang": "it",
-                },
-            )
+            resp = await client.get(_OPENPLZ_URL, params={"name": city, "limit": "1"})
             data = resp.json()
     except Exception:
         return None
-    for result in data.get("results", []):
-        detail = result.get("attrs", {}).get("detail", "")
-        m = re.search(r"#\s*(\d{4})", detail)
-        if m:
-            return m.group(1)
+    if isinstance(data, list) and data:
+        return data[0].get("postalCode")
     return None
 
 
