@@ -10,6 +10,12 @@
   <link rel="stylesheet" href="/static/css/style.css">
   <link href="/static/css/tom-select.css" rel="stylesheet">
   <script src="/static/js/tom-select.complete.min.js"></script>
+  <!-- Leaflet (mappa percorso) -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <!-- jsPDF + autotable (generazione PDF) -->
+  <script src="https://unpkg.com/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+  <script src="https://unpkg.com/jspdf-autotable@3.8.2/dist/jspdf.plugin.autotable.min.js"></script>
 </head>
 <body>
   <header>
@@ -368,6 +374,147 @@
         </div>
       </div>
 
+      <!-- Card: Coniuge/partner registrato (opzionale) -->
+      <div class="card" id="spouse-card">
+        <h2 class="card-title">
+          <label class="checkbox-label" style="font-size:inherit;font-weight:inherit;">
+            <input type="checkbox" id="include_spouse" name="include_spouse">
+            Includi coniuge/partner registrato attivo professionalmente
+          </label>
+        </h2>
+        <div id="spouse-fields" class="hidden">
+          <div class="form-group checkbox-group" style="margin-bottom:0.5rem;">
+            <label class="checkbox-label">
+              <input type="checkbox" id="sp_same_home" name="sp_same_home" checked>
+              Stesso domicilio del contribuente
+            </label>
+          </div>
+          <div id="sp-home-fields" class="hidden">
+            <fieldset class="address-group" style="margin-bottom:0.75rem;">
+              <legend>Domicilio coniuge</legend>
+              <div class="form-group"><label for="sp_home_city">Città</label>
+                <input type="text" id="sp_home_city" name="sp_home_city" autocomplete="address-level2">
+              </div>
+              <div class="form-group"><label for="sp_home_street">Via e numero civico</label>
+                <input type="text" id="sp_home_street" name="sp_home_street" maxlength="200" placeholder="Es. Via Campagna 32">
+              </div>
+              <div class="form-group"><label for="sp_home_npa">NPA</label>
+                <input type="text" id="sp_home_npa" name="sp_home_npa" inputmode="numeric" maxlength="10" placeholder="6900">
+              </div>
+              <div class="form-group"><label for="sp_home_country">Paese</label>
+                <select id="sp_home_country" name="sp_home_country">
+                  <option value="CH" selected>CH — Svizzera</option>
+                  <option value="IT">IT — Italia</option>
+                  <option value="DE">DE — Germania</option>
+                  <option value="FR">FR — Francia</option>
+                  <option value="AT">AT — Austria</option>
+                </select>
+              </div>
+            </fieldset>
+          </div>
+          <fieldset class="address-group" style="margin-bottom:0.75rem;">
+            <legend>Luogo di lavoro coniuge</legend>
+            <div class="form-group"><label for="sp_work_city">Città</label>
+              <input type="text" id="sp_work_city" name="sp_work_city" autocomplete="address-level2">
+            </div>
+            <div class="form-group"><label for="sp_work_street">Via e numero civico</label>
+              <input type="text" id="sp_work_street" name="sp_work_street" maxlength="200" placeholder="Es. Viale Franscini 30">
+            </div>
+            <div class="form-group"><label for="sp_work_npa">NPA</label>
+              <input type="text" id="sp_work_npa" name="sp_work_npa" inputmode="numeric" maxlength="10" placeholder="6500">
+            </div>
+            <div class="form-group"><label for="sp_work_country">Paese</label>
+              <select id="sp_work_country" name="sp_work_country">
+                <option value="CH" selected>CH — Svizzera</option>
+                <option value="IT">IT — Italia</option>
+                <option value="DE">DE — Germania</option>
+                <option value="FR">FR — Francia</option>
+                <option value="AT">AT — Austria</option>
+              </select>
+            </div>
+          </fieldset>
+          <div class="form-row">
+            <div class="form-group"><label for="sp_transport_mode">Mezzo di trasporto</label>
+              <select id="sp_transport_mode" name="sp_transport_mode">
+                <option value="public_transport">Mezzi pubblici</option>
+                <option value="private_car" selected>Auto privata</option>
+                <option value="bicycle">Bicicletta</option>
+                <option value="motorcycle">Moto (&gt;50cc)</option>
+              </select>
+            </div>
+            <div class="form-group"><label for="sp_days_per_week">Giorni/settimana</label>
+              <select id="sp_days_per_week" name="sp_days_per_week">
+                <option value="1">1</option><option value="2">2</option>
+                <option value="3">3</option><option value="4">4</option>
+                <option value="5" selected>5</option>
+              </select>
+            </div>
+            <div class="form-group"><label for="sp_home_office_days">Telelavoro gg/sett.</label>
+              <select id="sp_home_office_days" name="sp_home_office_days">
+                <option value="0" selected>0</option><option value="1">1</option>
+                <option value="2">2</option><option value="3">3</option><option value="4">4</option>
+              </select>
+            </div>
+          </div>
+          <div id="sp-distance-group" class="form-group">
+            <label for="sp_override_distance_km">Distanza casa-lavoro (km, andata)</label>
+            <input type="number" id="sp_override_distance_km" name="sp_override_distance_km" min="0.1" max="500" step="0.1" placeholder="Es. 15.5">
+            <span class="field-hint">Lasciare vuoto per calcolo automatico (richiede indirizzo completo coniuge)</span>
+          </div>
+          <div id="sp-pt-section" class="hidden">
+            <div class="form-group">
+              <label>Abbonamento trasporto pubblico coniuge</label>
+              <div class="radio-group">
+                <label class="radio-label"><input type="radio" name="sp_pt_cost_type" value="arcobaleno" checked> ARCOBALENO (TI)</label>
+                <label class="radio-label"><input type="radio" name="sp_pt_cost_type" value="manuale"> Costo manuale</label>
+              </div>
+            </div>
+            <div id="sp-arcobaleno-fields">
+              <div class="form-row">
+                <div class="form-group"><label for="sp_arcobaleno_zones">Zone ARCOBALENO</label>
+                  <select id="sp_arcobaleno_zones">
+                    <option value="1">1 zona — CHF 485</option><option value="2">2 zone — CHF 732</option>
+                    <option value="3" selected>3 zone — CHF 1'074</option><option value="4">4 zone — CHF 1'387</option>
+                    <option value="5">5 zone — CHF 1'691</option><option value="6">6 zone — CHF 1'986</option>
+                    <option value="7">7 zone — CHF 2'157</option><option value="8">8+ zone — CHF 2'252</option>
+                  </select>
+                </div>
+                <div class="form-group"><label for="sp_arcobaleno_class">Classe</label>
+                  <select id="sp_arcobaleno_class">
+                    <option value="2" selected>2ª classe</option><option value="1">1ª classe</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+            <div id="sp-manual-pt-fields" class="hidden">
+              <div class="form-group">
+                <label for="sp_annual_pt_cost">Costo abbonamento annuale (CHF)</label>
+                <input type="number" id="sp_annual_pt_cost" min="0" step="0.01" placeholder="Es. 1800.00">
+              </div>
+            </div>
+          </div>
+          <div class="form-group checkbox-group">
+            <label class="checkbox-label">
+              <input type="checkbox" id="sp_include_meals" name="sp_include_meals">
+              Includere deduzione pasti
+            </label>
+          </div>
+          <div id="sp-meal-group" class="form-group hidden">
+            <label for="sp_meal_situation">Situazione pasti</label>
+            <select id="sp_meal_situation" name="sp_meal_situation">
+              <option value="without_cafeteria" selected>Senza mensa aziendale</option>
+              <option value="with_cafeteria">Con mensa aziendale</option>
+            </select>
+          </div>
+          <div class="form-group checkbox-group">
+            <label class="checkbox-label">
+              <input type="checkbox" id="sp_include_other_expenses" name="sp_include_other_expenses">
+              Includere altre spese professionali (forfait)
+            </label>
+          </div>
+        </div>
+      </div>
+
       <!-- Errore inline -->
       <div id="form-error" class="alert-error hidden" role="alert"></div>
 
@@ -381,6 +528,34 @@
 
     <!-- Pannello risultati (nascosto finché non si calcola) -->
     <div id="results" class="hidden" aria-live="polite"></div>
+
+    <!-- Azioni risultati (PDF, accertamento) -->
+    <div id="results-actions" class="hidden" style="margin:0.75rem 0; display:flex; gap:0.75rem; flex-wrap:wrap;">
+      <button type="button" id="btn-download-pdf" class="btn-secondary">&#11015; Scarica PDF</button>
+      <button type="button" id="btn-assessment-mode" class="btn-secondary">&#9998; Modalità accertamento</button>
+    </div>
+
+    <!-- Banner modalità accertamento -->
+    <div id="assessment-banner" class="hidden" style="background:#fff3cd;border:1px solid #ffc107;border-radius:6px;padding:0.75rem 1rem;margin-bottom:0.75rem;">
+      <strong>Modalità accertamento attiva</strong> — modificare i valori nella tabella e inserire la motivazione prima di scaricare il PDF accertato.
+    </div>
+    <!-- Motivazione accertamento -->
+    <div id="assessment-reason-section" class="card hidden">
+      <h2 class="card-title">Motivazione delle modifiche</h2>
+      <div class="form-group">
+        <label for="assessment-reason">Motivazione (obbligatoria per il PDF accertato)</label>
+        <textarea id="assessment-reason" rows="4" maxlength="1000" placeholder="Indicare il motivo delle rettifiche apportate…" style="width:100%;box-sizing:border-box;padding:0.5rem;font-family:inherit;font-size:0.9rem;border:1px solid #ccc;border-radius:4px;"></textarea>
+        <p id="assessment-reason-error" class="hidden" style="color:#c0392b;margin-top:0.25rem;font-size:0.85rem;"></p>
+      </div>
+      <button type="button" id="btn-download-assessment" class="btn-primary">&#11015; Scarica accertato PDF</button>
+    </div>
+
+    <!-- Mappa percorso -->
+    <div id="map-section" class="card hidden">
+      <h2 class="card-title">Percorso casa-lavoro</h2>
+      <div id="route-map" style="height:320px;border-radius:8px;overflow:hidden;"></div>
+      <p id="map-note" class="field-hint hidden" style="margin-top:0.5rem;"></p>
+    </div>
   </main>
 
   <footer>
