@@ -162,16 +162,16 @@ class TestCompanyCar:
         assert "Art. 5a RS 642.118.1" in cantonal.lines[0].legal_reference
         assert "Art. 5a RS 642.118.1" in federal.lines[0].legal_reference
 
-    def test_ignored_when_not_private_car(self):
-        """Se transport_mode non è private_car, company_car viene ignorato."""
-        req = make_request(
-            transport_mode=TransportMode.PUBLIC_TRANSPORT,
-            company_car_monthly_chf=800.0,
-            annual_public_transport_cost_chf=1200.0,
-        )
-        cantonal, _ = _run_both(req, one_way_km=None)
-        # Il calcolo usa il costo del TP, non il forfait auto aziendale
-        assert cantonal.net_deduction_chf == 1200.0
+    def test_company_car_requires_private_car_mode(self):
+        """company_car_monthly_chf con transport_mode != private_car deve sollevare ValidationError."""
+        import pytest
+        from pydantic import ValidationError
+        with pytest.raises(ValidationError, match="valido solo con transport_mode=private_car"):
+            make_request(
+                transport_mode=TransportMode.PUBLIC_TRANSPORT,
+                company_car_monthly_chf=800.0,
+                annual_public_transport_cost_chf=1200.0,
+            )
 
 
 # ─── Helpers ──────────────────────────────────────────────────────────────────

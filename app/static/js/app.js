@@ -187,14 +187,37 @@
   });
 
   function showError(message) {
+    formError.className = 'alert-error';
     formError.textContent = message;
-    formError.classList.remove('hidden');
+    formError.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+
+  function showWarning(message) {
+    formError.className = 'alert-warning';
+    formError.textContent = message;
     formError.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   }
 
   function hideError() {
-    formError.classList.add('hidden');
+    formError.className = 'alert-error hidden';
     formError.textContent = '';
+  }
+
+  function getCapIfdWarning() {
+    const mode = transportSelect.value;
+    if (mode !== 'private_car') return null;
+    const overrideKm = _numVal('override_distance_km');
+    if (overrideKm === null) return null;
+    const daysPerWeek = parseInt(document.getElementById('days_per_week').value, 10) || 5;
+    const homeOfficeDays = parseInt(document.getElementById('home_office_days_per_week').value, 10) || 0;
+    const effectiveDays = Math.round(((daysPerWeek - homeOfficeDays) / 5) * 220);
+    const grossIfd = Math.round(overrideKm * 2 * 0.75 * effectiveDays);
+    if (grossIfd > 3300) {
+      return 'Attenzione: con ' + overrideKm + ' km la deduzione IFD auto privata ammonterebbe a CHF ' +
+        grossIfd.toLocaleString('de-CH') + ', ma verrà limitata al tetto legale di CHF 3\'300 ' +
+        '(Art. 26 LIFD). La deduzione cantonale TI non ha tetto massimo.';
+    }
+    return null;
   }
 
   function getFormPayload() {
@@ -307,6 +330,11 @@
     return null;
   }
 
+  function _numVal(id) {
+    var v = parseFloat(document.getElementById(id).value);
+    return isNaN(v) ? null : v;
+  }
+
   function validateForm() {
     const homeCity = (tomSelectHome.getValue() || document.getElementById('home_city').value).trim();
     const homeNpa = document.getElementById('home_npa').value.trim();
@@ -326,27 +354,80 @@
     const workNpaErr = validateNpa(workNpa, workCountry, 'del luogo di lavoro');
     if (workNpaErr) return workNpaErr;
 
+    // ── Distanza manuale ───────────────────────────────────────────────────────
+    const overrideKm = _numVal('override_distance_km');
+    if (overrideKm !== null) {
+      if (overrideKm < 0.1) return 'La distanza deve essere almeno 0.1 km.';
+      if (overrideKm > 500) return 'La distanza non può superare 500 km (valore inserito: ' + overrideKm + ' km).';
+    }
+
     const mode = transportSelect.value;
+
+    // ── Trasporto pubblico ─────────────────────────────────────────────────────
     if (mode === 'public_transport') {
       const ptRadio = document.querySelector('input[name=pt_cost_type]:checked');
       const ptVal = ptRadio ? ptRadio.value : 'arcobaleno';
       if (ptVal === 'manuale') {
-        const c = document.getElementById('annual_public_transport_cost_chf').value;
-        if (!c || parseFloat(c) <= 0) return 'Inserire il costo abbonamento annuale in CHF.';
+        const c = _numVal('annual_public_transport_cost_chf');
+        if (c === null || c <= 0) return 'Inserire il costo abbonamento annuale in CHF.';
+        if (c > 20000) return 'Il costo del trasporto pubblico non può superare CHF 20\'000 annui (inserito: CHF ' + c.toLocaleString('de-CH') + ').';
       } else if (ptVal === 'sbb-link') {
-        const c = document.getElementById('annual_public_transport_cost_chf_sbb').value;
-        if (!c || parseFloat(c) <= 0) return 'Inserire il costo abbonamento trovato su SBB.ch.';
-      }
-    }
-    if (mode === 'mixed') {
-      const carKm = document.getElementById('car_distance_km_mixed').value;
-      const ptCost = document.getElementById('public_transport_cost_mixed_chf').value;
-      if (!carKm && !ptCost) {
-        return 'Per il trasporto misto fornire almeno la distanza in auto o il costo mezzi pubblici.';
+        const c = _numVal('annual_public_transport_cost_chf_sbb');
+        if (c === null || c <= 0) return 'Inserire il costo abbonamento trovato su SBB.ch.';
+        if (c > 20000) return 'Il costo del trasporto pubblico non può superare CHF 20\'000 annui (inserito: CHF ' + c.toLocaleString('de-CH') + ').';
       }
     }
 
-    // salary is optional: IC uses flat-rate CHF 3'000 regardless; IFD needs salary for 3% calc
+    // ── Trasporto misto ────────────────────────────────────────────────────────
+    if (mode === 'mixed') {
+      const carKm = _numVal('car_distance_km_mixed');
+      const ptCost = _numVal('public_transport_cost_mixed_chf');
+      if (carKm === null && ptCost === null) {
+        return 'Per il trasporto misto fornire almeno la distanza in auto o il costo mezzi pubblici.';
+      }
+      if (carKm !== null && carKm > 500) return 'La distanza in auto non può superare 500 km (inseriti: ' + carKm + ' km).';
+      if (ptCost !== null && ptCost > 20000) return 'Il costo del trasporto pubblico non può superare CHF 20\'000 annui.';
+    }
+
+    // ── Auto aziendale (cifra 13.2.2) ─────────────────────────────────────────
+    if (mode === 'private_car') {
+      const companyCar = _numVal('company_car_monthly_chf');
+      if (companyCar !== null && companyCar > 2000) {
+        return 'Il forfait mensile auto aziendale (cifra 13.2.2) non può superare CHF 2\'000/mese (inserito: CHF ' + companyCar + ').';
+      }
+    }
+
+    // ── Alloggio settimanale ───────────────────────────────────────────────────
+    const accMonthly = _numVal('accommodation_monthly_chf');
+    if (accMonthly !== null && accMonthly > 5000) {
+      return 'Il costo mensile dell\'alloggio non può superare CHF 5\'000 (inserito: CHF ' + accMonthly.toLocaleString('de-CH') + ').';
+    }
+
+    // ── Altre spese professionali ──────────────────────────────────────────────
+    if (includeOtherExpensesChk.checked) {
+      const otherMethod = document.querySelector('input[name=other_expenses_method]:checked');
+      if (otherMethod && otherMethod.value === 'effettive') {
+        const actual = _numVal('actual_other_expenses_chf');
+        if (actual !== null && actual > 50000) {
+          return 'Le spese professionali effettive non possono superare CHF 50\'000 (inserito: CHF ' + actual.toLocaleString('de-CH') + ').';
+        }
+      }
+      const salary = _numVal('annual_net_salary_chf');
+      if (salary !== null && salary > 1000000) {
+        return 'Il salario netto annuo non può superare CHF 1\'000\'000 (inserito: CHF ' + salary.toLocaleString('de-CH') + ').';
+      }
+    }
+
+    // ── Attività accessoria ────────────────────────────────────────────────────
+    if (includeSecondaryChk.checked) {
+      const secMethod = document.querySelector('input[name=secondary_method]:checked');
+      if (secMethod && secMethod.value === 'effettive') {
+        const actual = _numVal('actual_secondary_activity_chf');
+        if (actual !== null && actual > 500000) {
+          return 'Le spese per l\'attività accessoria non possono superare CHF 500\'000 (inserito: CHF ' + actual.toLocaleString('de-CH') + ').';
+        }
+      }
+    }
 
     return null;
   }
@@ -515,6 +596,9 @@
       showError(validationError);
       return;
     }
+
+    const capWarn = getCapIfdWarning();
+    if (capWarn) showWarning(capWarn);
 
     const payload = getFormPayload();
     showSpinner();

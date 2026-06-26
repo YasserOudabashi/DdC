@@ -81,28 +81,28 @@ class DeductionRequest(BaseModel):
     meal_situation: MealSituation = MealSituation.HOME
 
     override_distance_km: Optional[float] = Field(default=None, ge=0.1, le=500.0)
-    car_distance_km_mixed: Optional[float] = Field(default=None, ge=0.0)
-    public_transport_cost_mixed_chf: Optional[float] = Field(default=None, ge=0.0)
-    annual_public_transport_cost_chf: Optional[float] = Field(default=None, ge=0.0)
+    car_distance_km_mixed: Optional[float] = Field(default=None, ge=0.0, le=500.0)
+    public_transport_cost_mixed_chf: Optional[float] = Field(default=None, ge=0.0, le=20_000.0)
+    annual_public_transport_cost_chf: Optional[float] = Field(default=None, ge=0.0, le=20_000.0)
     arcobaleno_zones: Optional[int] = Field(default=None, ge=1, le=8, description="Numero zone Arcobaleno (1-7, usa 8 per da 8 zone). Solo per transport_mode=public_transport.")
     arcobaleno_class: str = Field(default="2", pattern=r"^[12]$", description="Classe abbonamento ARCOBALENO: '1' = prima classe, '2' = seconda classe.")
-    annual_net_salary_chf: Optional[float] = Field(default=None, ge=0.0)
+    annual_net_salary_chf: Optional[float] = Field(default=None, ge=0.0, le=1_000_000.0)
 
     employer_pays_transport: bool = Field(default=False)
     employer_has_cafeteria: bool = Field(default=False)
-    company_car_monthly_chf: Optional[float] = Field(default=None, ge=0.0)
+    company_car_monthly_chf: Optional[float] = Field(default=None, ge=0.0, le=2_000.0)
 
     # Alloggio residente settimanale (Modulo 4 sez. 4.1 / 4.3)
-    annual_accommodation_cost_chf: Optional[float] = Field(default=None, ge=0.0)
+    annual_accommodation_cost_chf: Optional[float] = Field(default=None, ge=0.0, le=60_000.0)
     accommodation_type: str = Field(default="without_kitchen", pattern=r"^(without_kitchen|with_kitchen)$")
-    accommodation_monthly_chf: Optional[float] = Field(default=None, ge=0.0, description="Costo mensile alloggio (alternativa ad annual_accommodation_cost_chf)")
+    accommodation_monthly_chf: Optional[float] = Field(default=None, ge=0.0, le=5_000.0, description="Costo mensile alloggio (alternativa ad annual_accommodation_cost_chf)")
 
     include_meals: bool = Field(default=False)
     include_other_expenses: bool = Field(default=False)
     # Spese effettive in sostituzione del forfait IC (Modulo 4 sez. 5.2 / 6.2)
-    actual_other_expenses_chf: Optional[float] = Field(default=None, ge=0.0)
+    actual_other_expenses_chf: Optional[float] = Field(default=None, ge=0.0, le=50_000.0)
     include_secondary_activity: bool = Field(default=False)
-    actual_secondary_activity_chf: Optional[float] = Field(default=None, ge=0.0)
+    actual_secondary_activity_chf: Optional[float] = Field(default=None, ge=0.0, le=500_000.0)
 
     @model_validator(mode="after")
     def validate_home_street_required(self) -> DeductionRequest:
@@ -131,5 +131,30 @@ class DeductionRequest(BaseModel):
         ):
             raise ValueError(
                 "Per transport_mode mixed è necessario fornire almeno car_distance_km_mixed o public_transport_cost_mixed_chf"
+            )
+        return self
+
+    @model_validator(mode="after")
+    def validate_arcobaleno_not_with_manual_cost(self) -> DeductionRequest:
+        if self.arcobaleno_zones is not None and self.annual_public_transport_cost_chf is not None:
+            raise ValueError(
+                "arcobaleno_zones e annual_public_transport_cost_chf sono incompatibili: "
+                "fornire solo uno dei due metodi per specificare il costo del trasporto pubblico"
+            )
+        return self
+
+    @model_validator(mode="after")
+    def validate_accommodation_not_both(self) -> DeductionRequest:
+        if self.annual_accommodation_cost_chf is not None and self.accommodation_monthly_chf is not None:
+            raise ValueError(
+                "Fornire annual_accommodation_cost_chf oppure accommodation_monthly_chf, non entrambi"
+            )
+        return self
+
+    @model_validator(mode="after")
+    def validate_company_car_requires_private_car(self) -> DeductionRequest:
+        if self.company_car_monthly_chf is not None and self.transport_mode != TransportMode.PRIVATE_CAR:
+            raise ValueError(
+                "company_car_monthly_chf (cifra 13.2.2 Lohnausweis) è valido solo con transport_mode=private_car"
             )
         return self
