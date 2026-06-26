@@ -57,6 +57,39 @@ class WorkSchedule(BaseModel):
         return self
 
 
+class SpouseRequest(BaseModel):
+    """Dati del coniuge/partner registrato (Modulo 4 pagina 2).
+    fiscal_year e residency_type vengono ereditati dal contribuente principale.
+    """
+    home_address: Optional[Address] = None  # None = usa il domicilio del contribuente
+    work_address: Address
+    transport_mode: TransportMode
+    work_schedule: WorkSchedule = Field(default_factory=WorkSchedule)
+    meal_situation: MealSituation = MealSituation.HOME
+
+    override_distance_km: Optional[float] = Field(default=None, ge=0.1, le=500.0)
+    annual_public_transport_cost_chf: Optional[float] = Field(default=None, ge=0.0, le=20_000.0)
+    arcobaleno_zones: Optional[int] = Field(default=None, ge=1, le=8)
+    arcobaleno_class: str = Field(default="2", pattern=r"^[12]$")
+    annual_net_salary_chf: Optional[float] = Field(default=None, ge=0.0, le=1_000_000.0)
+
+    employer_pays_transport: bool = Field(default=False)
+    employer_has_cafeteria: bool = Field(default=False)
+    company_car_monthly_chf: Optional[float] = Field(default=None, ge=0.0, le=2_000.0)
+
+    include_meals: bool = Field(default=False)
+    include_other_expenses: bool = Field(default=False)
+    actual_other_expenses_chf: Optional[float] = Field(default=None, ge=0.0, le=50_000.0)
+    include_secondary_activity: bool = Field(default=False)
+    actual_secondary_activity_chf: Optional[float] = Field(default=None, ge=0.0, le=500_000.0)
+
+    @model_validator(mode="after")
+    def validate_arcobaleno_requires_public_transport(self) -> SpouseRequest:
+        if self.arcobaleno_zones is not None and self.transport_mode != TransportMode.PUBLIC_TRANSPORT:
+            raise ValueError("arcobaleno_zones richiede transport_mode=public_transport")
+        return self
+
+
 class DeductionRequest(BaseModel):
     model_config = ConfigDict(json_schema_extra={"example": {
         "fiscal_year": 2026,
@@ -103,6 +136,8 @@ class DeductionRequest(BaseModel):
     actual_other_expenses_chf: Optional[float] = Field(default=None, ge=0.0, le=50_000.0)
     include_secondary_activity: bool = Field(default=False)
     actual_secondary_activity_chf: Optional[float] = Field(default=None, ge=0.0, le=500_000.0)
+
+    spouse: Optional[SpouseRequest] = None
 
     @model_validator(mode="after")
     def validate_home_street_required(self) -> DeductionRequest:

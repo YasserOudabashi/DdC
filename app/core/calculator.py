@@ -3,8 +3,10 @@ Orchestratore principale — coordina tutti i motori di calcolo.
 Chiamato dall'endpoint POST /v1/deduction/calculate.
 """
 from __future__ import annotations
-from ..schemas.request import DeductionRequest, MealSituation, ResidencyType, TransportMode
-from ..schemas.response import DeductionLine, DeductionResponse, TaxLevelResult, TransportResult
+from ..schemas.request import DeductionRequest, MealSituation, ResidencyType, SpouseRequest, TransportMode
+from ..schemas.response import (
+    Coordinates, DeductionLine, DeductionResponse, SpouseResult, TaxLevelResult, TransportResult,
+)
 from ..rules.loader import load_rules
 from ..rules.models import FiscalYearRules
 from . import cantonal_engine, federal_engine, meals_engine, other_expenses, special_cases
@@ -331,3 +333,71 @@ def _federal_notes(rules: FiscalYearRules) -> list[str]:
     if cap:
         return [f"Tetto massimo IFD per veicolo privato: CHF {cap:.0f}/anno (RS 642.118.1)"]
     return []
+
+
+def _merge_spouse_as_request(main: DeductionRequest, sp: SpouseRequest) -> DeductionRequest:
+    """Costruisce un DeductionRequest equivalente dai dati del coniuge (bypass validator via model_construct)."""
+    home_addr = sp.home_address if sp.home_address is not None else main.home_address
+    return DeductionRequest.model_construct(
+        fiscal_year=main.fiscal_year,
+        home_address=home_addr,
+        work_address=sp.work_address,
+        transport_mode=sp.transport_mode,
+        residency_type=main.residency_type,
+        work_schedule=sp.work_schedule,
+        meal_situation=sp.meal_situation,
+        override_distance_km=sp.override_distance_km,
+        car_distance_km_mixed=None,
+        public_transport_cost_mixed_chf=None,
+        annual_public_transport_cost_chf=sp.annual_public_transport_cost_chf,
+        arcobaleno_zones=sp.arcobaleno_zones,
+        arcobaleno_class=sp.arcobaleno_class,
+        annual_net_salary_chf=sp.annual_net_salary_chf,
+        employer_pays_transport=sp.employer_pays_transport,
+        employer_has_cafeteria=sp.employer_has_cafeteria,
+        company_car_monthly_chf=sp.company_car_monthly_chf,
+        annual_accommodation_cost_chf=None,
+        accommodation_type="without_kitchen",
+        accommodation_monthly_chf=None,
+        include_meals=sp.include_meals,
+        include_other_expenses=sp.include_other_expenses,
+        actual_other_expenses_chf=sp.actual_other_expenses_chf,
+        include_secondary_activity=sp.include_secondary_activity,
+        actual_secondary_activity_chf=sp.actual_secondary_activity_chf,
+        spouse=None,
+    )
+
+
+def calculate_spouse(
+    main_req: DeductionRequest,
+    distance_km: float | None,
+    home_coords: tuple[float, float] | None = None,
+    work_coords: tuple[float, float] | None = None,
+    geocoding_used: bool = False,
+) -> SpouseResult:
+    """Calcola le deduzioni del coniuge/partner registrato (Modulo 4 pagina 2)."""
+    sp = main_req.spouse
+    if sp is None:
+        raise ValueError("main_req.spouse is None")
+
+    rules = load_rules(main_req.fiscal_year)
+    merged = _merge_spouse_as_request(main_req, sp)
+
+    one_way_km = sp.override_distance_km or distance_km
+    warnings: list[str] = []
+    effective_meal_situation = _resolve_meal_situation(merged, warnings)
+
+    cantonal = _build_cantonal(merged, one_way_km, rules, effective_meal_situation)
+    federal = _build_federal(merged, one_way_km, rules, effective_meal_situation)
+
+    home_c = Coordinates(lat=home_coords[0], lon=home_coords[1]) if home_coords else None
+    work_c = Coordinates(lat=work_coords[0], lon=work_coords[1]) if work_coords else None
+
+    return SpouseResult(
+        cantonal_TI=cantonal,
+        federal_IFD=federal,
+        distance_km=one_way_km,
+        geocoding_used=geocoding_used,
+        home_coordinates=home_c,
+        work_coordinates=work_c,
+    )

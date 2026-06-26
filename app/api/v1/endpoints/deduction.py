@@ -2,8 +2,8 @@ import asyncio
 from fastapi import APIRouter, Depends, HTTPException, Request
 
 from app.schemas.request import DeductionRequest, TransportMode
-from app.schemas.response import DeductionLine, DeductionResponse, TransportResult
-from app.core.calculator import calculate
+from app.schemas.response import Coordinates, DeductionLine, DeductionResponse, TransportResult
+from app.core.calculator import calculate, calculate_spouse
 from app.geo.resolver import resolve_distance
 from app.geo import tp_proximity
 from app.rules.loader import load_rules
@@ -65,6 +65,31 @@ async def calculate_deduction(request: Request, req: DeductionRequest) -> Deduct
 
     response = await calculate(req, distance_km=distance_km)
     response.geocoding_provider = geocoding_provider
+
+    # Coordinate geocodificate nel response (US-1001)
+    if home_coords is not None:
+        response.home_coordinates = Coordinates(lat=home_coords[0], lon=home_coords[1])
+    if work_coords is not None:
+        response.work_coordinates = Coordinates(lat=work_coords[0], lon=work_coords[1])
+
+    # Calcolo coniuge/partner (US-1002/1003)
+    if req.spouse is not None:
+        sp = req.spouse
+        spouse_home_addr = sp.home_address if sp.home_address is not None else req.home_address
+        sp_km, sp_provider, sp_home_c, sp_work_c = await resolve_distance(
+            spouse_home_addr,
+            sp.work_address,
+            road_factor=rules.geocoding.road_correction_factor,
+        )
+        sp_distance = sp.override_distance_km or sp_km
+        sp_geo_used = sp_km is not None and sp.override_distance_km is None
+        response.spouse = calculate_spouse(
+            main_req=req,
+            distance_km=sp_distance,
+            home_coords=sp_home_c,
+            work_coords=sp_work_c,
+            geocoding_used=sp_geo_used,
+        )
 
     if req.transport_mode == TransportMode.PRIVATE_CAR:
         blocked_reason = await _check_car_eligibility(

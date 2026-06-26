@@ -5,6 +5,11 @@ from uuid import uuid4
 from pydantic import BaseModel, Field
 
 
+class Coordinates(BaseModel):
+    lat: float
+    lon: float
+
+
 class DeductionLine(BaseModel):
     label: str
     amount_chf: float
@@ -37,6 +42,15 @@ class TaxLevelResult(BaseModel):
     notes: List[str] = []
 
 
+class SpouseResult(BaseModel):
+    cantonal_TI: TaxLevelResult
+    federal_IFD: TaxLevelResult
+    distance_km: Optional[float] = None
+    geocoding_used: bool = False
+    home_coordinates: Optional[Coordinates] = None
+    work_coordinates: Optional[Coordinates] = None
+
+
 class DeductionResponse(BaseModel):
     request_id: str = Field(default_factory=lambda: str(uuid4()))
     calculated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
@@ -49,6 +63,11 @@ class DeductionResponse(BaseModel):
     geocoding_used: bool = False
     geocoding_provider: Optional[str] = None
     distance_km: Optional[float] = None  # distanza calcolata o fornita manualmente
+
+    home_coordinates: Optional[Coordinates] = None
+    work_coordinates: Optional[Coordinates] = None
+
+    spouse: Optional[SpouseResult] = None
 
     warnings: List[str] = []            # es. "frontaliere: verificare accordo I-CH 2024"
     errors: List[str] = []
