@@ -81,15 +81,50 @@ async def calculate_deduction(request: Request, req: DeductionRequest) -> Deduct
             sp.work_address,
             road_factor=rules.geocoding.road_correction_factor,
         )
-        sp_distance = sp.override_distance_km or sp_km
+
+        # Stesse regole del contribuente principale anche per il coniuge:
+        # l'override manuale non può discostarsi di oltre 5 km dal geocoding.
+        if sp.override_distance_km is not None:
+            if sp_km is not None:
+                sp_diff = abs(sp.override_distance_km - sp_km)
+                if sp_diff > 5.0:
+                    raise HTTPException(
+                        status_code=422,
+                        detail=(
+                            f"Coniuge: la distanza inserita manualmente ({sp.override_distance_km:.1f} km) "
+                            f"differisce di {sp_diff:.1f} km dalla distanza calcolata automaticamente "
+                            f"({sp_km:.1f} km). La differenza massima consentita è 5 km. "
+                            "Verificare gli indirizzi o la distanza inserita per il coniuge."
+                        ),
+                    )
+            sp_distance: float | None = sp.override_distance_km
+        else:
+            sp_distance = sp_km
+            if sp_distance is None and sp.transport_mode.value in ("private_car", "public_transport"):
+                raise HTTPException(
+                    status_code=422,
+                    detail=(
+                        "Coniuge: impossibile geocodificare gli indirizzi forniti. "
+                        "Fornire la distanza manuale del coniuge per procedere senza geocoding."
+                    ),
+                )
+
         sp_geo_used = sp_km is not None and sp.override_distance_km is None
-        response.spouse = calculate_spouse(
+        spouse_result = calculate_spouse(
             main_req=req,
             distance_km=sp_distance,
             home_coords=sp_home_c,
             work_coords=sp_work_c,
             geocoding_used=sp_geo_used,
         )
+
+        # Stessa verifica di ammissibilità auto privata del contribuente (regola 30 km / fermata TP)
+        if sp.transport_mode == TransportMode.PRIVATE_CAR:
+            sp_blocked = await _check_car_eligibility(sp, sp_distance, sp_home_c, sp_work_c)
+            if sp_blocked:
+                _apply_car_block_spouse(spouse_result, sp_blocked)
+
+        response.spouse = spouse_result
 
     if req.transport_mode == TransportMode.PRIVATE_CAR:
         blocked_reason = await _check_car_eligibility(
@@ -205,6 +240,32 @@ def _apply_car_block(response: DeductionResponse, reason: str) -> None:
         if not level.flat_rate_applied:
             level.total_deduction_chf = round(level.total_deduction_chf - delta, 2)
     response.warnings.append(reason)
+
+
+def _apply_car_block_spouse(spouse, reason: str) -> None:
+    """Azzera la deduzione auto privata del coniuge e registra il motivo come avvertenza."""
+    blocked_line = DeductionLine(
+        label="Deduzione auto privata non ammessa",
+        amount_chf=0.0,
+        basis=reason,
+        legal_reference="Art. 25 cpv. 1a LT / Art. 26 LIFD",
+    )
+    for level in [spouse.cantonal_TI, spouse.federal_IFD]:
+        orig = level.transport_deduction
+        if orig.net_deduction_chf == 0.0:
+            continue
+        delta = orig.net_deduction_chf
+        level.transport_deduction = TransportResult(
+            mode=orig.mode,
+            one_way_distance_km=orig.one_way_distance_km,
+            effective_working_days=orig.effective_working_days,
+            gross_deduction_chf=orig.gross_deduction_chf,
+            net_deduction_chf=0.0,
+            lines=[blocked_line],
+        )
+        if not level.flat_rate_applied:
+            level.total_deduction_chf = round(level.total_deduction_chf - delta, 2)
+    spouse.warnings.append(reason)
 
 
 @router.get(

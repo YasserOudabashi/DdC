@@ -9,6 +9,9 @@
   let spouseMarkers = [];
   let lastResponse = null;
   let assessmentActive = false;
+  // Valori accertati: { tableId: { idx: value } }
+  let assessedState = {};
+  let assessmentDirty = false;
 
   const form = document.getElementById('deduction-form');
   const transportSelect = document.getElementById('transport_mode');
@@ -607,14 +610,33 @@
   }
 
   function showSpinner() {
+    // Nascondi TUTTE le azioni/sezioni legate ai risultati durante il calcolo
     var ra = document.getElementById('results-actions');
     if (ra) ra.classList.add('hidden');
+    var banner = document.getElementById('assessment-banner');
+    if (banner) banner.classList.add('hidden');
+    var reasonSection = document.getElementById('assessment-reason-section');
+    if (reasonSection) reasonSection.classList.add('hidden');
     resultsDiv.innerHTML =
       '<div class="spinner-wrapper">' +
         '<div class="spinner"></div>' +
         '<p class="spinner-label">Calcolo in corso…</p>' +
       '</div>';
     resultsDiv.classList.remove('hidden');
+  }
+
+  function setFormBusy(busy) {
+    var submitBtn = form.querySelector('button[type=submit]');
+    if (submitBtn) {
+      submitBtn.disabled = busy;
+      if (busy) {
+        if (!submitBtn.dataset.label) submitBtn.dataset.label = submitBtn.textContent;
+        submitBtn.textContent = 'Calcolo in corso…';
+      } else if (submitBtn.dataset.label) {
+        submitBtn.textContent = submitBtn.dataset.label;
+      }
+    }
+    if (btnReset) btnReset.disabled = busy;
   }
 
   function clearResults() {
@@ -749,27 +771,30 @@
 
     var yPos = 38;
 
-    function addLevelTable(level, title, isSpouse) {
+    function addLevelTable(level, title, tableId) {
       doc.setFontSize(11);
       doc.setFont(undefined, 'bold');
       doc.text(title, 14, yPos);
       yPos += 4;
 
+      // Valori accertati salvati per questa tabella, indicizzati per riga
+      var assessed = (assessmentMode && assessedState[tableId]) ? assessedState[tableId] : {};
+      var rowIdx = 0;       // indice riga-input (allineato a makeCell)
+      var accertatoTotal = 0;
+
+      function accertatoFor(calcolato) {
+        var v = (assessed[rowIdx] != null) ? assessed[rowIdx] : calcolato;
+        rowIdx++;
+        accertatoTotal += v;
+        return v;
+      }
+
       var rows = [];
       var transport = level.transport_deduction;
       transport.lines.forEach(function (line) {
         var calcolato = line.amount_chf;
-        var accertato = calcolato;
         if (assessmentMode) {
-          // Cerca il valore nell'input corrispondente
-          var inputs = document.querySelectorAll('.assessment-input');
-          inputs.forEach(function (inp) {
-            if (Math.abs(parseFloat(inp.getAttribute('data-original')) - calcolato) < 0.01) {
-              accertato = parseFloat(inp.value) || calcolato;
-            }
-          });
-        }
-        if (assessmentMode) {
+          var accertato = accertatoFor(calcolato);
           rows.push([line.label, 'CHF ' + calcolato.toFixed(2), 'CHF ' + accertato.toFixed(2), line.basis.slice(0, 50)]);
         } else {
           rows.push([line.label, 'CHF ' + calcolato.toFixed(2), line.basis.slice(0, 60)]);
@@ -778,19 +803,21 @@
 
       if (level.meals_deduction_chf != null) {
         if (assessmentMode) {
-          rows.push(['Pasti fuori domicilio', 'CHF ' + level.meals_deduction_chf.toFixed(2), 'CHF ' + level.meals_deduction_chf.toFixed(2), (level.meals_basis_text || '').slice(0, 50)]);
+          var accMeals = accertatoFor(level.meals_deduction_chf);
+          rows.push(['Pasti fuori domicilio', 'CHF ' + level.meals_deduction_chf.toFixed(2), 'CHF ' + accMeals.toFixed(2), (level.meals_basis_text || '').slice(0, 50)]);
         } else {
           rows.push(['Pasti fuori domicilio', 'CHF ' + level.meals_deduction_chf.toFixed(2), (level.meals_basis_text || '').slice(0, 60)]);
         }
       }
       if (level.other_expenses_deduction_chf != null) {
         if (assessmentMode) {
-          rows.push(['Altre spese professionali', 'CHF ' + level.other_expenses_deduction_chf.toFixed(2), 'CHF ' + level.other_expenses_deduction_chf.toFixed(2), '3% salario netto']);
+          var accOther = accertatoFor(level.other_expenses_deduction_chf);
+          rows.push(['Altre spese professionali', 'CHF ' + level.other_expenses_deduction_chf.toFixed(2), 'CHF ' + accOther.toFixed(2), '3% salario netto']);
         } else {
           rows.push(['Altre spese professionali', 'CHF ' + level.other_expenses_deduction_chf.toFixed(2), '3% salario netto']);
         }
       }
-      rows.push(['TOTALE', 'CHF ' + level.total_deduction_chf.toFixed(2), assessmentMode ? 'CHF ' + level.total_deduction_chf.toFixed(2) : '']);
+      rows.push(['TOTALE', 'CHF ' + level.total_deduction_chf.toFixed(2), assessmentMode ? 'CHF ' + accertatoTotal.toFixed(2) : '']);
 
       var head = assessmentMode
         ? [['Voce', 'Calcolato CHF', 'Accertato CHF', 'Base di calcolo']]
@@ -812,8 +839,8 @@
       yPos = doc.lastAutoTable.finalY + 6;
     }
 
-    addLevelTable(lastResponse.cantonal_TI, 'Imposta Cantonale TI (IC)', false);
-    addLevelTable(lastResponse.federal_IFD, 'Imposta Federale Diretta (IFD)', false);
+    addLevelTable(lastResponse.cantonal_TI, 'Imposta Cantonale TI (IC)', 'can');
+    addLevelTable(lastResponse.federal_IFD, 'Imposta Federale Diretta (IFD)', 'fed');
 
     if (lastResponse.spouse) {
       if (yPos > 220) { doc.addPage(); yPos = 20; }
@@ -821,8 +848,8 @@
       doc.setFont(undefined, 'bold');
       doc.text('Coniuge/Partner registrato', 14, yPos);
       yPos += 6;
-      addLevelTable(lastResponse.spouse.cantonal_TI, 'IC — Coniuge', true);
-      addLevelTable(lastResponse.spouse.federal_IFD, 'IFD — Coniuge', true);
+      addLevelTable(lastResponse.spouse.cantonal_TI, 'IC — Coniuge', 'spcan');
+      addLevelTable(lastResponse.spouse.federal_IFD, 'IFD — Coniuge', 'spfed');
     }
 
     if (assessmentMode) {
@@ -853,16 +880,50 @@
 
   // ── Assessment mode (US-1010/1011) ────────────────────────────────────────
 
+  function setSaveStatus(text, color) {
+    var el = document.getElementById('assessment-save-status');
+    if (!el) return;
+    if (!text) { el.classList.add('hidden'); el.textContent = ''; return; }
+    el.textContent = text;
+    el.style.color = color || '#666';
+    el.classList.remove('hidden');
+  }
+
+  function markAssessmentDirty() {
+    assessmentDirty = true;
+    setSaveStatus('● Modifiche non salvate', '#e67e22');
+  }
+
+  function saveAssessment() {
+    if (!lastResponse) return;
+    // Raccoglie tutti i valori correnti degli input nello stato accertato
+    assessedState = {};
+    resultsDiv.querySelectorAll('.assessment-input').forEach(function (inp) {
+      var tid = inp.getAttribute('data-table');
+      var idx = inp.getAttribute('data-idx');
+      if (!assessedState[tid]) assessedState[tid] = {};
+      assessedState[tid][idx] = parseFloat(inp.value) || 0;
+    });
+    assessmentDirty = false;
+    var now = new Date().toLocaleTimeString('it-CH', { hour: '2-digit', minute: '2-digit' });
+    setSaveStatus('✓ Modifiche salvate alle ' + now, '#27ae60');
+  }
+
   function hideAssessmentMode() {
     assessmentActive = false;
+    assessedState = {};
+    assessmentDirty = false;
     var banner = document.getElementById('assessment-banner');
     var reasonSection = document.getElementById('assessment-reason-section');
     var btnA = document.getElementById('btn-assessment-mode');
     var btnD = document.getElementById('btn-download-assessment');
+    var btnS = document.getElementById('btn-save-assessment');
     if (banner) banner.classList.add('hidden');
     if (reasonSection) reasonSection.classList.add('hidden');
     if (btnA) btnA.textContent = '✏ Modalità accertamento';
     if (btnD) btnD.classList.add('hidden');
+    if (btnS) btnS.classList.add('hidden');
+    setSaveStatus('');
   }
 
   function toggleAssessmentMode() {
@@ -871,17 +932,24 @@
     var reasonSection = document.getElementById('assessment-reason-section');
     var btnA = document.getElementById('btn-assessment-mode');
     var btnD = document.getElementById('btn-download-assessment');
+    var btnS = document.getElementById('btn-save-assessment');
 
     if (assessmentActive) {
+      assessedState = {};
+      assessmentDirty = false;
       if (banner) banner.classList.remove('hidden');
       if (reasonSection) reasonSection.classList.remove('hidden');
       if (btnA) btnA.textContent = '✕ Esci da modalità accertamento';
       if (btnD) btnD.classList.remove('hidden');
+      if (btnS) btnS.classList.remove('hidden');
+      setSaveStatus('Nessuna modifica', '#666');
     } else {
       if (banner) banner.classList.add('hidden');
       if (reasonSection) reasonSection.classList.add('hidden');
       if (btnA) btnA.textContent = '✏ Modalità accertamento';
       if (btnD) btnD.classList.add('hidden');
+      if (btnS) btnS.classList.add('hidden');
+      setSaveStatus('');
     }
     // Rirenderizza con/senza input editabili
     if (lastResponse) renderResults(lastResponse);
@@ -897,10 +965,14 @@
 
     function makeCell(amount) {
       if (assessment) {
-        var id = (tableId || 'tbl') + '-inp-' + (inputIdx++);
+        var idx = inputIdx++;
+        var tid = tableId || 'tbl';
+        // Riusa il valore già accertato per questa riga se presente
+        var saved = (assessedState[tid] && assessedState[tid][idx] != null)
+          ? assessedState[tid][idx] : amount;
         return '<td class="amount"><input type="number" class="assessment-input" step="0.01" value="' +
-          amount.toFixed(2) + '" data-original="' + amount.toFixed(2) +
-          '" data-table="' + (tableId || '') + '" style="width:90px;text-align:right;border:1px solid #ccc;border-radius:3px;padding:2px 4px;"></td>';
+          saved.toFixed(2) + '" data-original="' + amount.toFixed(2) +
+          '" data-table="' + tid + '" data-idx="' + idx + '" style="width:90px;text-align:right;border:1px solid #ccc;border-radius:3px;padding:2px 4px;"></td>';
       }
       return '<td class="amount">' + formatChf(amount) + '</td>';
     }
@@ -1032,6 +1104,13 @@
           buildColumn(sp.cantonal_TI, 'badge-cantonal', 'Cantonale TI (IC) — Coniuge', 'spcan') +
           buildColumn(sp.federal_IFD, 'badge-federal', 'Federale IFD — Coniuge', 'spfed') +
         '</div>';
+      if (sp.warnings && sp.warnings.length > 0) {
+        html +=
+          '<div class="alert-warning">' +
+            '<strong>ℹ️ Note coniuge</strong>' +
+            '<ul>' + sp.warnings.map(function (w) { return '<li>' + escapeHtml(w) + '</li>'; }).join('') + '</ul>' +
+          '</div>';
+      }
     }
 
     resultsDiv.innerHTML = html;
@@ -1049,12 +1128,18 @@
       if (reasonSection) reasonSection.classList.remove('hidden');
     }
 
-    // Listener su assessment-input per aggiornare i totali
+    // Listener su assessment-input per aggiornare i totali e lo stato accertato
     if (assessmentActive) {
       resultsDiv.querySelectorAll('.assessment-input').forEach(function (inp) {
         inp.addEventListener('input', function () {
           var orig = parseFloat(inp.getAttribute('data-original'));
           var cur = parseFloat(inp.value) || 0;
+          var tid = inp.getAttribute('data-table');
+          var idx = inp.getAttribute('data-idx');
+          // Salva il valore corrente nello stato accertato (auto-save in memoria)
+          if (!assessedState[tid]) assessedState[tid] = {};
+          assessedState[tid][idx] = cur;
+
           if (Math.abs(cur - orig) > 0.005) {
             inp.style.border = '2px solid #e67e22';
             inp.style.background = '#fffbf0';
@@ -1072,6 +1157,7 @@
               totalCell.innerHTML = '<strong>CHF ' + sum.toLocaleString('de-CH', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + '</strong>';
             }
           }
+          markAssessmentDirty();
         });
       });
     }
@@ -1091,6 +1177,11 @@
     btnAssessmentMode.addEventListener('click', toggleAssessmentMode);
   }
 
+  var btnSaveAssessment = document.getElementById('btn-save-assessment');
+  if (btnSaveAssessment) {
+    btnSaveAssessment.addEventListener('click', saveAssessment);
+  }
+
   var btnDownloadAssessment = document.getElementById('btn-download-assessment');
   if (btnDownloadAssessment) {
     btnDownloadAssessment.addEventListener('click', function () {
@@ -1103,6 +1194,8 @@
         return;
       }
       if (errEl) errEl.classList.add('hidden');
+      // Se ci sono modifiche non salvate, salva automaticamente prima del PDF
+      if (assessmentDirty) saveAssessment();
       generatePdf(true);
     });
   }
@@ -1124,6 +1217,7 @@
 
     const payload = getFormPayload();
     showSpinner();
+    setFormBusy(true);
     hideMap();
     hideAssessmentMode();
 
@@ -1161,6 +1255,8 @@
       clearResults();
       showError(err && err.message ? ('Errore: ' + err.message) : 'Impossibile contattare il server. Verificare la connessione.');
       return;
+    } finally {
+      setFormBusy(false);
     }
 
     // initMap è fuori dal try: un crash della mappa non cancella i risultati

@@ -124,11 +124,29 @@ async def test_spouse_same_home_no_error(mock_resolve, mock_tp):
         "spouse": {
             "work_address": {"street": "Via Test 1", "city": "Locarno", "postal_code": "6600"},
             "transport_mode": "bicycle",
-            "override_distance_km": 10.0,
+            # entro i 5 km dalla distanza geocodificata mock (25 km), come per il contribuente
+            "override_distance_km": 25.0,
         },
     }
     data = await _post(payload)
     assert data["spouse"] is not None
+
+
+@pytest.mark.asyncio
+async def test_spouse_override_too_far_rejected(mock_resolve, mock_tp):
+    """La distanza manuale del coniuge non può discostarsi >5 km dal geocoding (come il contribuente)."""
+    payload = {
+        **BASE_PAYLOAD,
+        "spouse": {
+            "work_address": {"street": "Via Test 1", "city": "Locarno", "postal_code": "6600"},
+            "transport_mode": "private_car",
+            "override_distance_km": 100.0,  # mock geocodificato = 25 km → differenza 75 km
+        },
+    }
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        resp = await client.post("/v1/deduction/calculate", json=payload)
+    assert resp.status_code == 422
+    assert "Coniuge" in resp.json()["detail"]
 
 
 @pytest.mark.asyncio

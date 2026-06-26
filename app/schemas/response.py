@@ -49,6 +49,7 @@ class SpouseResult(BaseModel):
     geocoding_used: bool = False
     home_coordinates: Optional[Coordinates] = None
     work_coordinates: Optional[Coordinates] = None
+    warnings: List[str] = []
 
 
 class DeductionResponse(BaseModel):
