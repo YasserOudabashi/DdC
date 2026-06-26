@@ -564,6 +564,26 @@
       var spWorkStreetVal = document.getElementById('sp_work_street').value.trim();
       if (!spWorkCityVal) return 'Inserire la città del luogo di lavoro del coniuge.';
       if (!spWorkStreetVal) return 'Inserire la via del luogo di lavoro del coniuge.';
+      var spWorkNpaV = document.getElementById('sp_work_npa').value.trim();
+      var spWorkCountryV = document.getElementById('sp_work_country').value || 'CH';
+      if (spWorkNpaV) {
+        var spNpaE = validateNpa(spWorkNpaV, spWorkCountryV, 'del luogo di lavoro del coniuge');
+        if (spNpaE) return spNpaE;
+      }
+      var spKmVal = parseFloat(document.getElementById('sp_override_distance_km').value);
+      if (!isNaN(spKmVal)) {
+        if (spKmVal < 0.1) return 'La distanza casa-lavoro del coniuge deve essere almeno 0.1 km.';
+        if (spKmVal > 500) return 'La distanza del coniuge non può superare 500 km (inserito: ' + spKmVal + ' km).';
+      }
+      var spModeV = document.getElementById('sp_transport_mode').value;
+      if (spModeV === 'public_transport') {
+        var spPtR = document.querySelector('input[name=sp_pt_cost_type]:checked');
+        if (spPtR && spPtR.value === 'manuale') {
+          var spPtC = parseFloat(document.getElementById('sp_annual_pt_cost').value);
+          if (isNaN(spPtC) || spPtC <= 0) return 'Inserire il costo abbonamento annuale del coniuge.';
+          if (spPtC > 20000) return 'Il costo abbonamento del coniuge non può superare CHF 20\'000.';
+        }
+      }
     }
 
     return null;
@@ -587,6 +607,8 @@
   }
 
   function showSpinner() {
+    var ra = document.getElementById('results-actions');
+    if (ra) ra.classList.add('hidden');
     resultsDiv.innerHTML =
       '<div class="spinner-wrapper">' +
         '<div class="spinner"></div>' +
@@ -1076,6 +1098,8 @@
       var errEl = document.getElementById('assessment-reason-error');
       if (!reason) {
         if (errEl) { errEl.textContent = 'Inserire la motivazione prima di scaricare il PDF accertato.'; errEl.classList.remove('hidden'); }
+        var reasonSection = document.getElementById('assessment-reason-section');
+        if (reasonSection) reasonSection.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
         return;
       }
       if (errEl) errEl.classList.add('hidden');
