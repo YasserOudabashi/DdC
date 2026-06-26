@@ -69,11 +69,12 @@ async def add_security_headers(request: Request, call_next):
     response.headers["Cache-Control"] = "no-store"
     response.headers["Content-Security-Policy"] = (
         "default-src 'self'; "
-        "style-src 'self' https://fonts.googleapis.com; "
+        "style-src 'self' https://fonts.googleapis.com https://unpkg.com; "
         "font-src 'self' https://fonts.gstatic.com; "
-        "script-src 'self'; "
-        "img-src 'self' data:; "
-        "connect-src 'self'; "
+        "script-src 'self' https://unpkg.com; "
+        "img-src 'self' data: https://*.tile.openstreetmap.org; "
+        "connect-src 'self' https://unpkg.com https://router.project-osrm.org "
+        "https://transport.opendata.ch https://api3.geo.admin.ch https://openplzapi.org; "
         "frame-ancestors 'none'"
     )
     response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"

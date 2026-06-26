@@ -1132,13 +1132,15 @@
 
       const data = await resp.json();
       renderResults(data);
-      // Inizializza mappa se le coordinate sono disponibili
-      initMap(data);
 
     } catch (err) {
       clearResults();
-      showError('Impossibile contattare il server. Verificare la connessione.');
+      showError(err && err.message ? ('Errore: ' + err.message) : 'Impossibile contattare il server. Verificare la connessione.');
+      return;
     }
+
+    // initMap è fuori dal try: un crash della mappa non cancella i risultati
+    try { initMap(lastResponse); } catch (e) { /* mappa non disponibile */ }
   });
 
   btnReset.addEventListener('click', function () {
