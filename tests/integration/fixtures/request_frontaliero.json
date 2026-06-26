@@ -7,6 +7,7 @@
     "country": "IT"
   },
   "work_address": {
+    "street": "Via Nassa 10",
     "city": "Lugano",
     "postal_code": "6900",
     "country": "CH"

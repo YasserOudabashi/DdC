@@ -111,6 +111,12 @@ class DeductionRequest(BaseModel):
         return self
 
     @model_validator(mode="after")
+    def validate_work_street_required(self) -> DeductionRequest:
+        if not self.work_address.street:
+            raise ValueError("work_address.street è obbligatorio (via e numero civico del luogo di lavoro)")
+        return self
+
+    @model_validator(mode="after")
     def validate_arcobaleno_requires_public_transport(self) -> DeductionRequest:
         if self.arcobaleno_zones is not None and self.transport_mode != TransportMode.PUBLIC_TRANSPORT:
             raise ValueError("arcobaleno_zones richiede transport_mode=public_transport")

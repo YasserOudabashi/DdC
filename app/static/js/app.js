@@ -48,6 +48,12 @@
       create: true,
       maxItems: 1,
       placeholder: 'Cerca città…',
+      render: {
+        option: function (item, escape) {
+          var npaStr = item.npa ? ' <span style="color:#888;font-size:0.85em">(' + escape(item.npa) + ')</span>' : '';
+          return '<div>' + escape(item.name) + npaStr + '</div>';
+        },
+      },
       load: function (query, callback) {
         if (query.length < 2) { callback([]); return; }
         fetch('/v1/locations/search?q=' + encodeURIComponent(query) + '&limit=10')
@@ -55,7 +61,23 @@
           .then(callback)
           .catch(function () { callback([]); });
       },
-      onItemAdd: function (value) { fillNpa(value, npaFieldId, countryFieldId); },
+      onItemAdd: function (value) {
+        var option = this.options[value];
+        if (option && option.npa) {
+          document.getElementById(npaFieldId).value = option.npa;
+        } else {
+          fillNpa(value, npaFieldId, countryFieldId);
+        }
+      },
+      onChange: function (value) {
+        if (!value) return;
+        var option = this.options[value];
+        if (option && option.npa) {
+          document.getElementById(npaFieldId).value = option.npa;
+        } else if (value) {
+          fillNpa(value, npaFieldId, countryFieldId);
+        }
+      },
     };
   }
 
@@ -191,10 +213,8 @@
     const workNpa = document.getElementById('work_npa').value.trim();
     const workCountry = document.getElementById('work_country').value || 'CH';
 
-    const homeAddress = { city: homeCity, postal_code: homeNpa, country: homeCountry };
-    if (homeStreet) homeAddress.street = homeStreet;
-    const workAddress = { city: workCity, postal_code: workNpa, country: workCountry };
-    if (workStreet) workAddress.street = workStreet;
+    const homeAddress = { street: homeStreet, city: homeCity, postal_code: homeNpa, country: homeCountry };
+    const workAddress = { street: workStreet, city: workCity, postal_code: workNpa, country: workCountry };
 
     const payload = {
       fiscal_year: fiscalYear,
@@ -301,6 +321,8 @@
     const homeNpaErr = validateNpa(homeNpa, homeCountry, 'del domicilio');
     if (homeNpaErr) return homeNpaErr;
     if (!workCity) return 'Inserire la città del luogo di lavoro.';
+    const workStreetVal = document.getElementById('work_street').value.trim();
+    if (!workStreetVal) return 'Inserire la via e il numero civico del luogo di lavoro (obbligatorio per il calcolo della distanza).';
     const workNpaErr = validateNpa(workNpa, workCountry, 'del luogo di lavoro');
     if (workNpaErr) return workNpaErr;
 

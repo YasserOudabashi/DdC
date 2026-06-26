@@ -8,7 +8,6 @@ from app.config import settings
 
 router = APIRouter()
 
-_OPENDATA_URL = "https://transport.opendata.ch/v1/locations"
 _GEO_ADMIN_URL = "https://api3.geo.admin.ch/rest/services/api/SearchServer"
 _NOMINATIM_URL = "https://nominatim.openstreetmap.org/search"
 
@@ -22,23 +21,40 @@ async def search_locations(
     q: Optional[str] = None,
     limit: int = 10,
 ) -> list[dict]:
+    """Cerca località svizzere per nome, restituisce {name, npa} con tutti gli NPA CH."""
     if not q or len(q) < 2:
         return []
     try:
         async with httpx.AsyncClient(timeout=3.0) as client:
             resp = await client.get(
-                _OPENDATA_URL,
-                params={"query": q, "type": "station", "limit": limit},
+                _GEO_ADMIN_URL,
+                params={
+                    "type": "locations",
+                    "searchText": q,
+                    "origins": "zipcode",
+                    "limit": str(limit),
+                    "returnGeometry": "false",
+                    "lang": "it",
+                },
             )
             data = resp.json()
     except Exception:
         return []
-    stations = data.get("stations", []) or []
-    return [
-        {"name": s["name"], "id": str(s.get("id", ""))}
-        for s in stations
-        if s.get("name")
-    ]
+    results = []
+    seen: set[str] = set()
+    for result in data.get("results", []):
+        attrs = result.get("attrs", {})
+        # label format: "<b>6900</b> Lugano"
+        label = attrs.get("label", "")
+        clean = re.sub(r"<[^>]+>", "", label).strip()
+        parts = clean.split(" ", 1)
+        if len(parts) == 2:
+            npa, city = parts[0], parts[1].strip()
+            key = f"{npa}|{city}"
+            if key not in seen:
+                seen.add(key)
+                results.append({"name": city, "npa": npa})
+    return results
 
 
 @router.get("/npa")
