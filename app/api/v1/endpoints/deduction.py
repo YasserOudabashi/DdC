@@ -30,17 +30,30 @@ async def calculate_deduction(request: Request, req: DeductionRequest) -> Deduct
     except FileNotFoundError as e:
         raise HTTPException(status_code=422, detail=str(e))
 
-    distance_km: float | None = None
-    geocoding_provider: str | None = None
-    home_coords: tuple[float, float] | None = None
-    work_coords: tuple[float, float] | None = None
+    # Geocoding sempre eseguito: serve per validare override, controlli TP e auto privata
+    geocoded_km, geocoding_provider, home_coords, work_coords = await resolve_distance(
+        req.home_address,
+        req.work_address,
+        road_factor=rules.geocoding.road_correction_factor,
+    )
 
-    if req.override_distance_km is None:
-        distance_km, geocoding_provider, home_coords, work_coords = await resolve_distance(
-            req.home_address,
-            req.work_address,
-            road_factor=rules.geocoding.road_correction_factor,
-        )
+    if req.override_distance_km is not None:
+        if geocoded_km is not None:
+            diff = abs(req.override_distance_km - geocoded_km)
+            if diff > 5.0:
+                raise HTTPException(
+                    status_code=422,
+                    detail=(
+                        f"La distanza inserita manualmente ({req.override_distance_km:.1f} km) "
+                        f"differisce di {diff:.1f} km dalla distanza calcolata automaticamente "
+                        f"({geocoded_km:.1f} km). La differenza massima consentita è 5 km. "
+                        "Verificare gli indirizzi o la distanza inserita."
+                    ),
+                )
+        distance_km: float | None = req.override_distance_km
+        geocoding_provider = f"override (geocodificato: {geocoded_km:.1f} km)" if geocoded_km else "override"
+    else:
+        distance_km = geocoded_km
         if distance_km is None and req.transport_mode.value in ("private_car", "public_transport"):
             raise HTTPException(
                 status_code=422,

@@ -5,6 +5,7 @@ Usa httpx.AsyncClient senza rete esterna (override_distance_km nelle fixture).
 import json
 import pytest
 from pathlib import Path
+from unittest.mock import AsyncMock, patch
 from httpx import AsyncClient, ASGITransport
 from app.main import app
 
@@ -57,7 +58,12 @@ async def test_private_car_ifd_cap():
 @pytest.mark.asyncio
 async def test_frontaliero_warning():
     payload = json.loads((FIXTURES / "request_frontaliero.json").read_text())
-    status, body = await _post(payload)
+    # Mock geocoder: Varese-IT → Nominatim dà coordinate errate; usiamo 30 km (= override)
+    with patch(
+        "app.api.v1.endpoints.deduction.resolve_distance",
+        new=AsyncMock(return_value=(30.0, "nominatim", (45.819, 8.825), (46.004, 8.952))),
+    ):
+        status, body = await _post(payload)
     assert status == 200
     warnings = body["warnings"]
     assert any("FRONTALIERE" in w for w in warnings)

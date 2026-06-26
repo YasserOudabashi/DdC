@@ -24,11 +24,10 @@ BASE_CAR = {
     },
     "transport_mode": "private_car",
     "residency_type": "resident_TI",
-    "override_distance_km": 1.0,
+    "override_distance_km": 20.0,
     "include_meals": False,
     "include_other_expenses": False,
 }
-
 
 async def _post(payload: dict):
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
@@ -36,8 +35,18 @@ async def _post(payload: dict):
     return resp.status_code, resp.json()
 
 
+@pytest.fixture
+def mock_geo_20km():
+    """Mock geocoder: 20 km, coerente con override_distance_km=20.0 in BASE_CAR."""
+    with patch(
+        "app.api.v1.endpoints.deduction.resolve_distance",
+        new=AsyncMock(return_value=(20.0, "swisstopo", (46.004, 8.952), (46.195, 9.015))),
+    ):
+        yield
+
+
 @pytest.mark.asyncio
-async def test_work_schedule_nested_payload_ho1():
+async def test_work_schedule_nested_payload_ho1(mock_geo_20km):
     """Con 1 giorno HO effective_working_days deve essere 176 (non 220)."""
     payload = {**BASE_CAR, "work_schedule": {"days_per_week": 5, "home_office_days_per_week": 1}}
     status, body = await _post(payload)
@@ -47,7 +56,7 @@ async def test_work_schedule_nested_payload_ho1():
 
 
 @pytest.mark.asyncio
-async def test_work_schedule_zero_ho():
+async def test_work_schedule_zero_ho(mock_geo_20km):
     """Con 0 giorni HO effective_working_days deve essere 220."""
     payload = {**BASE_CAR, "work_schedule": {"days_per_week": 5, "home_office_days_per_week": 0}}
     status, body = await _post(payload)
@@ -57,7 +66,7 @@ async def test_work_schedule_zero_ho():
 
 
 @pytest.mark.asyncio
-async def test_basis_text_with_ho():
+async def test_basis_text_with_ho(mock_geo_20km):
     """Con HO=1 la basis deve contenere il suffisso con 220/5 e 4 gg/sett."""
     payload = {**BASE_CAR, "work_schedule": {"days_per_week": 5, "home_office_days_per_week": 1}}
     status, body = await _post(payload)
@@ -68,7 +77,7 @@ async def test_basis_text_with_ho():
 
 
 @pytest.mark.asyncio
-async def test_basis_text_without_ho():
+async def test_basis_text_without_ho(mock_geo_20km):
     """Con HO=0 la basis NON deve contenere il suffisso HO."""
     payload = {**BASE_CAR, "work_schedule": {"days_per_week": 5, "home_office_days_per_week": 0}}
     status, body = await _post(payload)
@@ -78,7 +87,7 @@ async def test_basis_text_without_ho():
 
 
 @pytest.mark.asyncio
-async def test_meals_basis_text():
+async def test_meals_basis_text(mock_geo_20km):
     """Con include_meals=True e HO=1 il meals_basis_text deve mostrare tariffa e 176 giorni."""
     payload = {
         **BASE_CAR,
@@ -98,7 +107,7 @@ async def test_tp_warning_stop_within_200m():
     """Fermata a 150m: deduzione auto bloccata e motivo in warnings."""
     payload = {**BASE_CAR, "override_distance_km": None}
     with patch(
-        "app.geo.resolver.resolve_distance",
+        "app.api.v1.endpoints.deduction.resolve_distance",
         new=AsyncMock(return_value=(10.0, "swisstopo", (46.004, 8.952), (46.012, 8.960))),
     ):
         with patch(
@@ -119,7 +128,7 @@ async def test_tp_warning_no_stop():
     """Se find_nearest_stop ritorna None, nessun blocco per fermata TP deve essere aggiunto."""
     payload = {**BASE_CAR, "override_distance_km": None}
     with patch(
-        "app.geo.resolver.resolve_distance",
+        "app.api.v1.endpoints.deduction.resolve_distance",
         new=AsyncMock(return_value=(10.0, "swisstopo", (46.004, 8.952), (46.012, 8.960))),
     ):
         with patch(
@@ -137,7 +146,7 @@ async def test_tp_warning_stop_beyond_200m():
     """Fermata a 250m (> 200m): nessun blocco per TP, nessun warning fermata."""
     payload = {**BASE_CAR, "override_distance_km": None}
     with patch(
-        "app.geo.resolver.resolve_distance",
+        "app.api.v1.endpoints.deduction.resolve_distance",
         new=AsyncMock(return_value=(10.0, "swisstopo", (46.004, 8.952), (46.012, 8.960))),
     ):
         with patch(
