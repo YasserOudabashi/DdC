@@ -1,394 +1,172 @@
 {
   "project": "DdC Trasferta TI",
-  "branchName": "ralph/fase-8-arcobaleno-ux",
-  "description": "Fase 8 — Costo abbonamento TP via tabella ARCOBALENO + autocomplete indirizzi. Introduce: lookup automatico costo abbonamento annuale ARCOBALENO per rotte TI (tabella YAML da flyer dicembre 2025), campo manuale alternativo, link SBB per rotte extra-TI, campi città con autocomplete via transport.opendata.ch, campi paese come select, validazione NPA per-paese.",
+  "branchName": "ralph/fase-11-e2e-browser",
+  "description": "Fase 11 — Verifica end-to-end nel browser (Playwright) di TUTTI i percorsi utente del web service: ogni mezzo di trasporto, pasti, alloggio, Lohnausweis, coniuge, mappa, PDF, modalita accertamento, validazioni e usabilita. I test girano contro l'app reale (uvicorn in-process) con geocoder stubbato in modo deterministico (tests/e2e/conftest.py). Obiettivo: garantire che il sito funzioni correttamente dal punto di vista dell'utente, senza regressioni.",
   "userStories": [
     {
-      "id": "US-701",
-      "title": "Constant-time API key comparison",
-      "passes": true
-    },
-    {
-      "id": "US-702",
-      "title": "Rate limiting on /v1/health endpoint",
-      "passes": true
-    },
-    {
-      "id": "US-703",
-      "title": "Toggle /docs and /redoc via DOCS_ENABLED env var",
-      "passes": true
-    },
-    {
-      "id": "US-704",
-      "title": "Add CSP, HSTS, and Permissions-Policy security headers",
-      "passes": true
-    },
-    {
-      "id": "US-705",
-      "title": "Proxy-aware rate limiting via TRUSTED_PROXIES",
-      "passes": true
-    },
-    {
-      "id": "US-706",
-      "title": "Remove filesystem info disclosure from YAML loader error",
-      "passes": true
-    },
-    {
-      "id": "US-707",
-      "title": "Input length and format validation on Address fields",
-      "passes": true
-    },
-    {
-      "id": "US-708",
-      "title": "Make Nominatim contact email configurable",
-      "passes": true
-    },
-    {
-      "id": "US-709",
-      "title": "Run Docker container as non-root user",
-      "passes": true
-    },
-    {
-      "id": "US-710",
-      "title": "Add pip-audit for dependency vulnerability scanning",
-      "passes": true
-    },
-    {
-      "id": "US-711",
-      "title": "Fix ALLOWED_ORIGINS wildcard warning in .env.example",
-      "passes": true
-    },
-    {
-      "id": "US-712",
-      "title": "Security test suite",
-      "passes": true
-    },
-    {
-      "id": "US-801",
-      "title": "Tabella prezzi ARCOBALENO annuale nel YAML",
-      "description": "As a developer, I want the official ARCOBALENO annual subscription prices in the YAML rules files so that the calculator can look up the exact cost without estimation.",
+      "id": "US-1101",
+      "title": "Infrastruttura E2E Playwright (server in-process + stub geocoder)",
+      "description": "As a QA engineer, I want a deterministic browser test harness so that E2E tests run the real site without depending on external geocoding/routing services.",
       "acceptanceCriteria": [
-        "In rules/2025.yaml e rules/2026.yaml, aggiungere sotto cantonal_TI: la sezione public_transport_subscriptions con i prezzi ufficiali del flyer ARCOBALENO dicembre 2025 (valido dal 14.12.2025).",
-        "La struttura YAML da aggiungere è la seguente (sotto cantonal_TI:, allo stesso livello di transport:, meals:, other_expenses:):",
-        "  public_transport_subscriptions:",
-        "    arcobaleno_annual_adult_2cl:  # Adulti >=25 anni, 2a classe",
-        "      zones_1: 485",
-        "      zones_2: 732",
-        "      zones_3: 1074",
-        "      zones_4: 1387",
-        "      zones_5: 1691",
-        "      zones_6: 1986",
-        "      zones_7: 2157",
-        "      zones_8_plus: 2252",
-        "    arcobaleno_annual_adult_1cl:  # Adulti >=25 anni, 1a classe",
-        "      zones_1: 827",
-        "      zones_2: 1245",
-        "      zones_3: 1834",
-        "      zones_4: 2366",
-        "      zones_5: 2879",
-        "      zones_6: 3382",
-        "      zones_7: 3667",
-        "      zones_8_plus: 3829",
-        "I valori sono identici per 2025 e 2026 (nessun aumento tariffario tra le due edizioni del flyer).",
-        "uv run pytest tests/ -v — 93 test passano senza regressioni."
+        "pyproject.toml: nel gruppo dev e presente 'playwright>=1.40' (API async, NON pytest-playwright che usa l'API sync e confligge con asyncio_mode=auto) e in [tool.pytest.ini_options] e registrato il marker 'e2e'.",
+        "Esiste tests/e2e/conftest.py con: fixture session 'live_server' (uvicorn in-process su thread -> base URL); fixture function-scoped autouse '_stub_geo' che sostituisce app.geo.resolver._swisstopo.resolve, _nominatim.resolve e app.geo.tp_proximity.find_nearest_stop con versioni deterministiche e RIPRISTINA dopo ogni test (per non inquinare i test backend); fixture async 'page' (Chromium via async_playwright). Coordinate fisse per NPA/citta: 6500 Bellinzona, 6900 Lugano, 6600 Locarno, 6830 Chiasso, 6512 Giubiasco, 22100 Como.",
+        "Esiste tests/e2e/helpers.py con funzioni ASYNC riutilizzabili: set_city (TomSelect create:true via digitazione+Invio), fill_address(prefix), fill_minimal_addresses, calcola (attende risultati IC/IFD), results_text.",
+        "Esiste tests/e2e/test_smoke.py: la homepage carica (titolo contiene 'Deduzioni Trasferta'), il form #deduction-form e il bottone 'Calcola deduzione' sono visibili, le card principali (Dati generali, Indirizzi, Trasporto, Pasti) sono presenti.",
+        "I browser Playwright sono installati: documentare e, se necessario, eseguire 'uv run playwright install chromium' prima dei test.",
+        "uv run pytest tests/ -v - tutti i test passano (backend esistenti + smoke E2E), nessuna regressione."
       ],
       "priority": 1,
-      "passes": true
+      "passes": false,
+      "notes": "Infrastruttura gia scaffoldata e verificata localmente (smoke + happy-path passano su chromium). Confermare che giri pulita nell'ambiente ralph/Docker, eseguendo 'uv run playwright install chromium' se i browser mancano."
     },
     {
-      "id": "US-802",
-      "title": "Modelli Pydantic per ARCOBALENO",
-      "description": "As a developer, I want Pydantic models for the ARCOBALENO subscription data so that the YAML section is strongly typed.",
+      "id": "US-1102",
+      "title": "E2E mezzi pubblici ARCOBALENO (happy path IC+IFD)",
+      "description": "As a user, I want to compute my deduction using public transport so that I see correct IC and IFD results.",
       "acceptanceCriteria": [
-        "In app/rules/models.py, aggiungere le seguenti classi PRIMA di CantonalRules:",
-        "  class ArcobalenovAnnualRates(BaseModel):",
-        "      zones_1: float",
-        "      zones_2: float",
-        "      zones_3: float",
-        "      zones_4: float",
-        "      zones_5: float",
-        "      zones_6: float",
-        "      zones_7: float",
-        "      zones_8_plus: float",
-        "  class PublicTransportSubscriptions(BaseModel):",
-        "      arcobaleno_annual_adult_2cl: Optional[ArcobalenovAnnualRates] = None",
-        "      arcobaleno_annual_adult_1cl: Optional[ArcobalenovAnnualRates] = None",
-        "In CantonalRules, aggiungere il campo: public_transport_subscriptions: Optional[PublicTransportSubscriptions] = None",
-        "Il loader YAML esistente (app/rules/loader.py) carica già tutto automaticamente via Pydantic — nessuna modifica al loader.",
-        "Typecheck/lint passa.",
-        "uv run pytest tests/ -v — 93 test passano senza regressioni."
+        "tests/e2e/test_public_transport.py: con indirizzi Bellinzona(6500)->Lugano(6900), mezzo 'Mezzi pubblici', abbonamento ARCOBALENO 3 zone 2a classe, dopo Calcola il pannello #results mostra le colonne 'Cantonale TI (IC)' e 'Federale IFD'.",
+        "Verifica che la deduzione trasporto rifletta il costo ARCOBALENO selezionato (es. CHF 1'074 per 3 zone 2a classe): l'importo compare nei risultati.",
+        "Cambiando le zone ARCOBALENO (es. 5 zone) l'anteprima costo (#arcobaleno-cost-preview) si aggiorna prima del calcolo.",
+        "Test anche l'opzione 'Inserisci costo abbonamento' (manuale): inserito un valore, il calcolo lo usa.",
+        "uv run pytest tests/ -v - tutti i test passano, nessuna regressione."
       ],
       "priority": 2,
-      "passes": true
+      "passes": false,
+      "notes": ""
     },
     {
-      "id": "US-803",
-      "title": "Campi arcobaleno_zones e arcobaleno_class nel request schema",
-      "description": "As a user, I want to specify the number of ARCOBALENO zones and the class so the API can look up the exact subscription cost.",
+      "id": "US-1103",
+      "title": "E2E auto privata (blocco <30km, override distanza, warning cap IFD)",
+      "description": "As a user using a private car, I want the app to enforce the car rules so that deductions and warnings are correct.",
       "acceptanceCriteria": [
-        "In app/schemas/request.py nella classe DeductionRequest, aggiungere dopo annual_public_transport_cost_chf:",
-        "  arcobaleno_zones: Optional[int] = Field(default=None, ge=1, le=8, description='Numero zone Arcobaleno (1-7, usa 8 per da 8 zone). Solo per transport_mode=public_transport.')",
-        "  arcobaleno_class: str = Field(default='2', pattern='^[12]$', description=\"Classe abbonamento ARCOBALENO: '1' = prima classe, '2' = seconda classe.\")",
-        "Aggiungere model_validator (mode='after') che solleva ValueError se arcobaleno_zones is not None AND transport_mode != TransportMode.PUBLIC_TRANSPORT: messaggio 'arcobaleno_zones richiede transport_mode=public_transport'.",
-        "Aggiornare l'example in model_config: rimuovere annual_public_transport_cost_chf dall'example e aggiungere 'arcobaleno_zones': 3, 'arcobaleno_class': '2'.",
-        "Test: POST /v1/deduction/calculate con arcobaleno_zones=3 e transport_mode='private_car' ritorna HTTP 422.",
-        "Test: POST con arcobaleno_zones=None (omesso) continua a funzionare come prima.",
-        "Typecheck/lint passa.",
-        "uv run pytest tests/ -v — 93+ test passano senza regressioni."
+        "tests/e2e/test_private_car.py: selezionando 'Auto privata' compare il campo 'Distanza effettiva (km)' (#distance-override-group non hidden).",
+        "Caso distanza breve (Bellinzona 6500 -> Giubiasco 6512, < 30 km): il risultato segnala che l'auto privata non e ammessa / la deduzione auto e bloccata (verificare il messaggio/nota mostrato nei risultati).",
+        "Caso override coerente: inserendo una distanza vicina a quella geocodificata il calcolo procede e mostra la deduzione auto IC e IFD.",
+        "Caso cap IFD: con una distanza elevata il frontend mostra il warning cap IFD CHF 3'300 (getCapIfdWarning) e i risultati IFD risultano limitati mentre l'IC no.",
+        "Override incoerente (differenza > 5 km dal geocodificato): viene mostrato un errore di validazione e il calcolo non procede.",
+        "uv run pytest tests/ -v - tutti i test passano, nessuna regressione."
       ],
       "priority": 3,
-      "passes": true
+      "passes": false,
+      "notes": ""
     },
     {
-      "id": "US-804",
-      "title": "Lookup ARCOBALENO nel calculator",
-      "description": "As a user, when I provide arcobaleno_zones, I want the calculator to return the exact annual subscription cost instead of the km-estimate.",
+      "id": "US-1104",
+      "title": "E2E moto targa bianca e bicicletta",
+      "description": "As a user with a motorcycle or bicycle, I want correct deductions for those modes.",
       "acceptanceCriteria": [
-        "In app/core/calculator.py, aggiungere funzione privata _arcobaleno_annual_cost(zones: int, class_: str, rules: FiscalYearRules) -> float | None:",
-        "  - Se rules.cantonal_TI.public_transport_subscriptions is None, ritorna None.",
-        "  - Seleziona rates = arcobaleno_annual_adult_2cl se class_=='2', altrimenti arcobaleno_annual_adult_1cl.",
-        "  - Se rates is None, ritorna None.",
-        "  - Mappa: zones==1 -> rates.zones_1, zones==2 -> rates.zones_2, ..., zones==7 -> rates.zones_7, zones>=8 -> rates.zones_8_plus.",
-        "  - Ritorna il valore CHF come float.",
-        "In _cantonal_transport(): se req.arcobaleno_zones is not None E req.transport_mode == TransportMode.PUBLIC_TRANSPORT:",
-        "  - Chiamare _arcobaleno_annual_cost(req.arcobaleno_zones, req.arcobaleno_class, rules)",
-        "  - Se il risultato non è None, passarlo come annual_public_transport_cost_chf a cantonal_engine.calculate_transport()",
-        "  - Dopo aver ricevuto il TransportResult, aggiornare result.lines[0].basis con: f'Abbonamento annuale ARCOBALENO {req.arcobaleno_zones} zona/zone, {req.arcobaleno_class}a cl. — CHF {costo:.2f} (Fonte: flyer ARCOBALENO dicembre 2025)'",
-        "  - Aggiornare result.lines[0].label con: f'Mezzi pubblici — Abbonamento ARCOBALENO ({req.arcobaleno_zones} {\"zona\" if req.arcobaleno_zones == 1 else \"zone\"})'",
-        "Stessa logica in _federal_transport() — per IFD i mezzi pubblici NON hanno cap (rules.federal_IFD.transport.public_transport.cap_chf è null, già corretto).",
-        "Se arcobaleno_zones is None, il comportamento esistente (stima 0.065/km o annual_public_transport_cost_chf manuale) è invariato.",
-        "Test: POST con arcobaleno_zones=1, arcobaleno_class='2' -> cantonal_TI.transport_deduction.net_deduction_chf == 485.0",
-        "Test: POST con arcobaleno_zones=3, arcobaleno_class='2' -> cantonal_TI.transport_deduction.net_deduction_chf == 1074.0",
-        "Test: POST con arcobaleno_zones=8, arcobaleno_class='2' -> cantonal_TI.transport_deduction.net_deduction_chf == 2252.0",
-        "Test: POST con arcobaleno_zones=2, arcobaleno_class='1' -> cantonal_TI.transport_deduction.net_deduction_chf == 1245.0",
-        "Test: federal con arcobaleno_zones=3 -> federal_IFD.transport_deduction.net_deduction_chf == 1074.0 (no cap su MP)",
-        "Typecheck/lint passa.",
-        "uv run pytest tests/ -v — 93+ test passano."
+        "tests/e2e/test_moto_bici.py: 'Motocicletta targa bianca' mostra il campo distanza e produce risultati IC+IFD con tariffa moto (0.40/km IFD).",
+        "'Bicicletta / e-bike' produce risultati con la deduzione forfettaria bici (CHF 700) senza richiedere distanza.",
+        "I risultati mostrano correttamente le due colonne IC e IFD per entrambi i mezzi.",
+        "uv run pytest tests/ -v - tutti i test passano, nessuna regressione."
       ],
       "priority": 4,
-      "passes": true
+      "passes": false,
+      "notes": ""
     },
     {
-      "id": "US-805",
-      "title": "Endpoint ricerca località /v1/locations/search",
-      "description": "As a frontend developer, I want a backend endpoint that searches Swiss transport locations so the city autocomplete can work without CORS issues.",
+      "id": "US-1105",
+      "title": "E2E trasporto misto (auto fino alla stazione + abbonamento)",
+      "description": "As a user combining car and train, I want the mixed mode to compute both legs.",
       "acceptanceCriteria": [
-        "Creare app/api/v1/endpoints/locations.py con endpoint: GET /v1/locations/search?q=<text>&limit=10",
-        "  - Se q ha meno di 2 caratteri, ritorna immediatamente [] (HTTP 200, array vuoto).",
-        "  - Altrimenti: chiama https://transport.opendata.ch/v1/locations?query=<q>&type=station&limit=<limit> via httpx.AsyncClient (timeout=3.0 secondi).",
-        "  - Se la chiamata fallisce o va in timeout, ritorna [] (HTTP 200, mai HTTP 5xx verso il client).",
-        "  - Parsea la risposta: estrae stations[].name e stations[].id.",
-        "  - Ritorna: [{\"name\": str, \"id\": str}, ...]",
-        "  - Response model: List[dict] con campi name e id.",
-        "httpx è già in pyproject.toml come dipendenza (verificare; se mancante, aggiungere 'httpx>=0.27').",
-        "Registrare il router in app/api/v1/router.py: from .endpoints.locations import router as locations_router; app.include_router(locations_router, prefix='/v1/locations', tags=['Locations'])",
-        "Aggiungere il rate limiter (@limiter.limit) sulla route: '60/minute' (importare limiter e Request come negli altri endpoint).",
-        "Test di integrazione: GET /v1/locations/search?q=Lu -> HTTP 200 con array (anche vuoto se rete non disponibile in test).",
-        "Test: GET /v1/locations/search?q=L -> HTTP 200 con [] (q troppo corta).",
-        "Test: GET /v1/locations/search (senza q) -> HTTP 200 con [] oppure HTTP 422.",
-        "Typecheck/lint passa.",
-        "uv run pytest tests/ -v — 93+ test passano."
+        "tests/e2e/test_mixed.py: selezionando 'Misto auto + treno' compaiono i campi #mixed-fields (distanza auto fino alla stazione + costo abbonamento).",
+        "Compilati entrambi i campi, il calcolo produce risultati IC+IFD che sommano la quota auto e la quota mezzi pubblici.",
+        "uv run pytest tests/ -v - tutti i test passano, nessuna regressione."
       ],
       "priority": 5,
-      "passes": true
+      "passes": false,
+      "notes": ""
     },
     {
-      "id": "US-806",
-      "title": "Frontend — autocomplete città e select paese",
-      "description": "As a user, I want to search for my city using a searchable dropdown and have the country auto-set so I don't need to type it manually.",
+      "id": "US-1106",
+      "title": "E2E pasti e alloggio settimanale",
+      "description": "As a user, I want meal and weekly-accommodation options to behave correctly in the form.",
       "acceptanceCriteria": [
-        "In app/static/index.html, aggiungere Tom Select via CDN prima di </head>:",
-        "  <link href='https://cdn.jsdelivr.net/npm/tom-select@2/dist/css/tom-select.css' rel='stylesheet'>",
-        "  <script src='https://cdn.jsdelivr.net/npm/tom-select@2/dist/js/tom-select.complete.min.js'></script>",
-        "Lasciare invariati gli input home_city e work_city (tipo text, id e name invariati). Tom Select li trasformerà in autocomplete.",
-        "Cambiare i campi paese da <input type='text'> a <select> per home_country e work_country con opzioni:",
-        "  <option value='CH' selected>CH — Svizzera</option>",
-        "  <option value='IT'>IT — Italia</option>",
-        "  <option value='DE'>DE — Germania</option>",
-        "  <option value='FR'>FR — Francia</option>",
-        "  <option value='AT'>AT — Austria</option>",
-        "In app/static/js/app.js, inizializzare Tom Select su home_city e work_city con:",
-        "  - valueField: 'name', labelField: 'name', searchField: 'name'",
-        "  - load(query, callback): se query.length < 2, callback([]); altrimenti fetch('/v1/locations/search?q=' + encodeURIComponent(query) + '&limit=10').then(r => r.json()).then(callback).catch(() => callback([]))",
-        "  - minChars: 2",
-        "  - create: true (permette di digitare un valore libero non in lista, per città straniere o piccoli comuni)",
-        "  - placeholder: 'Cerca città…'",
-        "Salvare riferimenti: const tomSelectHome = new TomSelect('#home_city', {...}); const tomSelectWork = new TomSelect('#work_city', {...})",
-        "In btnReset handler: aggiungere tomSelectHome.clear(); tomSelectWork.clear(); dopo form.reset()",
-        "In getFormPayload(): leggere homeCountry da document.getElementById('home_country').value (ora è select, non input — funziona uguale con .value)",
-        "In validateForm(): aggiornare il check NPA:",
-        "  const homeCountry = document.getElementById('home_country').value;",
-        "  const workCountry = document.getElementById('work_country').value;",
-        "  if (homeCountry === 'CH' && !/^[0-9]{4}$/.test(homeNpa)) return 'Il NPA CH deve essere di 4 cifre.';",
-        "  if (homeCountry === 'IT' && !/^[0-9]{5}$/.test(homeNpa)) return 'Il CAP italiano deve essere di 5 cifre.';",
-        "  if (homeCountry !== 'CH' && homeCountry !== 'IT' && !/^[0-9A-Z -]{3,10}$/.test(homeNpa)) return 'NPA non valido.';",
-        "  (stessa logica per workNpa / workCountry)",
-        "Typecheck/lint passa (frontend — verificare che non ci siano errori JS in console aprendo il browser).",
-        "uv run pytest tests/ -v — 93+ test passano senza regressioni backend."
+        "tests/e2e/test_meals_accommodation.py: deselezionando 'Includi deduzione pasti' la sezione situazione pasti si nasconde; riselezionandola riappare.",
+        "Le situazioni pasti (senza mensa 15, con mensa 7.50, rientro a casa) producono importi pasti coerenti nei risultati.",
+        "Selezionando 'Residente settimanale' come tipo di residenza compare la card #accommodation-card (alloggio settimanale); per altri tipi resta hidden.",
+        "Inserito un costo alloggio mensile oltre il tetto, il risultato applica il cap (800 senza cucina / 1'000 con cucina).",
+        "uv run pytest tests/ -v - tutti i test passano, nessuna regressione."
       ],
       "priority": 6,
-      "passes": true
+      "passes": false,
+      "notes": ""
     },
     {
-      "id": "US-807",
-      "title": "Frontend — sezione scelta costo abbonamento mezzi pubblici",
-      "passes": true,
-      "description": "As a user selecting public transport, I want a clear UI to choose between ARCOBALENO zone lookup (TI), manual cost entry, or a link to the SBB calculator for other regions.",
+      "id": "US-1107",
+      "title": "E2E Lohnausweis + altre spese + attivita accessoria",
+      "description": "As a user, I want Lohnausweis fields and other-expense options to affect the result correctly.",
       "acceptanceCriteria": [
-        "In app/static/index.html, dentro il blocco trasporto (dopo il select transport_mode), aggiungere un div id='pt-cost-section' class='hidden' con tre radio option e relative sezioni:",
-        "  RADIO 1 — value='arcobaleno', checked by default, label='Abbonamento ARCOBALENO (Canton Ticino)':",
-        "    <div id='arcobaleno-fields'>",
-        "      <div class='form-group'>",
-        "        <label>Zone ARCOBALENO</label>",
-        "        <select id='arcobaleno_zones'>",
-        "          <option value='1'>1 zona — CHF 485</option>",
-        "          <option value='2'>2 zone — CHF 732</option>",
-        "          <option value='3' selected>3 zone — CHF 1'074</option>",
-        "          <option value='4'>4 zone — CHF 1'387</option>",
-        "          <option value='5'>5 zone — CHF 1'691</option>",
-        "          <option value='6'>6 zone — CHF 1'986</option>",
-        "          <option value='7'>7 zone — CHF 2'157</option>",
-        "          <option value='8'>8+ zone — CHF 2'252</option>",
-        "        </select>",
-        "      </div>",
-        "      <div class='form-group'>",
-        "        <label>Classe</label>",
-        "        <select id='arcobaleno_class'>",
-        "          <option value='2' selected>2ª classe</option>",
-        "          <option value='1'>1ª classe</option>",
-        "        </select>",
-        "      </div>",
-        "      <p class='field-hint' id='arcobaleno-cost-preview'>Costo annuo stimato: CHF 1'074.00</p>",
-        "    </div>",
-        "  RADIO 2 — value='manuale', label='Inserisci costo abbonamento (tutte le reti)':",
-        "    <div id='manual-pt-fields' class='hidden'>",
-        "      <div class='form-group'>",
-        "        <label for='annual_public_transport_cost_chf'>Costo abbonamento annuale (CHF)</label>",
-        "        <input type='number' id='annual_public_transport_cost_chf' min='0' step='0.01' placeholder='Es. 1800.00'>",
-        "      </div>",
-        "    </div>",
-        "  RADIO 3 — value='sbb-link', label='Calcola su SBB.ch (rotte fuori TI)':",
-        "    <div id='sbb-link-fields' class='hidden'>",
-        "      <p class='field-hint'>Per abbonamenti fuori dal Canton Ticino (ZVV, BLS, Libero, ecc.), calcola il costo annuo sul sito SBB e inseriscilo qui sotto.</p>",
-        "      <a href='https://www.sbb.ch/it/offerte/acquisto-abbo-percorso-modulari-comunita?validityDuration=YEAR' target='_blank' rel='noopener noreferrer' class='btn-link'>Apri calcolatore SBB →</a>",
-        "      <div class='form-group' style='margin-top:0.75rem'>",
-        "        <label for='annual_public_transport_cost_chf_sbb'>Costo abbonamento annuale trovato (CHF)</label>",
-        "        <input type='number' id='annual_public_transport_cost_chf_sbb' min='0' step='0.01' placeholder='Inserisci il costo trovato su SBB.ch'>",
-        "      </div>",
-        "    </div>",
-        "In app/static/js/app.js:",
-        "  - In updateTransportVisibility(): mostrare pt-cost-section quando mode == 'public_transport'; nasconderlo altrimenti.",
-        "  - Aggiungere listener sui radio buttons per mostrare/nascondere arcobaleno-fields, manual-pt-fields, sbb-link-fields.",
-        "  - Aggiungere listener su arcobaleno_zones e arcobaleno_class per aggiornare il testo #arcobaleno-cost-preview. Tabelle JS (same as YAML): adult2cl = {1:485,2:732,3:1074,4:1387,5:1691,6:1986,7:2157,8:2252}, adult1cl = {1:827,2:1245,3:1834,4:2366,5:2879,6:3382,7:3667,8:3829}.",
-        "  - In getFormPayload():",
-        "      const ptRadio = document.querySelector('input[name=pt_cost_type]:checked')?.value;",
-        "      if (ptRadio === 'arcobaleno') { payload.arcobaleno_zones = parseInt(document.getElementById('arcobaleno_zones').value); payload.arcobaleno_class = document.getElementById('arcobaleno_class').value; }",
-        "      if (ptRadio === 'manuale') { const c = document.getElementById('annual_public_transport_cost_chf').value; if (c) payload.annual_public_transport_cost_chf = parseFloat(c); }",
-        "      if (ptRadio === 'sbb-link') { const c = document.getElementById('annual_public_transport_cost_chf_sbb').value; if (c) payload.annual_public_transport_cost_chf = parseFloat(c); }",
-        "  - In validateForm(): se mode == 'public_transport' && ptRadio == 'manuale': annual_public_transport_cost_chf deve essere > 0; se ptRadio == 'sbb-link': annual_public_transport_cost_chf_sbb deve essere > 0.",
-        "Typecheck/lint passa.",
-        "uv run pytest tests/ -v — 93+ test passano senza regressioni backend."
+        "tests/e2e/test_lohnausweis_other.py: spuntando 'Campo D' (employer_pays_transport) la deduzione trasporto netta risulta azzerata nei risultati (il lordo teorico puo restare).",
+        "Spuntando 'Campo F' (employer_has_cafeteria) i pasti usano la tariffa ridotta (7.50).",
+        "Con 'Auto privata' selezionata compare #company-car-group (cifra 13.2.2); inserito un importo mensile, il trasporto usa il forfait auto aziendale (Art. 5a) anziche la formula km.",
+        "Attivando 'Includi altre spese professionali' compaiono i metodi IC (forfait 3'000 / effettive); con 'effettive' compare il campo importo e il risultato applica il maggiore tra forfait e effettive.",
+        "Attivando 'Attivita accessoria dipendente' compare la relativa sezione e il risultato include la deduzione accessoria.",
+        "uv run pytest tests/ -v - tutti i test passano, nessuna regressione."
       ],
-      "priority": 7
+      "priority": 7,
+      "passes": false,
+      "notes": ""
     },
     {
-      "id": "US-808",
-      "title": "Test suite per Fase 8",
-      "description": "As a developer, I want automated tests for all Fase 8 functionality so regressions are caught immediately.",
+      "id": "US-1108",
+      "title": "E2E coniuge / partner registrato",
+      "description": "As a couple, I want to compute the spouse deduction alongside mine.",
       "acceptanceCriteria": [
-        "Creare tests/unit/test_arcobaleno_lookup.py con test:",
-        "  test_arcobaleno_2cl_zones_1: POST calculate con transport_mode='public_transport', arcobaleno_zones=1, arcobaleno_class='2', fiscal_year=2026 -> cantonal_TI.transport_deduction.net_deduction_chf == 485.0",
-        "  test_arcobaleno_2cl_zones_3: arcobaleno_zones=3 -> cantonal_TI net == 1074.0",
-        "  test_arcobaleno_2cl_zones_8: arcobaleno_zones=8 -> cantonal_TI net == 2252.0",
-        "  test_arcobaleno_1cl_zones_2: arcobaleno_class='1', arcobaleno_zones=2 -> cantonal_TI net == 1245.0",
-        "  test_arcobaleno_federal_no_cap: arcobaleno_zones=3 -> federal_IFD.transport_deduction.net_deduction_chf == 1074.0 (mezzi pubblici non soggetti a cap IFD)",
-        "  test_arcobaleno_federal_no_cap_large: arcobaleno_zones=8, arcobaleno_class='1' -> federal_IFD net == 3829.0 (sopra 3300 IFD ma non cappato perche MP)",
-        "  test_arcobaleno_basis_string: arcobaleno_zones=3 -> cantonal_TI.transport_deduction.lines[0].basis contiene 'ARCOBALENO' e '1074'",
-        "  test_arcobaleno_invalid_with_private_car: transport_mode='private_car', arcobaleno_zones=3 -> HTTP 422",
-        "  test_arcobaleno_zones_none_fallback: transport_mode='public_transport', arcobaleno_zones=None, annual_public_transport_cost_chf=1800.0 -> cantonal_TI net == 1800.0 (fallback manuale funziona ancora)",
-        "Aggiornare tests/integration/test_locations.py (nuovo file) con:",
-        "  test_locations_search_short_query: GET /v1/locations/search?q=L -> HTTP 200 con [] (q troppo corta)",
-        "  test_locations_search_valid_query: GET /v1/locations/search?q=Lugano -> HTTP 200 con lista (può essere vuota se rete non disponibile, non deve sollevare eccezioni)",
-        "uv run pytest tests/unit/test_arcobaleno_lookup.py tests/integration/test_locations.py -v — tutti i test passano.",
-        "uv run pytest tests/ -v — 93+ test passano senza regressioni."
+        "tests/e2e/test_spouse.py: spuntando 'Includi coniuge/partner registrato' compare la sezione #spouse-fields.",
+        "Con 'Stesso domicilio del contribuente' attivo, i campi domicilio coniuge restano nascosti e il calcolo usa il domicilio principale.",
+        "Deselezionando 'Stesso domicilio' compaiono i campi domicilio coniuge (#sp-home-fields) e sono compilabili.",
+        "Dopo il calcolo i risultati mostrano le colonne dedicate al coniuge ('IC ... Coniuge' e 'IFD ... Coniuge').",
+        "uv run pytest tests/ -v - tutti i test passano, nessuna regressione."
       ],
       "priority": 8,
-      "passes": true
+      "passes": false,
+      "notes": ""
     },
     {
-      "id": "US-901",
-      "title": "Fix work_schedule nesting nel frontend",
-      "description": "As a user, I want the home office days I select to actually affect the calculation so that I receive the correct deduction amount.",
+      "id": "US-1109",
+      "title": "E2E mappa percorso (Leaflet markers + OSRM tollerante)",
+      "description": "As a user, I want to see the route map after computing.",
       "acceptanceCriteria": [
-        "In app/static/js/app.js, funzione getFormPayload(): rimuovere i campi flat days_per_week e home_office_days_per_week dal root del payload e sostituirli con l'oggetto annidato: work_schedule: { days_per_week: daysPerWeek, home_office_days_per_week: homeOfficeDays }",
-        "Test manuale: con 5 gg/sett, 1 gg HO, 1 km auto privata → cantonal net deve essere 0.6 × 1.0 × 2 × 176 = 211.20 CHF (non 264.00 CHF)",
-        "uv run pytest tests/ -v — tutti i test passano senza regressioni"
+        "tests/e2e/test_map.py: dopo un calcolo con coordinate valide, la card #map-section diventa visibile e #route-map contiene un'istanza Leaflet con i marker casa e lavoro.",
+        "Il test e robusto rispetto al routing OSRM esterno: intercettare la chiamata OSRM con page.route (risposta finta) oppure asserire solo la presenza della mappa e dei marker, senza dipendere dal tracciato reale.",
+        "Premendo 'Azzera' la mappa viene rimossa e #map-section torna hidden.",
+        "uv run pytest tests/ -v - tutti i test passano, nessuna regressione."
       ],
-      "priority": 1,
-      "passes": true
+      "priority": 9,
+      "passes": false,
+      "notes": "OSRM (router.project-osrm.org) e esterno: usare page.route per stubbarlo o non asserire sul tracciato."
     },
     {
-      "id": "US-902",
-      "title": "Basis string trasparente per giorni effettivi (auto, moto, misto)",
-      "description": "As a user, I want the calculation formula to show how working days were computed from home office days so that I can verify the deduction is correct.",
+      "id": "US-1110",
+      "title": "E2E PDF e modalita accertamento",
+      "description": "As a tax officer, I want to download the computed PDF and produce an assessed PDF.",
       "acceptanceCriteria": [
-        "In app/core/cantonal_engine.py, aggiornare la firma di calculate_transport per ricevere anche work_schedule: WorkSchedule come parametro opzionale (default=None per retrocompatibilità test). In _effective_days, tenere la logica invariata.",
-        "In _private_car, _motorcycle e _mixed (tratto auto) di cantonal_engine.py: se work_schedule non è None e work_schedule.home_office_days_per_week > 0, aggiungere il suffisso alla basis: f' ({standard_annual}/5 sett. × {office_days:.0f} gg/sett. in ufficio)' dove office_days = work_schedule.days_per_week - work_schedule.home_office_days_per_week.",
-        "Stessa modifica in app/core/federal_engine.py per _private_car, _motorcycle, _mixed.",
-        "In app/core/calculator.py, aggiornare le chiamate a cantonal_engine.calculate_transport e federal_engine.calculate_transport passando work_schedule=req.work_schedule.",
-        "Esempio con 5 gg/sett e 1 HO: basis = 'CHF 0.6/km × 1.0km × 2 × 176 giorni (220/5 sett. × 4 gg/sett. in ufficio)'",
-        "Esempio con 0 HO: basis = 'CHF 0.6/km × 1.0km × 2 × 220 giorni' (nessun suffisso)",
-        "uv run pytest tests/ -v — tutti i test passano"
+        "tests/e2e/test_pdf_assessment.py: dopo un calcolo, il bottone 'Scarica PDF' e visibile e il click avvia un download (verificare con page.expect_download che il file .pdf venga generato).",
+        "Cliccando 'Modalita accertamento' compaiono il banner #assessment-banner, la tabella editabile e la sezione motivazione (#assessment-reason-section).",
+        "Provando a scaricare il PDF accertato senza motivazione compare l'errore #assessment-reason-error e il download NON parte.",
+        "Inserita la motivazione e modificato un valore, 'Scarica PDF accertato' avvia il download del PDF.",
+        "uv run pytest tests/ -v - tutti i test passano, nessuna regressione."
       ],
-      "priority": 2,
-      "passes": true
+      "priority": 10,
+      "passes": false,
+      "notes": "jsPDF genera il PDF lato browser: usare page.expect_download per intercettare il file."
     },
     {
-      "id": "US-903",
-      "title": "Meals basis text nella risposta e nel frontend",
-      "description": "As a user, I want to see the daily rate × days formula for meals so that I can verify that home office days were excluded.",
+      "id": "US-1111",
+      "title": "E2E validazioni form e usabilita",
+      "description": "As a user, I want clear validation and usable conditional UI.",
       "acceptanceCriteria": [
-        "In app/schemas/response.py, aggiungere campo opzionale a TaxLevelResult: meals_basis_text: Optional[str] = None",
-        "In app/core/meals_engine.py, modificare calculate_meals_cantonal e calculate_meals_federal per ritornare anche la stringa basis: cambiare tipo di ritorno da float a tuple[float, str]. La stringa deve avere formato: f'CHF {rate:.2f}/giorno × {effective_days} giorni' con suffisso ' → tetto CHF {annual_max:.0f}/anno applicato' se il tetto è stato raggiunto.",
-        "In app/core/calculator.py, aggiornare _build_cantonal e _build_federal: decompattare la tupla (meals_chf, meals_basis) e popolare meals_basis_text nel TaxLevelResult.",
-        "In app/static/js/app.js, funzione buildDeductionTable: sostituire la basis hardcoded '—' per la riga pasti con: escapeHtml(level.meals_basis_text || '—')",
-        "uv run pytest tests/ -v — tutti i test passano"
+        "tests/e2e/test_validation_ux.py: inviando il form con indirizzi mancanti compare un errore (#form-error) e il calcolo non procede.",
+        "Cross-check NPA/paese: NPA palesemente non svizzero con paese CH (o viceversa) genera un avviso/errore di validazione.",
+        "Sezioni condizionali: cambiando 'Mezzo di trasporto' compaiono/scompaiono i blocchi corretti (PT, distanza, misto, auto aziendale); il comportamento e coerente con updateTransportVisibility.",
+        "'Azzera' ripulisce il form (citta TomSelect comprese), nasconde risultati, mappa e modalita accertamento.",
+        "Accessibilita di base: #results ha aria-live='polite'; il tooltip Lohnausweis e raggiungibile via tastiera (tabindex).",
+        "uv run pytest tests/ -v - tutti i test passano, nessuna regressione."
       ],
-      "priority": 3,
-      "passes": true
-    },
-    {
-      "id": "US-904",
-      "title": "Warning prossimità fermata TP (distanza ≤ 200m)",
-      "description": "As a user choosing private car, I want to be informed if there's a public transport stop within 200m of my home so that I can evaluate whether the car deduction is appropriate.",
-      "acceptanceCriteria": [
-        "Creare app/geo/tp_proximity.py con funzione asincrona: async def find_nearest_stop(lat: float, lon: float, timeout: float = 3.0) -> tuple[str, float] | None. Chiama https://transport.opendata.ch/v1/locations?x={lon}&y={lat}&type=station&limit=1 via httpx.AsyncClient(timeout=timeout). Se la risposta contiene almeno una stazione con coordinate, calcola la distanza in metri usando Haversine tra (lat, lon) e le coordinate della stazione. Ritorna (nome_stazione, distanza_m) oppure None se fallisce.",
-        "In app/api/v1/endpoints/deduction.py, dopo aver risolto le coordinate del domicilio: se req.transport_mode == TransportMode.PRIVATE_CAR e le coordinate del domicilio sono disponibili, chiamare await tp_proximity.find_nearest_stop(home_lat, home_lon). Se risultato non è None e distanza <= 200: aggiungere alle warnings della response: f\"Fermata TP '{nome}' a {distanza:.0f}m dal domicilio — valutare deduzione per mezzi pubblici (Art. 25 LT)\"",
-        "Se il geocoding del domicilio non è disponibile o la chiamata a TP fallisce: ignorare silenziosamente, nessun errore verso il client.",
-        "Il net_deduction_chf per l'auto viene calcolato normalmente anche se la fermata è vicina (warning solo informativo).",
-        "La street del domicilio NON è resa obbligatoria.",
-        "Test in tests/unit/test_fase9_homeoffice.py: mockare find_nearest_stop per ritornare ('Lugano, Piazza Dante', 150.0) → warnings contiene stringa con '150m'. Mockare per None → nessun warning. Mockare per ('Stazione', 250.0) → nessun warning.",
-        "uv run pytest tests/ -v — tutti i test passano"
-      ],
-      "priority": 4,
-      "passes": true
-    },
-    {
-      "id": "US-905",
-      "title": "Test suite Fase 9",
-      "description": "As a developer, I want automated tests for all Fase 9 fixes so regressions are caught immediately.",
-      "acceptanceCriteria": [
-        "Creare tests/unit/test_fase9_homeoffice.py con i seguenti test:",
-        "test_work_schedule_nested_payload: POST a /v1/deduction/calculate con payload che include work_schedule: {days_per_week: 5, home_office_days_per_week: 1} e transport_mode=private_car, override_distance_km=1.0, fiscal_year=2026 → cantonal_TI.transport_deduction.effective_working_days == 176",
-        "test_work_schedule_zero_ho: stessa richiesta con home_office_days_per_week: 0 → effective_working_days == 220",
-        "test_basis_text_with_ho: con home_office_days_per_week=1 → cantonal_TI.transport_deduction.lines[0].basis contiene '220/5' e '4 gg/sett'",
-        "test_basis_text_without_ho: con home_office_days_per_week=0 → basis NON contiene 'sett. in ufficio'",
-        "test_meals_basis_text: con include_meals=True, meal_situation=without_cafeteria, home_office_days_per_week=1 → cantonal_TI.meals_basis_text contiene '15.00' e '176 giorni'",
-        "uv run pytest tests/unit/test_fase9_homeoffice.py -v — tutti i nuovi test passano",
-        "uv run pytest tests/ -v — tutti i test passano senza regressioni"
-      ],
-      "priority": 5,
-      "passes": true
+      "priority": 11,
+      "passes": false,
+      "notes": ""
     }
   ]
 }

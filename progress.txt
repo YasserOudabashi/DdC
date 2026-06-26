@@ -1,248 +1,45 @@
-# Ralph Progress Log — DdC Security Hardening
-# Avviato: 2026-06-24
+# Ralph Progress Log — DdC Fase 11: Verifica E2E browser (Playwright)
+# Avviato: 2026-06-26
 
-## 2026-06-24 — US-701 DONE
-- app/security.py: aggiunto `import secrets`; verify_api_key() ora usa secrets.compare_digest()
-  per confronto timing-safe della API key (prevenzione timing attack).
-- 84 test passano, nessuna regressione.
-- Prossima: US-702 (rate limiting su /v1/health)
+## Contesto
+- Fase 11: 11 storie (US-1101..US-1111) — test end-to-end nel browser con Playwright.
+- branchName: ralph/fase-11-e2e-browser (basato su origin/master 054ae26, ultimo codice).
+- Obiettivo: verificare che TUTTI i percorsi utente del sito funzionino (correttezza + usabilita), non aggiungere feature.
+- Le fasi 1-10 (backend + frontend mappa/coniuge/PDF/accertamento) sono gia implementate e committate.
 
-## 2026-06-24 — US-702 DONE
-- app/api/v1/endpoints/health.py: aggiunto import Request, limiter; decorator
-  @limiter.limit("{rate_limit_per_minute}/minute") e request: Request come primo param.
-- 84 test passano, nessuna regressione.
-- Prossima: US-703 (toggle /docs e /redoc via DOCS_ENABLED env var)
+## Infrastruttura gia pronta (US-1101 scaffoldata e verificata localmente)
+- pyproject.toml: aggiunto 'playwright>=1.40' al gruppo dev + marker 'e2e'.
+  NB: NON usare pytest-playwright (API sync/greenlet): confligge con asyncio_mode=auto
+  e lascia un event loop "running" che rompe i test backend async.
+- tests/e2e/conftest.py:
+  - fixture 'live_server' = uvicorn in-process (thread) -> base URL.
+  - fixture function-scoped autouse '_stub_geo' = stub deterministico di
+    resolver._swisstopo.resolve / _nominatim.resolve / tp_proximity.find_nearest_stop,
+    con RIPRISTINO dopo ogni test (vedi lezione sotto).
+    Tabella coordinate: 6500 Bellinzona, 6900 Lugano, 6600 Locarno, 6830 Chiasso,
+    6512 Giubiasco (<5km da Bellinzona, per test blocco auto), 22100 Como (IT).
+  - fixture async 'page' = Chromium via async_playwright (function-scoped).
+- tests/e2e/helpers.py: funzioni ASYNC: set_city (TomSelect create:true), fill_address,
+  fill_minimal_addresses, calcola (attende "Cantonale TI" nei risultati), results_text.
+- tests/e2e/test_smoke.py: 2 test async (homepage + card principali) -> PASS su chromium.
+- Verificato localmente: 'uv run pytest tests/ -q' = 133 passed (131 backend + 2 e2e), 0 falliti.
 
-## 2026-06-24 — US-703 DONE
-- app/config.py: aggiunto `docs_enabled: bool = True` in Settings.
-- app/main.py: docs_url e redoc_url ora condizionali su settings.docs_enabled
-  (None disabilita completamente Swagger UI e ReDoc).
-- .env.example: aggiunto `DOCS_ENABLED=false  # false in produzione`.
-- 84 test passano, nessuna regressione.
-- Prossima: US-704 (CSP, HSTS, Permissions-Policy security headers)
+## Note importanti per chi implementa le storie
+- PRIMA dei test eseguire 'uv run playwright install chromium' se i browser mancano.
+- I test E2E sono ASYNC (playwright.async_api), coerenti con asyncio_mode=auto del progetto.
+- LEZIONE: lo stub geo patcha lo stato globale del modulo. DEVE essere function-scoped e
+  ripristinare in finally, altrimenti (session-scope) resta attivo e fa fallire i test
+  backend integration con 422 (override distanza vs distanza stubbata).
+- Le citta usano TomSelect con create:true: digitare il nome + Invio; impostare l'NPA
+  DOPO la citta (onItemAdd puo sovrascriverlo se vuoto). Vedi helpers.set_city.
+- I km sono deterministici grazie allo stub geo (haversine reale su coordinate fisse).
+- /v1/locations/search e /v1/locations/npa restano esterni: con create:true non servono,
+  ma se necessario intercettarli con page.route.
+- OSRM (router.project-osrm.org) e esterno: per US-1109 usare page.route o asserire solo
+  presenza mappa + marker, senza dipendere dal tracciato.
+- PDF (jsPDF) generato lato browser: per US-1110 usare page.expect_download.
+- Lo stub tp_proximity.find_nearest_stop ritorna None (nessuna fermata vicina): il blocco
+  auto privata <30km va testato con la coppia Bellinzona->Giubiasco (distanza breve).
 
-## 2026-06-24 — US-704 DONE
-- app/security.py: aggiunti 4 nuovi header in add_security_headers():
-  Content-Security-Policy, Strict-Transport-Security, Permissions-Policy,
-  X-Permitted-Cross-Domain-Policies.
-- Tutti i precedenti 5 header (X-Content-Type-Options, X-Frame-Options, X-XSS-Protection,
-  Referrer-Policy, Cache-Control) preservati invariati.
-- 84 test passano, nessuna regressione.
-- Prossima: US-705 (proxy-aware rate limiting via TRUSTED_PROXIES)
-
-## 2026-06-24 — US-705 DONE
-- app/config.py: aggiunto `trusted_proxies: str = ""` in Settings.
-- app/security.py: aggiunta funzione `get_real_ip(request)` — se client.host è in
-  trusted_proxies e c'è header X-Forwarded-For, ritorna il primo IP dall'header;
-  altrimenti usa get_remote_address() (fallback invariato quando lista vuota).
-  limiter ora usa `key_func=get_real_ip` al posto di `get_remote_address`.
-- .env.example: aggiunto `TRUSTED_PROXIES=  # IP del reverse proxy, es: 127.0.0.1`.
-- 84 test passano, nessuna regressione.
-- Prossima: US-706 (rimuovere info disclosure filesystem da YAML loader)
-
-## 2026-06-24 — US-706 DONE
-- app/rules/loader.py: rimossa variabile `available` e clausola `Disponibili: ...`
-  dal messaggio FileNotFoundError. Nuovo messaggio: solo
-  `f'Anno fiscale {fiscal_year} non supportato.'`
-  Previene l'enumerazione del filesystem da parte di attaccanti.
-- 84 test passano, nessuna regressione.
-- Prossima: US-708 (Nominatim contact email configurabile via env var)
-
-## 2026-06-24 — US-707 DONE
-- app/schemas/request.py: aggiunti Field constraints su Address:
-  city=Field(..., min_length=1, max_length=100)
-  street=Field(default=None, max_length=200)
-  postal_code=Field(..., min_length=3, max_length=10)
-  country=Field(default='CH', min_length=2, max_length=2)
-- Tutti i fixture esistenti (Lugano/6900, Bellinzona/6500, ecc.) continuano a passare.
-- 84 test passano, nessuna regressione.
-- Prossima: US-706 (rimuovere info disclosure filesystem da YAML loader)
-
-## 2026-06-24 — US-708 DONE
-- app/config.py: aggiunto `nominatim_contact_email: str = "admin@example.com"` in Settings.
-- app/geo/providers/nominatim.py: rimosso `_HEADERS` globale con email hardcoded;
-  header User-Agent ora costruito dinamicamente in resolve() leggendo
-  settings.nominatim_contact_email. Aggiunto import di `settings` da app.config.
-- .env.example: aggiunto `NOMINATIM_CONTACT_EMAIL=tua@email.com  # per User-Agent Nominatim`.
-- 84 test passano, nessuna regressione.
-
-## 2026-06-24 — US-709, US-710, US-711, US-712 DONE (manualmente, sandbox non può eseguire docker)
-- US-709: Dockerfile — aggiunge appgroup + appuser non-root, direttiva USER appuser prima di CMD.
-- US-710: pyproject.toml — pip-audit>=2.7 in dev deps; creato docs/security.md con sezione audit.
-- US-711: .env.example — ALLOWED_ORIGINS non più *, commento warning produzione aggiunto.
-- US-712: tests/unit/test_security.py (7 test: API key, real IP, Address validation);
-          tests/integration/test_security_headers.py (2 test: headers + health).
-- 93/93 test passano.
-- FASE 7 COMPLETATA: tutte le storie US-701..US-712 hanno passes: true.
-
-## 2026-06-25 — US-801 DONE
-- rules/2025.yaml e rules/2026.yaml: aggiunta sezione public_transport_subscriptions
-  sotto cantonal_TI: (stesso livello di transport:, meals:, other_expenses:).
-  Prezzi ARCOBALENO adulti >=25 anni: 2a cl. (485..2252 CHF), 1a cl. (827..3829 CHF).
-  Fonte: flyer ARCOBALENO "Piano zone e tariffe", dicembre 2025, valido dal 14.12.2025.
-  Valori identici per 2025 e 2026 (nessun aumento tariffario).
-- 93 test passano, nessuna regressione.
-- Prossima: US-802 (modelli Pydantic ArcobalenovAnnualRates + PublicTransportSubscriptions in app/rules/models.py)
-
-## 2026-06-25 — US-802 DONE
-- app/rules/models.py: aggiunte classi ArcobalenovAnnualRates (zones_1..zones_8_plus: float)
-  e PublicTransportSubscriptions (arcobaleno_annual_adult_2cl, arcobaleno_annual_adult_1cl: Optional).
-  Aggiunto campo public_transport_subscriptions: Optional[PublicTransportSubscriptions] = None in CantonalRules.
-  Il loader YAML carica già tutto automaticamente via Pydantic — nessuna modifica al loader.
-- 93 test passano, nessuna regressione.
-- Prossima: US-803 (campi arcobaleno_zones e arcobaleno_class nel request schema)
-
-## 2026-06-25 — US-803 DONE
-- app/schemas/request.py: aggiunti due campi in DeductionRequest dopo annual_public_transport_cost_chf:
-  arcobaleno_zones: Optional[int] = Field(default=None, ge=1, le=8)
-  arcobaleno_class: str = Field(default='2', pattern='^[12]$')
-- Aggiunto model_validator validate_arcobaleno_requires_public_transport: solleva ValueError
-  se arcobaleno_zones is not None AND transport_mode != PUBLIC_TRANSPORT.
-- Aggiornato example in model_config: rimosso annual_public_transport_cost_chf, aggiunti
-  arcobaleno_zones=3, arcobaleno_class='2'.
-- 93 test passano, nessuna regressione.
-- Prossima: US-804 (lookup ARCOBALENO nel calculator — _arcobaleno_annual_cost() in calculator.py)
-
-## 2026-06-25 — US-804 DONE
-- app/core/calculator.py: aggiunta funzione privata _arcobaleno_annual_cost(zones, class_, rules) -> float | None
-  che legge i prezzi da rules.cantonal_TI.public_transport_subscriptions e mappa zones 1-7 ai campi
-  zones_1..zones_7, zones>=8 -> zones_8_plus.
-- _cantonal_transport() e _federal_transport(): quando arcobaleno_zones is not None e transport_mode==PUBLIC_TRANSPORT,
-  passa il costo ARCOBALENO come annual_public_transport_cost_chf al motore; aggiorna lines[0].label e
-  lines[0].basis con la descrizione ufficiale (zona/zone, classe, CHF, fonte flyer dic. 2025).
-- Fallback invariato: se arcobaleno_zones is None, usa req.annual_public_transport_cost_chf (o stima km).
-- 93 test passano, nessuna regressione.
-- Prossima: US-805 (endpoint GET /v1/locations/search per autocomplete città via transport.opendata.ch)
-
-## 2026-06-25 — US-806 DONE
-- app/static/index.html: aggiunto Tom Select v2 via CDN (CSS + JS) prima di </head>.
-  Campi paese home_country e work_country trasformati da <input type="text"> a <select>
-  con opzioni CH/IT/DE/FR/AT. Rimosso pattern/maxlength="4" dai campi NPA (ora maxlength="10").
-- app/static/js/app.js: inizializzazione TomSelect su #home_city e #work_city con
-  load callback -> /v1/locations/search, create:true, placeholder 'Cerca città…'.
-  Funzione helper validateNpa() per validazione per-paese (CH=4 cifre, IT=5 cifre, altri=3-10 char).
-  validateForm() e getFormPayload() aggiornati per leggere il valore da tomSelectHome/Work.getValue().
-  btnReset aggiornato con tomSelectHome.clear() + tomSelectWork.clear().
-- 96 test passano (nessuna regressione backend).
-- Prossima: US-807 (Frontend — sezione scelta costo abbonamento mezzi pubblici con 3 radio option)
-
-## 2026-06-25 — US-805 DONE
-- app/api/v1/endpoints/locations.py: nuovo endpoint GET /v1/locations/search?q=<text>&limit=10
-  che proxia transport.opendata.ch/v1/locations. Ritorna [] se q < 2 caratteri o in caso di
-  errore/timeout (httpx.AsyncClient timeout=3.0s). Rate limit 60/minute via @limiter.limit.
-- app/api/v1/router.py: registrato locations_router con prefix=/v1/locations, tags=['Locations'].
-- tests/integration/test_locations.py: 3 test (query corta -> [], senza q -> [], query valida -> lista).
-- 96 test passano (93 originali + 3 nuovi), nessuna regressione.
-- Prossima: US-806 (Frontend — autocomplete città Tom Select + select paese)
-
-## 2026-06-25 — US-807 DONE
-- app/static/index.html: aggiunto div#pt-cost-section (hidden) dentro la Card Trasporto,
-  dopo il select transport_mode. Contiene 3 radio buttons (pt_cost_type):
-  - 'arcobaleno' (default): select zone (1-8) + select classe (1ª/2ª) + preview costo
-  - 'manuale': input annual_public_transport_cost_chf
-  - 'sbb-link': link SBB + input annual_public_transport_cost_chf_sbb
-- app/static/css/style.css: aggiunte classi .radio-group, .radio-label, .btn-link.
-- app/static/js/app.js:
-  - Costanti ARCOBALENO_2CL e ARCOBALENO_1CL per preview live.
-  - updateArcobalenoCostPreview(): aggiorna testo #arcobaleno-cost-preview.
-  - updatePtCostVisibility(): mostra/nasconde i sotto-blocchi in base al radio selezionato.
-  - updateTransportVisibility(): mostra/nasconde pt-cost-section quando mode='public_transport'.
-  - Listener su radio pt_cost_type, arcobaleno_zones, arcobaleno_class.
-  - getFormPayload(): legge ptRadio e include arcobaleno_zones/arcobaleno_class oppure
-    annual_public_transport_cost_chf nel payload secondo selezione.
-  - validateForm(): validazione manuale e sbb-link richiedono costo > 0.
-- 96 test passano, nessuna regressione backend.
-- Prossima: US-808 (Test suite Fase 8 — test arcobaleno lookup + test locations)
-
-## 2026-06-25 — US-808 DONE
-- tests/unit/test_arcobaleno_lookup.py: 9 test che coprono tutti i casi ARCOBALENO:
-  zones 1/3/8 (2a cl.), zone 2 (1a cl.), federal no-cap (1074 e 3829 sopra soglia IFD),
-  stringa basis con 'ARCOBALENO' e '1074', validazione 422 con private_car, fallback manuale.
-- tests/integration/test_locations.py: già presente dalla US-805 con 3 test (query corta,
-  senza q, query valida).
-- 105 test passano (96 precedenti + 9 nuovi arcobaleno), nessuna regressione.
-- FASE 8 COMPLETATA: tutte le storie US-801..US-808 hanno passes: true.
-
-## 2026-06-25 — FASE 9 COMPLETATA (US-901..US-905)
-- US-901: fix work_schedule nesting nel frontend (giorni HO ora applicati al calcolo)
-- US-902: basis string trasparente con suffisso HO per auto/moto/misto
-- US-903: meals_basis_text nella risposta API e nel frontend
-- US-904: app/geo/tp_proximity.py — find_nearest_stop() via transport.opendata.ch + Haversine;
-  resolver.py ora ritorna 3-tuple (km, provider, home_coords);
-  deduction.py aggiunge warning se fermata TP ≤ 200m dal domicilio (solo informativo)
-- US-905: tests/unit/test_fase9_homeoffice.py — 8 test (HO, basis, meals, TP proximity)
-- 113 test passano, nessuna regressione
-- Deploy VPS: git rebase origin/master + systemctl restart trasferta-api (OK)
-- FASE 9 COMPLETATA: tutte le storie US-901..US-905 hanno passes: true
-
-## 2026-06-25 — US-903 DONE
-- app/core/meals_engine.py: cambiato tipo di ritorno da float a tuple[float, str] per
-  calculate_meals_cantonal, calculate_meals_federal e _calculate(). La stringa basis ha
-  formato 'CHF {rate:.2f}/giorno × {effective_days} giorni' con suffisso
-  ' → tetto CHF {annual_max:.0f}/anno applicato' se il tetto è stato raggiunto.
-  Caso HOME ritorna (0.0, '').
-- app/schemas/response.py: aggiunto campo meals_basis_text: Optional[str] = None in TaxLevelResult.
-- app/core/calculator.py: _build_cantonal() e _build_federal() ora decompattano la tupla
-  (meals_chf, meals_basis) e passano meals_basis_text al TaxLevelResult.
-- app/static/js/app.js: buildDeductionTable() ora mostra escapeHtml(level.meals_basis_text || '—')
-  invece di '—' nella colonna basis della riga pasti.
-- tests/unit/test_new_deductions.py: aggiornati 3 test che chiamano meals_engine direttamente
-  per decompattare la tupla (result, _).
-- tests/unit/test_fase4_lohnausweis.py: aggiornata helper _meals_cantonal per restituire solo il float.
-- 105 test passano, nessuna regressione.
-- Prossima: US-904 (Warning prossimità fermata TP — distanza ≤ 200m)
-
-## 2026-06-25 — US-902 DONE
-- app/core/cantonal_engine.py: reso work_schedule opzionale (default=None per compat test).
-  Aggiunta helper _ho_suffix(work_schedule, standard_annual) -> str che ritorna
-  " ({standard_annual}/5 sett. × {office_days:.0f} gg/sett. in ufficio)" quando HO > 0.
-  Aggiornate _private_car, _motorcycle, _mixed: ricevono work_schedule e standard_annual;
-  appendono il suffisso alla basis string quando home_office_days_per_week > 0.
-- app/core/federal_engine.py: stessa modifica per _private_car_federal, _motorcycle_federal,
-  _mixed_federal. Aggiunta _ho_suffix identica.
-- 105 test passano, nessuna regressione.
-- Prossima: US-903 (Meals basis text — ritornare formula CHF/giorno × giorni nella risposta)
-
-## 2026-06-25 — US-901 DONE
-- app/static/js/app.js, getFormPayload(): rimossi i campi flat days_per_week e
-  home_office_days_per_week dal root del payload; sostituiti con oggetto annidato:
-  work_schedule: { days_per_week: daysPerWeek, home_office_days_per_week: homeOfficeDays }
-  Questo era il bug che faceva ignorare i giorni HO nel calcolo (il backend si aspettava
-  work_schedule, non campi flat al root).
-- 105 test passano, nessuna regressione.
-- Prossima: US-902 (basis string trasparente per giorni effettivi — suffisso alla formula km)
-
-## 2026-06-25 — US-904 DONE
-- app/geo/tp_proximity.py: nuovo modulo con find_nearest_stop(lat, lon, timeout=3.0) -> tuple[str, float] | None.
-  Chiama transport.opendata.ch/v1/locations?x={lon}&y={lat}&type=station&limit=1, calcola distanza Haversine
-  tra il domicilio e la stazione più vicina. Ritorna (nome, distanza_m) oppure None se fallisce/timeout.
-- app/geo/resolver.py: risolve_distance ora ritorna 3-tuple (distanza_km, provider, home_coords) invece di 2-tuple.
-  home_coords = (lat, lon) del domicilio oppure None se il geocoding fallisce.
-- app/api/v1/endpoints/deduction.py:
-  - Importa TransportMode e tp_proximity.
-  - Dopo geocoding, se transport_mode==PRIVATE_CAR e home_coords is not None:
-    chiama find_nearest_stop; se distanza <= 200m aggiunge warning all'utente (Art. 25 LT).
-  - Rimossa condizione errata req.home_address.street (street NON obbligatoria per il check).
-- tests/unit/test_fase9_homeoffice.py: già presente con 8 test (5 US-905 + 3 US-904 TP proximity).
-  Tutti e 8 passano con mock di resolve_distance e find_nearest_stop.
-- 113 test passano (105 precedenti + 8 nuovi), nessuna regressione.
-- FASE 9 COMPLETATA: tutte le storie US-901..US-905 hanno passes: true.
-
-## 2026-06-25 — US-905 DONE
-- tests/unit/test_fase9_homeoffice.py: già presente con tutti i test richiesti:
-  test_work_schedule_nested_payload_ho1, test_work_schedule_zero_ho, test_basis_text_with_ho,
-  test_basis_text_without_ho, test_meals_basis_text, test_tp_warning_stop_within_200m,
-  test_tp_warning_no_stop, test_tp_warning_stop_beyond_200m.
-- 113 test passano, nessuna regressione.
-
-## 2026-06-25 — FASE 8 AVVIATA
-- Scopo: ARCOBALENO zone lookup + autocomplete indirizzi + UI costo abbonamento TP
-- PRD: US-801..US-808 (8 storie, tutte passes: false)
-- branchName: ralph/fase-8-arcobaleno-ux
-- Prezzi ARCOBALENO adulti >=25 anni, 2a cl.: 1z=485, 2z=732, 3z=1074, 4z=1387, 5z=1691, 6z=1986, 7z=2157, 8z+=2252
-- Prezzi ARCOBALENO adulti >=25 anni, 1a cl.: 1z=827, 2z=1245, 3z=1834, 4z=2366, 5z=2879, 6z=3382, 7z=3667, 8z+=3829
-- Fonte: flyer ARCOBALENO "Piano zone e tariffe", dicembre 2025, valido dal 14.12.2025
-- Autocomplete: Tom Select v2 via CDN + backend /v1/locations/search -> transport.opendata.ch
-- UI abbonamento TP: 3 opzioni (ARCOBALENO select, manuale, link SBB https://www.sbb.ch/it/offerte/acquisto-abbo-percorso-modulari-comunita?validityDuration=YEAR)
-- REGOLA D'ORO: nessun valore CHF nel codice Python — tutti nel YAML
-
+## Stato storie
+- US-1101..US-1111: passes=false (US-1101 gia pronta a livello di codice, da confermare in ambiente ralph).
