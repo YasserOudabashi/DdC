@@ -65,6 +65,7 @@
         var option = this.options[value];
         if (option && option.npa) {
           document.getElementById(npaFieldId).value = option.npa;
+          document.getElementById(countryFieldId).value = 'CH';
         } else {
           fillNpa(value, npaFieldId, countryFieldId);
         }
@@ -74,6 +75,7 @@
         var option = this.options[value];
         if (option && option.npa) {
           document.getElementById(npaFieldId).value = option.npa;
+          document.getElementById(countryFieldId).value = 'CH';
         } else if (value) {
           fillNpa(value, npaFieldId, countryFieldId);
         }
@@ -353,6 +355,24 @@
     if (!workStreetVal) return 'Inserire la via e il numero civico del luogo di lavoro (obbligatorio per il calcolo della distanza).';
     const workNpaErr = validateNpa(workNpa, workCountry, 'del luogo di lavoro');
     if (workNpaErr) return workNpaErr;
+
+    // ── Cross-check NPA vs paese ───────────────────────────────────────────────
+    if (homeNpa && homeCountry === 'IT' && /^[0-9]{4}$/.test(homeNpa)) {
+      return 'NPA domicilio a 4 cifre con paese "IT": il CAP italiano ha 5 cifre. ' +
+             'Se il domicilio è in Svizzera, impostare il paese su CH.';
+    }
+    if (homeNpa && homeCountry === 'CH' && /^[0-9]{5}$/.test(homeNpa)) {
+      return 'NPA domicilio a 5 cifre con paese "CH": il NPA svizzero ha 4 cifre. ' +
+             'Se il domicilio è in Italia, impostare il paese su IT.';
+    }
+    if (workNpa && workCountry === 'IT' && /^[0-9]{4}$/.test(workNpa)) {
+      return 'NPA luogo di lavoro a 4 cifre con paese "IT": il CAP italiano ha 5 cifre. ' +
+             'Se il luogo di lavoro è in Svizzera, impostare il paese su CH.';
+    }
+    if (workNpa && workCountry === 'CH' && /^[0-9]{5}$/.test(workNpa)) {
+      return 'NPA luogo di lavoro a 5 cifre con paese "CH": il NPA svizzero ha 4 cifre. ' +
+             'Se il luogo di lavoro è in Italia, impostare il paese su IT.';
+    }
 
     // ── Distanza manuale ───────────────────────────────────────────────────────
     const overrideKm = _numVal('override_distance_km');
