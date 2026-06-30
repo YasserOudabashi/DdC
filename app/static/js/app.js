@@ -856,27 +856,44 @@
           rows.push(['Altre spese professionali', 'CHF ' + level.other_expenses_deduction_chf.toFixed(2), '3% salario netto']);
         }
       }
-      rows.push(['TOTALE', 'CHF ' + level.total_deduction_chf.toFixed(2), assessmentMode ? 'CHF ' + accertatoTotal.toFixed(2) : '', '']);
+      if (assessmentMode) {
+        rows.push(['TOTALE', 'CHF ' + level.total_deduction_chf.toFixed(2), 'CHF ' + accertatoTotal.toFixed(2), '']);
+      } else {
+        rows.push(['TOTALE', 'CHF ' + level.total_deduction_chf.toFixed(2), '']);
+      }
 
+      // In accertamento: Voce | Calcolato (prima) | Accertato (dopo) | Motivazione.
       var head = assessmentMode
-        ? [['Voce', 'Calcolato CHF', 'Accertato CHF', 'Motivazione']]
+        ? [['Voce', 'Calcolato (prima)', 'Accertato (dopo)', 'Motivazione']]
         : [['Voce', 'Importo CHF', 'Base di calcolo']];
+
+      var totalRowIdx = rows.length - 1;
 
       doc.autoTable({
         head: head,
         body: rows,
         startY: yPos,
         margin: { left: 14, right: 14 },
-        styles: { fontSize: 8 },
-        headStyles: { fillColor: [0, 51, 102] },
-        columnStyles: assessmentMode ? { 3: { cellWidth: 60 } } : {},
+        styles: { fontSize: 8, cellPadding: 2, valign: 'middle', overflow: 'linebreak' },
+        headStyles: { fillColor: [0, 51, 102], textColor: [255, 255, 255], fontStyle: 'bold' },
+        alternateRowStyles: { fillColor: [247, 249, 252] },
+        columnStyles: assessmentMode
+          ? { 0: { cellWidth: 56 }, 1: { halign: 'right' }, 2: { halign: 'right' }, 3: { cellWidth: 50 } }
+          : { 1: { halign: 'right', cellWidth: 32 } },
         didParseCell: function (data) {
-          if (data.row.index === rows.length - 1) {
+          // Solo le celle del corpo tabella: l'header NON deve mai ereditare i colori
+          // delle righe rettificate (altrimenti diventa testo bianco su sfondo chiaro).
+          if (data.section !== 'body') return;
+          if (data.row.index === totalRowIdx) {
             data.cell.styles.fontStyle = 'bold';
+            data.cell.styles.fillColor = [233, 238, 245];
           } else if (assessmentMode && changedRowIdx.indexOf(data.row.index) >= 0) {
-            // Evidenzia le righe effettivamente rettificate
-            data.cell.styles.fillColor = [255, 245, 224];
-            if (data.column.index === 2) data.cell.styles.fontStyle = 'bold';
+            // Evidenzia le righe effettivamente rettificate (giallo tenue)
+            data.cell.styles.fillColor = [255, 243, 205];
+            if (data.column.index === 2) {
+              data.cell.styles.fontStyle = 'bold';
+              data.cell.styles.textColor = [146, 64, 14];
+            }
           }
         },
       });
@@ -938,6 +955,13 @@
     setSaveStatus('● Modifiche non salvate', '#e67e22');
   }
 
+  // Trova il campo «Motivo» associato a una riga (ora in una riga separata della tabella).
+  function findReasonInput(tid, idx) {
+    return resultsDiv.querySelector(
+      '.assessment-reason-input[data-table="' + tid + '"][data-idx="' + idx + '"]'
+    );
+  }
+
   function saveAssessment() {
     if (!lastResponse) return;
     // Raccoglie importo + motivo correnti di ogni input nello stato accertato
@@ -945,8 +969,7 @@
     resultsDiv.querySelectorAll('.assessment-input').forEach(function (inp) {
       var tid = inp.getAttribute('data-table');
       var idx = inp.getAttribute('data-idx');
-      var td = inp.closest('td');
-      var reasonInp = td ? td.querySelector('.assessment-reason-input') : null;
+      var reasonInp = findReasonInput(tid, idx);
       if (!assessedState[tid]) assessedState[tid] = {};
       assessedState[tid][idx] = {
         amount: parseFloat(inp.value) || 0,
@@ -965,8 +988,7 @@
       var orig = parseFloat(inp.getAttribute('data-original'));
       var cur = parseFloat(inp.value) || 0;
       if (Math.abs(cur - orig) > 0.005) {
-        var td = inp.closest('td');
-        var reasonInp = td ? td.querySelector('.assessment-reason-input') : null;
+        var reasonInp = findReasonInput(inp.getAttribute('data-table'), inp.getAttribute('data-idx'));
         if (!reasonInp || !reasonInp.value.trim()) missing++;
       }
     });
@@ -1026,28 +1048,38 @@
     const transport = level.transport_deduction;
     let rows = '';
     var inputIdx = 0;
+    var tid = tableId || 'tbl';
 
-    function makeCell(amount) {
-      if (assessment) {
-        var idx = inputIdx++;
-        var tid = tableId || 'tbl';
-        // Riusa valore + motivo già accertati per questa riga se presenti
-        var entry = (assessedState[tid] && assessedState[tid][idx]) || {};
-        var saved = (entry.amount != null) ? entry.amount : amount;
-        var savedReason = entry.reason || '';
-        var changed = Math.abs(saved - amount) > 0.005;
-        var reasonHiddenClass = changed ? '' : ' hidden';
-        var amountBorder = changed ? '2px solid #e67e22' : '1px solid #ccc';
-        return '<td class="amount">' +
-          '<input type="number" class="assessment-input" step="0.01" value="' + saved.toFixed(2) +
-          '" data-original="' + amount.toFixed(2) + '" data-table="' + tid + '" data-idx="' + idx +
-          '" style="width:90px;text-align:right;border:' + amountBorder + ';border-radius:3px;padding:2px 4px;">' +
-          '<input type="text" class="assessment-reason-input' + reasonHiddenClass + '" maxlength="300" value="' + escapeHtml(savedReason) +
-          '" data-table="' + tid + '" data-idx="' + idx + '" placeholder="Motivo della modifica…" ' +
-          'style="width:100%;margin-top:3px;font-size:0.78rem;border:1px solid #e67e22;border-radius:3px;padding:2px 4px;box-sizing:border-box;">' +
-          '</td>';
+    // Ritorna { cell, reasonRow }: la cella editabile dell'importo + una riga
+    // separata a tutta larghezza per il «Motivo della modifica» (così è sempre
+    // cliccabile e non si sovrappone alla colonna "Base di calcolo").
+    function makeCells(amount) {
+      if (!assessment) {
+        return { cell: '<td class="amount">' + formatChf(amount) + '</td>', reasonRow: '' };
       }
-      return '<td class="amount">' + formatChf(amount) + '</td>';
+      var idx = inputIdx++;
+      // Riusa valore + motivo già accertati per questa riga se presenti
+      var entry = (assessedState[tid] && assessedState[tid][idx]) || {};
+      var saved = (entry.amount != null) ? entry.amount : amount;
+      var savedReason = entry.reason || '';
+      var changed = Math.abs(saved - amount) > 0.005;
+      var changedClass = changed ? ' is-changed' : '';
+      var cell =
+        '<td class="amount">' +
+          '<input type="number" class="assessment-input' + changedClass + '" step="0.01" value="' + saved.toFixed(2) +
+          '" data-original="' + amount.toFixed(2) + '" data-table="' + tid + '" data-idx="' + idx +
+          '" aria-label="Importo accertato">' +
+        '</td>';
+      var reasonRow =
+        '<tr class="assessment-reason-row' + (changed ? '' : ' hidden') + '">' +
+          '<td class="reason-label">&#8627; Motivo della modifica</td>' +
+          '<td colspan="2">' +
+            '<input type="text" class="assessment-reason-input" maxlength="300" value="' + escapeHtml(savedReason) +
+            '" data-table="' + tid + '" data-idx="' + idx + '" placeholder="Indicare il motivo della rettifica…" ' +
+            'aria-label="Motivo della modifica">' +
+          '</td>' +
+        '</tr>';
+      return { cell: cell, reasonRow: reasonRow };
     }
 
     transport.lines.forEach(function (line) {
@@ -1055,31 +1087,34 @@
       const capRow = (line.capped && line.cap_amount_chf != null)
         ? '<tr><td colspan="3" class="cap-warning">Tetto massimo applicato: ' + formatChf(line.cap_amount_chf) + '</td></tr>'
         : '';
+      var c = makeCells(line.amount_chf);
       rows +=
         '<tr>' +
           '<td>' + escapeHtml(line.label) + capMark +
             '<span class="legal-ref">' + escapeHtml(line.legal_reference) + '</span></td>' +
-          makeCell(line.amount_chf) +
+          c.cell +
           '<td class="basis">' + escapeHtml(line.basis) + '</td>' +
-        '</tr>' + capRow;
+        '</tr>' + c.reasonRow + capRow;
     });
 
     if (level.meals_deduction_chf != null) {
+      var cm = makeCells(level.meals_deduction_chf);
       rows +=
         '<tr>' +
           '<td>Pasti fuori domicilio</td>' +
-          makeCell(level.meals_deduction_chf) +
+          cm.cell +
           '<td class="basis">' + escapeHtml(level.meals_basis_text || '—') + '</td>' +
-        '</tr>';
+        '</tr>' + cm.reasonRow;
     }
 
     if (level.other_expenses_deduction_chf != null) {
+      var co = makeCells(level.other_expenses_deduction_chf);
       rows +=
         '<tr>' +
           '<td>Altre spese professionali</td>' +
-          makeCell(level.other_expenses_deduction_chf) +
+          co.cell +
           '<td class="basis">3% salario netto</td>' +
-        '</tr>';
+        '</tr>' + co.reasonRow;
     }
 
     var totalId = tableId ? 'total-' + tableId : '';
@@ -1275,10 +1310,6 @@
 
     // Listener su assessment-input per aggiornare i totali e lo stato accertato
     if (assessmentActive) {
-      function reasonInputFor(inp) {
-        var td = inp.closest('td');
-        return td ? td.querySelector('.assessment-reason-input') : null;
-      }
       function storeEntry(tid, idx, amount, reason) {
         if (!assessedState[tid]) assessedState[tid] = {};
         assessedState[tid][idx] = { amount: amount, reason: reason || '' };
@@ -1289,23 +1320,17 @@
           var cur = parseFloat(inp.value) || 0;
           var tid = inp.getAttribute('data-table');
           var idx = inp.getAttribute('data-idx');
-          var reasonInp = reasonInputFor(inp);
+          var reasonInp = findReasonInput(tid, idx);
           var changed = Math.abs(cur - orig) > 0.005;
 
-          // Mostra/nasconde il campo motivo a seconda che la riga sia modificata
+          // Mostra/nasconde la RIGA «Motivo della modifica» a seconda che la riga sia rettificata
           if (reasonInp) {
-            if (changed) reasonInp.classList.remove('hidden');
-            else reasonInp.classList.add('hidden');
+            var reasonRow = reasonInp.closest('tr');
+            if (reasonRow) reasonRow.classList.toggle('hidden', !changed);
           }
           storeEntry(tid, idx, cur, reasonInp ? reasonInp.value : '');
 
-          if (changed) {
-            inp.style.border = '2px solid #e67e22';
-            inp.style.background = '#fffbf0';
-          } else {
-            inp.style.border = '1px solid #ccc';
-            inp.style.background = '';
-          }
+          inp.classList.toggle('is-changed', changed);
           // Ricalcola totale della tabella
           var tableEl = inp.closest('table');
           if (tableEl) {

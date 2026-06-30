@@ -513,6 +513,55 @@ fieldset legend {
   font-style: italic;
 }
 
+/* ── Modalità accertamento (editing per-voce) ── */
+.deduction-table input.assessment-input {
+  width: 96px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  border: 1px solid var(--ct-grey-border);
+  border-radius: 3px;
+  padding: 4px 6px;
+  font-size: 0.85rem;
+}
+
+.deduction-table input.assessment-input.is-changed {
+  border: 2px solid #e67e22;
+  background: #fffbf0;
+}
+
+/* Riga dedicata al «Motivo della modifica»: a tutta larghezza, sempre cliccabile */
+.deduction-table tr.assessment-reason-row > td {
+  border-bottom: 1px solid var(--ct-grey-border);
+  padding-top: 0;
+  padding-bottom: 8px;
+}
+
+.deduction-table td.reason-label {
+  color: #b45309;
+  font-size: 0.74rem;
+  font-weight: 600;
+  white-space: nowrap;
+  vertical-align: middle;
+}
+
+.deduction-table input.assessment-reason-input {
+  width: 100%;
+  box-sizing: border-box;
+  font-family: var(--ct-font);
+  font-size: 0.82rem;
+  border: 1px solid #e67e22;
+  border-radius: 3px;
+  padding: 6px 8px;
+  background: #fffdf8;
+}
+
+.deduction-table input.assessment-reason-input:focus {
+  outline: none;
+  border-color: var(--ct-blue-mid);
+  box-shadow: 0 0 0 3px rgba(0, 80, 158, 0.18);
+  background: var(--ct-white);
+}
+
 /* ── Alert warning ── */
 .alert-warning {
   background: #fff3cd;
