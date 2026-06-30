@@ -196,6 +196,84 @@ def _arcobaleno_annual_cost(zones: int, class_: str, rules: FiscalYearRules) -> 
     return zone_map.get(zones, rates.zones_8_plus)
 
 
+def estimate_arcobaleno_zones(distance_km: float, rules: FiscalYearRules) -> int:
+    """Stima il n. di zone Arcobaleno dalla distanza casa-lavoro (fasce dal YAML)."""
+    subs = rules.cantonal_TI.public_transport_subscriptions
+    if subs is None or not subs.zone_estimate_by_km:
+        return 8
+    for band in subs.zone_estimate_by_km:
+        if distance_km <= band.max_km:
+            return band.zones
+    return 8  # oltre l'ultima fascia → abbonamento 8+ zone
+
+
+def build_alternative_transport(
+    distance_km: float | None,
+    station_distance_km: float | None,
+    effective_days: int,
+    rules: FiscalYearRules,
+    arcobaleno_class: str = "2",
+) -> tuple[TransportResult, TransportResult] | None:
+    """Scenario alternativo 'auto fino alla stazione + abbonamento ARCOBALENO'.
+
+    Mostrato quando la deduzione auto privata viene bloccata perché i mezzi pubblici
+    erano ragionevolmente utilizzabili. Ritorna (cantonale, federale) o None se mancano
+    i dati necessari (distanza o fermata più vicina).
+    """
+    if station_distance_km is None or distance_km is None:
+        return None
+    zones = estimate_arcobaleno_zones(distance_km, rules)
+    abbonamento = _arcobaleno_annual_cost(zones, arcobaleno_class, rules)
+    if abbonamento is None:
+        return None
+
+    z_label = "zona" if zones == 1 else "zone"
+
+    def _level(rate: float | None, cap: float | None) -> TransportResult:
+        rate = rate or 0.0
+        car_gross = round(rate * station_distance_km * 2 * effective_days, 2)
+        car_net = round(min(car_gross, cap), 2) if cap else car_gross
+        car_capped = cap is not None and car_gross > cap
+        total = round(car_net + abbonamento, 2)
+        lines = [
+            DeductionLine(
+                label=f"Auto fino alla stazione ({station_distance_km:.1f} km)",
+                amount_chf=car_net,
+                basis=f"CHF {rate}/km × {station_distance_km:.1f}km × 2 × {effective_days} giorni",
+                legal_reference="Art. 25 cpv. 1a LT / Art. 26 LIFD",
+                capped=car_capped,
+                cap_amount_chf=cap if car_capped else None,
+            ),
+            DeductionLine(
+                label=f"Abbonamento ARCOBALENO ({zones} {z_label}, stima)",
+                amount_chf=abbonamento,
+                basis=(
+                    f"Abbonamento annuale {zones} {z_label}, {arcobaleno_class}a cl. — "
+                    f"CHF {abbonamento:.2f} (zone stimate da distanza {distance_km:.1f}km)"
+                ),
+                legal_reference="Art. 25 cpv. 1a LT / Art. 26 LIFD",
+            ),
+        ]
+        return TransportResult(
+            mode="car_to_station_plus_subscription",
+            one_way_distance_km=distance_km,
+            effective_working_days=effective_days,
+            gross_deduction_chf=round(car_gross + abbonamento, 2),
+            net_deduction_chf=total,
+            lines=lines,
+        )
+
+    cantonal = _level(
+        rules.cantonal_TI.transport.private_car.rate_chf_per_km,
+        rules.cantonal_TI.transport.private_car.cap_chf,
+    )
+    federal = _level(
+        rules.federal_IFD.transport.private_car.rate_chf_per_km,
+        rules.federal_IFD.transport.private_car.cap_chf,
+    )
+    return cantonal, federal
+
+
 def _cantonal_transport(
     req: DeductionRequest, one_way_km: float | None, rules: FiscalYearRules,
 ) -> TransportResult:

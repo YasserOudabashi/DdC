@@ -61,7 +61,7 @@ async def test_frontaliero_warning():
     # Mock geocoder: Varese-IT → Nominatim dà coordinate errate; usiamo 30 km (= override)
     with patch(
         "app.api.v1.endpoints.deduction.resolve_distance",
-        new=AsyncMock(return_value=(30.0, "nominatim", (45.819, 8.825), (46.004, 8.952))),
+        new=AsyncMock(return_value=(30.0, "nominatim", (45.819, 8.825), (46.004, 8.952), None, None)),
     ):
         status, body = await _post(payload)
     assert status == 200

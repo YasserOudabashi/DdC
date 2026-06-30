@@ -29,7 +29,7 @@ def mock_resolve():
     with patch(
         "app.api.v1.endpoints.deduction.resolve_distance",
         new_callable=AsyncMock,
-        return_value=(MOCK_KM, "swisstopo", MOCK_HOME_COORDS, MOCK_WORK_COORDS),
+        return_value=(MOCK_KM, "swisstopo", MOCK_HOME_COORDS, MOCK_WORK_COORDS, None, None),
     ) as m:
         yield m
 
@@ -39,7 +39,7 @@ def mock_resolve_fail():
     with patch(
         "app.api.v1.endpoints.deduction.resolve_distance",
         new_callable=AsyncMock,
-        return_value=(None, "none", None, None),
+        return_value=(None, "none", None, None, None, None),
     ) as m:
         yield m
 

@@ -68,26 +68,29 @@ def _stub_geo():
     inquina i test backend (che girano nella stessa sessione pytest).
     """
     from app.geo import resolver, tp_proximity
+    from app.geo.providers.base import GeoResolved
 
-    async def fake_resolve(address: str):
-        return _lookup(address)
+    async def fake_resolve_detailed(address: str):
+        lat, lon = _lookup(address)
+        # postcode/city None → la validazione NPA viene saltata (nessun warning spurio)
+        return GeoResolved(lat=lat, lon=lon)
 
     async def fake_nearest_stop(lat: float, lon: float):
         # Nessuna fermata "vicina" di default: non blocca l'auto via TP.
         return None
 
-    orig_sw = resolver._swisstopo.resolve
-    orig_no = resolver._nominatim.resolve
+    orig_sw = resolver._swisstopo.resolve_detailed
+    orig_no = resolver._nominatim.resolve_detailed
     orig_stop = tp_proximity.find_nearest_stop
 
-    resolver._swisstopo.resolve = fake_resolve
-    resolver._nominatim.resolve = fake_resolve
+    resolver._swisstopo.resolve_detailed = fake_resolve_detailed
+    resolver._nominatim.resolve_detailed = fake_resolve_detailed
     tp_proximity.find_nearest_stop = fake_nearest_stop
     try:
         yield
     finally:
-        resolver._swisstopo.resolve = orig_sw
-        resolver._nominatim.resolve = orig_no
+        resolver._swisstopo.resolve_detailed = orig_sw
+        resolver._nominatim.resolve_detailed = orig_no
         tp_proximity.find_nearest_stop = orig_stop
 
 

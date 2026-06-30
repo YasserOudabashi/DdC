@@ -82,6 +82,17 @@ cantonal_TI:
       zones_6: 3382
       zones_7: 3667
       zones_8_plus: 3829
+    # Stima n. zone ARCOBALENO dalla distanza casa-lavoro (fasce km, limite superiore incluso).
+    # Usata per lo scenario alternativo "auto fino alla stazione + abbonamento". Oltre l'ultima
+    # fascia → zone 8+. Approssimazione: le zone reali sono geografiche.
+    zone_estimate_by_km:
+      - { max_km: 5,  zones: 1 }
+      - { max_km: 10, zones: 2 }
+      - { max_km: 18, zones: 3 }
+      - { max_km: 28, zones: 4 }
+      - { max_km: 40, zones: 5 }
+      - { max_km: 55, zones: 6 }
+      - { max_km: 75, zones: 7 }
 
   flat_rate_all_expenses_chf: null   # forfait globale 2025 — non previsto (solo dal 2026, Art. 25 cpv. 2 LT)
 

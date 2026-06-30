@@ -1,10 +1,13 @@
 import asyncio
 from fastapi import APIRouter, Depends, HTTPException, Request
 
-from app.schemas.request import DeductionRequest, TransportMode
-from app.schemas.response import Coordinates, DeductionLine, DeductionResponse, TransportResult
-from app.core.calculator import calculate, calculate_spouse
+from app.schemas.request import Address, DeductionRequest, TransportMode
+from app.schemas.response import (
+    AddressCheck, Coordinates, DeductionLine, DeductionResponse, TransportResult,
+)
+from app.core.calculator import build_alternative_transport, calculate, calculate_spouse
 from app.geo.resolver import resolve_distance
+from app.geo.providers.base import GeoResolved
 from app.geo import tp_proximity
 from app.rules.loader import load_rules
 from app.security import limiter, verify_api_key
@@ -16,6 +19,35 @@ _RATE = f"{settings.rate_limit_per_minute}/minute"
 
 _TP_THRESHOLD_M = 300.0
 _MAX_CAR_KM = 30.0
+
+_ALT_SCENARIO_NOTE = (
+    "Scenario alternativo disponibile: 'auto fino alla stazione + abbonamento ARCOBALENO'. "
+    "La deduzione auto privata resta azzerata; lo scenario alternativo è indicativo "
+    "(zone abbonamento stimate dalla distanza) e può essere rettificato in accertamento."
+)
+
+
+def _normalize_npa(value: str | None) -> str:
+    return (value or "").replace(" ", "").strip().lower()
+
+
+def _validate_npa(field: str, addr: Address, resolved: GeoResolved | None) -> AddressCheck | None:
+    """Confronta l'NPA inserito con quello risolto dal geocoder.
+
+    Ritorna None se non ci sono dati risolti (validazione saltata, es. nei test).
+    matched=False se l'NPA risolto è presente e diverso da quello inserito.
+    """
+    if resolved is None or resolved.postcode is None:
+        return None
+    matched = _normalize_npa(addr.postal_code) == _normalize_npa(resolved.postcode)
+    return AddressCheck(
+        field=field,
+        input_npa=addr.postal_code,
+        resolved_npa=resolved.postcode,
+        input_city=addr.city,
+        resolved_city=resolved.city,
+        matched=matched,
+    )
 
 
 @router.post(
@@ -31,7 +63,10 @@ async def calculate_deduction(request: Request, req: DeductionRequest) -> Deduct
         raise HTTPException(status_code=422, detail=str(e))
 
     # Geocoding sempre eseguito: serve per validare override, controlli TP e auto privata
-    geocoded_km, geocoding_provider, home_coords, work_coords = await resolve_distance(
+    (
+        geocoded_km, geocoding_provider, home_coords, work_coords,
+        home_resolved, work_resolved,
+    ) = await resolve_distance(
         req.home_address,
         req.work_address,
         road_factor=rules.geocoding.road_correction_factor,
@@ -72,11 +107,29 @@ async def calculate_deduction(request: Request, req: DeductionRequest) -> Deduct
     if work_coords is not None:
         response.work_coordinates = Coordinates(lat=work_coords[0], lon=work_coords[1])
 
+    # Validazione NPA ↔ città/via: avvisa + propone la correzione (non blocca)
+    for field, addr, resolved in (
+        ("home", req.home_address, home_resolved),
+        ("work", req.work_address, work_resolved),
+    ):
+        check = _validate_npa(field, addr, resolved)
+        if check is not None:
+            response.address_validation.append(check)
+            if not check.matched:
+                response.warnings.append(
+                    f"NPA {addr.postal_code} non corrisponde alla località risolta per "
+                    f"{'il domicilio' if field == 'home' else 'il luogo di lavoro'} "
+                    f"({check.resolved_npa or '?'} {check.resolved_city or ''}). "
+                    f"Verificare l'indirizzo: l'NPA corretto sembra {check.resolved_npa}."
+                )
+
     # Calcolo coniuge/partner (US-1002/1003)
     if req.spouse is not None:
         sp = req.spouse
         spouse_home_addr = sp.home_address if sp.home_address is not None else req.home_address
-        sp_km, sp_provider, sp_home_c, sp_work_c = await resolve_distance(
+        (
+            sp_km, sp_provider, sp_home_c, sp_work_c, sp_home_resolved, sp_work_resolved,
+        ) = await resolve_distance(
             spouse_home_addr,
             sp.work_address,
             road_factor=rules.geocoding.road_correction_factor,
@@ -120,18 +173,44 @@ async def calculate_deduction(request: Request, req: DeductionRequest) -> Deduct
 
         # Stessa verifica di ammissibilità auto privata del contribuente (regola 30 km / fermata TP)
         if sp.transport_mode == TransportMode.PRIVATE_CAR:
-            sp_blocked = await _check_car_eligibility(sp, sp_distance, sp_home_c, sp_work_c)
+            sp_blocked, sp_station_km = await _check_car_eligibility(sp, sp_distance, sp_home_c, sp_work_c)
             if sp_blocked:
+                # Cattura i giorni effettivi prima dell'azzeramento
+                sp_eff_days = spouse_result.cantonal_TI.transport_deduction.effective_working_days
                 _apply_car_block_spouse(spouse_result, sp_blocked)
+                sp_alt = build_alternative_transport(
+                    sp_distance, sp_station_km, sp_eff_days, rules, sp.arcobaleno_class,
+                )
+                if sp_alt is not None:
+                    spouse_result.cantonal_TI.alternative_transport = sp_alt[0]
+                    spouse_result.federal_IFD.alternative_transport = sp_alt[1]
+                    spouse_result.warnings.append(_ALT_SCENARIO_NOTE)
+
+        # Validazione NPA coniuge
+        for sp_field, sp_addr, sp_res in (
+            ("spouse_home", spouse_home_addr, sp_home_resolved),
+            ("spouse_work", sp.work_address, sp_work_resolved),
+        ):
+            sp_check = _validate_npa(sp_field, sp_addr, sp_res)
+            if sp_check is not None:
+                response.address_validation.append(sp_check)
 
         response.spouse = spouse_result
 
     if req.transport_mode == TransportMode.PRIVATE_CAR:
-        blocked_reason = await _check_car_eligibility(
+        blocked_reason, station_km = await _check_car_eligibility(
             req, distance_km, home_coords, work_coords
         )
         if blocked_reason:
+            eff_days = response.cantonal_TI.transport_deduction.effective_working_days
             _apply_car_block(response, blocked_reason)
+            alt = build_alternative_transport(
+                distance_km, station_km, eff_days, rules, req.arcobaleno_class,
+            )
+            if alt is not None:
+                response.cantonal_TI.alternative_transport = alt[0]
+                response.federal_IFD.alternative_transport = alt[1]
+                response.warnings.append(_ALT_SCENARIO_NOTE)
     elif home_coords is not None:
         # Avviso informativo: fermata TP vicina (modalità non-auto)
         nearby = await tp_proximity.find_nearest_stop(home_coords[0], home_coords[1])
@@ -151,11 +230,15 @@ async def _check_car_eligibility(
     distance_km: float | None,
     home_coords: tuple[float, float] | None,
     work_coords: tuple[float, float] | None,
-) -> str | None:
+) -> tuple[str | None, float | None]:
     """
-    Ritorna il motivo del blocco se la deduzione auto non è ammessa, altrimenti None.
+    Ritorna (motivo_blocco, distanza_stazione_km).
 
-    Regola 1 (geocoding only): fermata TP entro 200m dal domicilio e/o luogo di lavoro.
+    motivo_blocco è il testo dell'avvertenza se la deduzione auto non è ammessa, altrimenti None.
+    distanza_stazione_km è la distanza dal domicilio alla fermata più vicina (km), usata
+    per costruire lo scenario alternativo "auto fino alla stazione + abbonamento".
+
+    Regola 1 (geocoding only): fermata TP entro 300m dal domicilio e/o luogo di lavoro.
     Regola 2 (geocoding only): distanza casa-lavoro < 30 km.
     Entrambe si applicano solo quando la distanza proviene dal geocoder
     (override_distance_km=None), perché è la situazione in cui abbiamo le coordinate.
@@ -173,6 +256,14 @@ async def _check_car_eligibility(
     elif work_coords:
         work_stop = await tp_proximity.find_nearest_stop(work_coords[0], work_coords[1])
 
+    # Distanza (km) per il tratto auto→stazione: fermata più vicina al domicilio.
+    if home_stop is not None:
+        station_km: float | None = round(home_stop[1] / 1000.0, 2)
+    elif work_stop is not None:
+        station_km = round(work_stop[1] / 1000.0, 2)
+    else:
+        station_km = None
+
     home_ok = home_stop is not None and home_stop[1] <= _TP_THRESHOLD_M
     work_ok = work_stop is not None and work_stop[1] <= _TP_THRESHOLD_M
 
@@ -185,7 +276,7 @@ async def _check_car_eligibility(
             f"(fermata '{w_name}' a {w_dist:.0f}m): "
             "il trasporto pubblico poteva essere utilizzato, quindi la deduzione "
             "per auto privata non è ammessa (Art. 25 cpv. 1a LT / Art. 26 LIFD)."
-        )
+        ), station_km
     if home_ok:
         h_name, h_dist = home_stop  # type: ignore[misc]
         return (
@@ -193,7 +284,7 @@ async def _check_car_eligibility(
             "i mezzi pubblici sono accessibili a piedi, quindi la deduzione "
             "per auto privata non è ammessa (Art. 25 cpv. 1a LT / Art. 26 LIFD). "
             "Poteva essere utilizzato il trasporto pubblico."
-        )
+        ), station_km
     if work_ok:
         w_name, w_dist = work_stop  # type: ignore[misc]
         return (
@@ -201,7 +292,7 @@ async def _check_car_eligibility(
             "i mezzi pubblici sono accessibili a piedi, quindi la deduzione "
             "per auto privata non è ammessa (Art. 25 cpv. 1a LT / Art. 26 LIFD). "
             "Poteva essere utilizzato il trasporto pubblico."
-        )
+        ), station_km
 
     # Regola 30km: solo se la distanza proviene dal geocoder (non da override manuale)
     if req.override_distance_km is None and distance_km is not None and distance_km < _MAX_CAR_KM:
@@ -211,9 +302,9 @@ async def _check_car_eligibility(
             "ragionevolmente utilizzabili; la deduzione per auto privata non è ammessa "
             "(Art. 25 cpv. 1a LT / Art. 26 LIFD). "
             "Poteva essere utilizzato il trasporto pubblico."
-        )
+        ), station_km
 
-    return None
+    return None, station_km
 
 
 def _apply_car_block(response: DeductionResponse, reason: str) -> None:

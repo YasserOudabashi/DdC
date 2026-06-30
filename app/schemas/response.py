@@ -31,6 +31,9 @@ class TransportResult(BaseModel):
 class TaxLevelResult(BaseModel):
     level: str                           # "cantonal_TI" | "federal_IFD"
     transport_deduction: TransportResult
+    # Scenario alternativo "auto fino alla stazione + abbonamento" mostrato quando
+    # la deduzione auto privata è stata bloccata perché i mezzi pubblici erano usabili.
+    alternative_transport: Optional[TransportResult] = None
     meals_deduction_chf: Optional[float] = None
     meals_basis_text: Optional[str] = None
     accommodation_deduction_chf: Optional[float] = None
@@ -40,6 +43,16 @@ class TaxLevelResult(BaseModel):
     flat_rate_applied: bool = False      # True se usato il forfait invece delle spese effettive
     flat_rate_chf: Optional[float] = None
     notes: List[str] = []
+
+
+class AddressCheck(BaseModel):
+    """Esito della validazione NPA ↔ indirizzo risolto dal geocoder."""
+    field: str                           # "home" | "work" | "spouse_home" | "spouse_work"
+    input_npa: str
+    resolved_npa: Optional[str] = None
+    input_city: Optional[str] = None
+    resolved_city: Optional[str] = None
+    matched: bool = True
 
 
 class SpouseResult(BaseModel):
@@ -69,6 +82,8 @@ class DeductionResponse(BaseModel):
     work_coordinates: Optional[Coordinates] = None
 
     spouse: Optional[SpouseResult] = None
+
+    address_validation: List[AddressCheck] = []  # validazione NPA ↔ città/via
 
     warnings: List[str] = []            # es. "frontaliere: verificare accordo I-CH 2024"
     errors: List[str] = []

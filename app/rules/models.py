@@ -82,9 +82,17 @@ class ArcobalenovAnnualRates(BaseModel):
     zones_8_plus: float
 
 
+class ZoneEstimateBand(BaseModel):
+    """Fascia distanza → numero di zone Arcobaleno (stima per scenario auto+abbonamento)."""
+    max_km: float                            # limite superiore della fascia (incluso)
+    zones: int                               # numero di zone Arcobaleno corrispondente
+
+
 class PublicTransportSubscriptions(BaseModel):
     arcobaleno_annual_adult_2cl: Optional[ArcobalenovAnnualRates] = None
     arcobaleno_annual_adult_1cl: Optional[ArcobalenovAnnualRates] = None
+    # Stima del n. di zone Arcobaleno dalla distanza casa-lavoro (fasce km ordinate).
+    zone_estimate_by_km: Optional[list[ZoneEstimateBand]] = None
 
 
 class TaxLevelRules(BaseModel):

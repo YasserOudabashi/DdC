@@ -710,13 +710,46 @@
     var mapNote = document.getElementById('map-note');
     var mode = data.cantonal_TI.transport_deduction.mode;
     if (mode === 'public_transport') {
-      if (mapNote) { mapNote.textContent = 'Percorso mezzi pubblici non disponibile — visualizzati solo i punti di partenza e arrivo.'; mapNote.classList.remove('hidden'); }
+      if (mapNote) { mapNote.textContent = 'Caricamento percorso mezzi pubblici…'; mapNote.classList.remove('hidden'); }
+      drawTransitRoute(homeC, workC, mapNote);
     } else {
       if (mapNote) mapNote.classList.add('hidden');
       // Routing OSRM (US-1006)
       var osrmProfile = (mode === 'bicycle') ? 'cycling' : 'driving';
       drawOsrmRoute(homeC, workC, osrmProfile);
     }
+  }
+
+  function drawTransitRoute(homeC, workC, mapNote) {
+    // Percorso mezzi pubblici via backend proxy (transport.opendata.ch).
+    var url = '/v1/route/transit?from_lat=' + homeC.lat + '&from_lon=' + homeC.lon +
+      '&to_lat=' + workC.lat + '&to_lon=' + workC.lon;
+    var controller = new AbortController();
+    var timeoutId = setTimeout(function () { controller.abort(); }, 7000);
+
+    fetch(url, { signal: controller.signal })
+      .then(function (r) { clearTimeout(timeoutId); return r.json(); })
+      .then(function (data) {
+        if (!leafletMap) return;
+        var pts = (data && data.polyline) || [];
+        if (pts.length >= 2) {
+          if (osrmPolyline) { osrmPolyline.remove(); }
+          osrmPolyline = L.polyline(pts, { color: '#8e44ad', weight: 4, opacity: 0.8, dashArray: '6,4' }).addTo(leafletMap);
+          try { leafletMap.fitBounds(osrmPolyline.getBounds(), { padding: [40, 40] }); } catch (e) {}
+          if (mapNote) { mapNote.textContent = 'Percorso mezzi pubblici (fonte: transport.opendata.ch).'; }
+        } else {
+          drawStraightLine(homeC, workC, mapNote);
+        }
+      })
+      .catch(function () { drawStraightLine(homeC, workC, mapNote); });
+  }
+
+  function drawStraightLine(homeC, workC, mapNote) {
+    if (!leafletMap) return;
+    if (osrmPolyline) { osrmPolyline.remove(); }
+    osrmPolyline = L.polyline([[homeC.lat, homeC.lon], [workC.lat, workC.lon]],
+      { color: '#8e44ad', weight: 3, opacity: 0.6, dashArray: '4,6' }).addTo(leafletMap);
+    if (mapNote) { mapNote.textContent = 'Percorso transit non disponibile — visualizzata linea diretta casa-lavoro.'; }
   }
 
   function drawOsrmRoute(homeC, workC, profile) {
@@ -781,12 +814,21 @@
       var assessed = (assessmentMode && assessedState[tableId]) ? assessedState[tableId] : {};
       var rowIdx = 0;       // indice riga-input (allineato a makeCell)
       var accertatoTotal = 0;
+      var changedRowIdx = [];   // indici (in rows) delle righe con accertato ≠ calcolato
 
       function accertatoFor(calcolato) {
-        var v = (assessed[rowIdx] != null) ? assessed[rowIdx] : calcolato;
+        var entry = assessed[rowIdx];
+        var amount = (entry && entry.amount != null) ? entry.amount : calcolato;
+        var reason = (entry && entry.reason) ? entry.reason : '';
         rowIdx++;
-        accertatoTotal += v;
-        return v;
+        accertatoTotal += amount;
+        return { amount: amount, reason: reason, changed: Math.abs(amount - calcolato) > 0.005 };
+      }
+
+      function pushAssessed(label, calcolato, basisFallback) {
+        var a = accertatoFor(calcolato);
+        if (a.changed) changedRowIdx.push(rows.length);
+        rows.push([label, 'CHF ' + calcolato.toFixed(2), 'CHF ' + a.amount.toFixed(2), a.reason || (a.changed ? '—' : '')]);
       }
 
       var rows = [];
@@ -794,8 +836,7 @@
       transport.lines.forEach(function (line) {
         var calcolato = line.amount_chf;
         if (assessmentMode) {
-          var accertato = accertatoFor(calcolato);
-          rows.push([line.label, 'CHF ' + calcolato.toFixed(2), 'CHF ' + accertato.toFixed(2), line.basis.slice(0, 50)]);
+          pushAssessed(line.label, calcolato, line.basis);
         } else {
           rows.push([line.label, 'CHF ' + calcolato.toFixed(2), line.basis.slice(0, 60)]);
         }
@@ -803,24 +844,22 @@
 
       if (level.meals_deduction_chf != null) {
         if (assessmentMode) {
-          var accMeals = accertatoFor(level.meals_deduction_chf);
-          rows.push(['Pasti fuori domicilio', 'CHF ' + level.meals_deduction_chf.toFixed(2), 'CHF ' + accMeals.toFixed(2), (level.meals_basis_text || '').slice(0, 50)]);
+          pushAssessed('Pasti fuori domicilio', level.meals_deduction_chf, level.meals_basis_text);
         } else {
           rows.push(['Pasti fuori domicilio', 'CHF ' + level.meals_deduction_chf.toFixed(2), (level.meals_basis_text || '').slice(0, 60)]);
         }
       }
       if (level.other_expenses_deduction_chf != null) {
         if (assessmentMode) {
-          var accOther = accertatoFor(level.other_expenses_deduction_chf);
-          rows.push(['Altre spese professionali', 'CHF ' + level.other_expenses_deduction_chf.toFixed(2), 'CHF ' + accOther.toFixed(2), '3% salario netto']);
+          pushAssessed('Altre spese professionali', level.other_expenses_deduction_chf, '3% salario netto');
         } else {
           rows.push(['Altre spese professionali', 'CHF ' + level.other_expenses_deduction_chf.toFixed(2), '3% salario netto']);
         }
       }
-      rows.push(['TOTALE', 'CHF ' + level.total_deduction_chf.toFixed(2), assessmentMode ? 'CHF ' + accertatoTotal.toFixed(2) : '']);
+      rows.push(['TOTALE', 'CHF ' + level.total_deduction_chf.toFixed(2), assessmentMode ? 'CHF ' + accertatoTotal.toFixed(2) : '', '']);
 
       var head = assessmentMode
-        ? [['Voce', 'Calcolato CHF', 'Accertato CHF', 'Base di calcolo']]
+        ? [['Voce', 'Calcolato CHF', 'Accertato CHF', 'Motivazione']]
         : [['Voce', 'Importo CHF', 'Base di calcolo']];
 
       doc.autoTable({
@@ -830,9 +869,14 @@
         margin: { left: 14, right: 14 },
         styles: { fontSize: 8 },
         headStyles: { fillColor: [0, 51, 102] },
+        columnStyles: assessmentMode ? { 3: { cellWidth: 60 } } : {},
         didParseCell: function (data) {
           if (data.row.index === rows.length - 1) {
             data.cell.styles.fontStyle = 'bold';
+          } else if (assessmentMode && changedRowIdx.indexOf(data.row.index) >= 0) {
+            // Evidenzia le righe effettivamente rettificate
+            data.cell.styles.fillColor = [255, 245, 224];
+            if (data.column.index === 2) data.cell.styles.fontStyle = 'bold';
           }
         },
       });
@@ -857,7 +901,7 @@
       var reason = document.getElementById('assessment-reason').value.trim();
       doc.setFontSize(10);
       doc.setFont(undefined, 'bold');
-      doc.text('Motivazione delle modifiche:', 14, yPos);
+      doc.text('Commento generale:', 14, yPos);
       yPos += 5;
       doc.setFont(undefined, 'normal');
       var lines = doc.splitTextToSize(reason, 180);
@@ -896,17 +940,37 @@
 
   function saveAssessment() {
     if (!lastResponse) return;
-    // Raccoglie tutti i valori correnti degli input nello stato accertato
+    // Raccoglie importo + motivo correnti di ogni input nello stato accertato
     assessedState = {};
     resultsDiv.querySelectorAll('.assessment-input').forEach(function (inp) {
       var tid = inp.getAttribute('data-table');
       var idx = inp.getAttribute('data-idx');
+      var td = inp.closest('td');
+      var reasonInp = td ? td.querySelector('.assessment-reason-input') : null;
       if (!assessedState[tid]) assessedState[tid] = {};
-      assessedState[tid][idx] = parseFloat(inp.value) || 0;
+      assessedState[tid][idx] = {
+        amount: parseFloat(inp.value) || 0,
+        reason: reasonInp ? reasonInp.value.trim() : '',
+      };
     });
     assessmentDirty = false;
     var now = new Date().toLocaleTimeString('it-CH', { hour: '2-digit', minute: '2-digit' });
     setSaveStatus('✓ Modifiche salvate alle ' + now, '#27ae60');
+  }
+
+  // Ritorna l'elenco delle righe modificate prive di motivo (per validazione PDF).
+  function changedRowsMissingReason() {
+    var missing = 0;
+    resultsDiv.querySelectorAll('.assessment-input').forEach(function (inp) {
+      var orig = parseFloat(inp.getAttribute('data-original'));
+      var cur = parseFloat(inp.value) || 0;
+      if (Math.abs(cur - orig) > 0.005) {
+        var td = inp.closest('td');
+        var reasonInp = td ? td.querySelector('.assessment-reason-input') : null;
+        if (!reasonInp || !reasonInp.value.trim()) missing++;
+      }
+    });
+    return missing;
   }
 
   function hideAssessmentMode() {
@@ -967,12 +1031,21 @@
       if (assessment) {
         var idx = inputIdx++;
         var tid = tableId || 'tbl';
-        // Riusa il valore già accertato per questa riga se presente
-        var saved = (assessedState[tid] && assessedState[tid][idx] != null)
-          ? assessedState[tid][idx] : amount;
-        return '<td class="amount"><input type="number" class="assessment-input" step="0.01" value="' +
-          saved.toFixed(2) + '" data-original="' + amount.toFixed(2) +
-          '" data-table="' + tid + '" data-idx="' + idx + '" style="width:90px;text-align:right;border:1px solid #ccc;border-radius:3px;padding:2px 4px;"></td>';
+        // Riusa valore + motivo già accertati per questa riga se presenti
+        var entry = (assessedState[tid] && assessedState[tid][idx]) || {};
+        var saved = (entry.amount != null) ? entry.amount : amount;
+        var savedReason = entry.reason || '';
+        var changed = Math.abs(saved - amount) > 0.005;
+        var reasonHiddenClass = changed ? '' : ' hidden';
+        var amountBorder = changed ? '2px solid #e67e22' : '1px solid #ccc';
+        return '<td class="amount">' +
+          '<input type="number" class="assessment-input" step="0.01" value="' + saved.toFixed(2) +
+          '" data-original="' + amount.toFixed(2) + '" data-table="' + tid + '" data-idx="' + idx +
+          '" style="width:90px;text-align:right;border:' + amountBorder + ';border-radius:3px;padding:2px 4px;">' +
+          '<input type="text" class="assessment-reason-input' + reasonHiddenClass + '" maxlength="300" value="' + escapeHtml(savedReason) +
+          '" data-table="' + tid + '" data-idx="' + idx + '" placeholder="Motivo della modifica…" ' +
+          'style="width:100%;margin-top:3px;font-size:0.78rem;border:1px solid #e67e22;border-radius:3px;padding:2px 4px;box-sizing:border-box;">' +
+          '</td>';
       }
       return '<td class="amount">' + formatChf(amount) + '</td>';
     }
@@ -1037,6 +1110,59 @@
     );
   }
 
+  function buildAlternativeScenario(levelIC, levelIFD, title) {
+    // Mostra lo scenario "auto fino alla stazione + abbonamento" quando presente.
+    var altIC = levelIC && levelIC.alternative_transport;
+    var altIFD = levelIFD && levelIFD.alternative_transport;
+    if (!altIC && !altIFD) return '';
+
+    function rows(alt) {
+      if (!alt) return '';
+      return alt.lines.map(function (l) {
+        return '<tr><td>' + escapeHtml(l.label) + '</td><td class="amount">' + formatChf(l.amount_chf) + '</td></tr>';
+      }).join('') +
+        '<tr class="total-row"><td><strong>Totale scenario</strong></td><td class="amount"><strong>' +
+        formatChf(alt.net_deduction_chf) + '</strong></td></tr>';
+    }
+
+    return (
+      '<div class="alert-warning" style="margin-top:0.75rem;background:#eef6ff;border-color:#7fb1e6;">' +
+        '<strong>🔀 ' + escapeHtml(title) + '</strong>' +
+        '<p style="margin:0.25rem 0 0.5rem;font-size:0.85rem;">I mezzi pubblici erano ragionevolmente utilizzabili. ' +
+        'Oltre allo scenario con deduzione auto azzerata (sopra), ecco lo scenario alternativo ' +
+        '<em>auto fino alla stazione + abbonamento ARCOBALENO</em> (importi indicativi, zone stimate dalla distanza):</p>' +
+        '<div class="results-columns">' +
+          '<div class="results-column"><div class="results-column-header"><span class="badge-cantonal">Cantonale TI (IC)</span></div>' +
+            '<table class="deduction-table"><tbody>' + rows(altIC) + '</tbody></table></div>' +
+          '<div class="results-column"><div class="results-column-header"><span class="badge-federal">Federale IFD</span></div>' +
+            '<table class="deduction-table"><tbody>' + rows(altIFD) + '</tbody></table></div>' +
+        '</div>' +
+      '</div>'
+    );
+  }
+
+  var NPA_FIELD_MAP = {
+    home: 'home_npa', work: 'work_npa',
+    spouse_home: 'sp_home_npa', spouse_work: 'sp_work_npa',
+  };
+  var NPA_FIELD_LABEL = {
+    home: 'domicilio', work: 'luogo di lavoro',
+    spouse_home: 'domicilio coniuge', spouse_work: 'luogo di lavoro coniuge',
+  };
+
+  function buildNpaWarnings(data) {
+    var checks = (data.address_validation || []).filter(function (c) { return !c.matched && c.resolved_npa; });
+    if (checks.length === 0) return '';
+    var items = checks.map(function (c) {
+      var label = NPA_FIELD_LABEL[c.field] || c.field;
+      return '<li style="margin-bottom:0.35rem;">NPA <strong>' + escapeHtml(c.input_npa) + '</strong> per il ' + escapeHtml(label) +
+        ' non corrisponde alla località risolta (<strong>' + escapeHtml(c.resolved_npa) + ' ' + escapeHtml(c.resolved_city || '') + '</strong>). ' +
+        '<button type="button" class="btn-secondary npa-fix-btn" data-npa-field="' + escapeHtml(c.field) +
+        '" data-npa-value="' + escapeHtml(c.resolved_npa) + '" style="padding:2px 8px;font-size:0.8rem;">Usa ' + escapeHtml(c.resolved_npa) + '</button></li>';
+    }).join('');
+    return '<div class="alert-danger" id="npa-warning-box"><strong>⚠️ Verifica NPA</strong><ul style="margin:0.5rem 0 0;">' + items + '</ul></div>';
+  }
+
   function renderResults(data) {
     lastResponse = data;
 
@@ -1085,11 +1211,13 @@
         ' &mdash; Calcolato il ' + dateStr + ' alle ' + timeStr +
         distHtml + geoHtml +
       '</div>' +
+      buildNpaWarnings(data) +
       errHtml +
       '<div class="results-columns">' +
         buildColumn(data.cantonal_TI, 'badge-cantonal', 'Cantonale TI (IC)', 'can') +
         buildColumn(data.federal_IFD, 'badge-federal', 'Federale IFD', 'fed') +
       '</div>' +
+      buildAlternativeScenario(data.cantonal_TI, data.federal_IFD, 'Scenario alternativo trasporto') +
       warnHtml;
 
     // Risultati coniuge (US-1008)
@@ -1103,7 +1231,8 @@
         '<div class="results-columns">' +
           buildColumn(sp.cantonal_TI, 'badge-cantonal', 'Cantonale TI (IC) — Coniuge', 'spcan') +
           buildColumn(sp.federal_IFD, 'badge-federal', 'Federale IFD — Coniuge', 'spfed') +
-        '</div>';
+        '</div>' +
+        buildAlternativeScenario(sp.cantonal_TI, sp.federal_IFD, 'Scenario alternativo trasporto — Coniuge');
       if (sp.warnings && sp.warnings.length > 0) {
         html +=
           '<div class="alert-warning">' +
@@ -1115,6 +1244,22 @@
 
     resultsDiv.innerHTML = html;
     resultsDiv.classList.remove('hidden');
+
+    // Wiring bottoni "Usa NPA corretto"
+    resultsDiv.querySelectorAll('.npa-fix-btn').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var field = btn.getAttribute('data-npa-field');
+        var value = btn.getAttribute('data-npa-value');
+        var inputId = NPA_FIELD_MAP[field];
+        var input = inputId ? document.getElementById(inputId) : null;
+        if (input) {
+          input.value = value;
+          input.style.background = '#eafaf1';
+          btn.textContent = '✓ Applicato';
+          btn.disabled = true;
+        }
+      });
+    });
 
     // Azioni risultati (PDF, accertamento)
     var ra = document.getElementById('results-actions');
@@ -1130,17 +1275,31 @@
 
     // Listener su assessment-input per aggiornare i totali e lo stato accertato
     if (assessmentActive) {
+      function reasonInputFor(inp) {
+        var td = inp.closest('td');
+        return td ? td.querySelector('.assessment-reason-input') : null;
+      }
+      function storeEntry(tid, idx, amount, reason) {
+        if (!assessedState[tid]) assessedState[tid] = {};
+        assessedState[tid][idx] = { amount: amount, reason: reason || '' };
+      }
       resultsDiv.querySelectorAll('.assessment-input').forEach(function (inp) {
         inp.addEventListener('input', function () {
           var orig = parseFloat(inp.getAttribute('data-original'));
           var cur = parseFloat(inp.value) || 0;
           var tid = inp.getAttribute('data-table');
           var idx = inp.getAttribute('data-idx');
-          // Salva il valore corrente nello stato accertato (auto-save in memoria)
-          if (!assessedState[tid]) assessedState[tid] = {};
-          assessedState[tid][idx] = cur;
+          var reasonInp = reasonInputFor(inp);
+          var changed = Math.abs(cur - orig) > 0.005;
 
-          if (Math.abs(cur - orig) > 0.005) {
+          // Mostra/nasconde il campo motivo a seconda che la riga sia modificata
+          if (reasonInp) {
+            if (changed) reasonInp.classList.remove('hidden');
+            else reasonInp.classList.add('hidden');
+          }
+          storeEntry(tid, idx, cur, reasonInp ? reasonInp.value : '');
+
+          if (changed) {
             inp.style.border = '2px solid #e67e22';
             inp.style.background = '#fffbf0';
           } else {
@@ -1157,6 +1316,16 @@
               totalCell.innerHTML = '<strong>CHF ' + sum.toLocaleString('de-CH', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + '</strong>';
             }
           }
+          markAssessmentDirty();
+        });
+      });
+      // Listener sui campi motivo per salvarne il testo
+      resultsDiv.querySelectorAll('.assessment-reason-input').forEach(function (rinp) {
+        rinp.addEventListener('input', function () {
+          var tid = rinp.getAttribute('data-table');
+          var idx = rinp.getAttribute('data-idx');
+          var entry = (assessedState[tid] && assessedState[tid][idx]) || {};
+          storeEntry(tid, idx, entry.amount != null ? entry.amount : 0, rinp.value);
           markAssessmentDirty();
         });
       });
@@ -1187,15 +1356,28 @@
     btnDownloadAssessment.addEventListener('click', function () {
       var reason = document.getElementById('assessment-reason').value.trim();
       var errEl = document.getElementById('assessment-reason-error');
+      var reasonSection = document.getElementById('assessment-reason-section');
+
+      // 1) Ogni riga modificata deve avere il proprio motivo
+      var missing = changedRowsMissingReason();
+      if (missing > 0) {
+        if (errEl) {
+          errEl.textContent = 'Inserire il motivo per ciascuna voce modificata (' + missing + ' mancante/i): ' +
+            'compilare il campo "Motivo della modifica" sotto ogni importo rettificato.';
+          errEl.classList.remove('hidden');
+        }
+        resultsDiv.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        return;
+      }
+      // 2) Il commento generale resta obbligatorio
       if (!reason) {
-        if (errEl) { errEl.textContent = 'Inserire la motivazione prima di scaricare il PDF accertato.'; errEl.classList.remove('hidden'); }
-        var reasonSection = document.getElementById('assessment-reason-section');
+        if (errEl) { errEl.textContent = 'Inserire il commento generale prima di scaricare il PDF accertato.'; errEl.classList.remove('hidden'); }
         if (reasonSection) reasonSection.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
         return;
       }
       if (errEl) errEl.classList.add('hidden');
-      // Se ci sono modifiche non salvate, salva automaticamente prima del PDF
-      if (assessmentDirty) saveAssessment();
+      // Salva SEMPRE prima del PDF, così la colonna Accertato non è mai vuota
+      saveAssessment();
       generatePdf(true);
     });
   }

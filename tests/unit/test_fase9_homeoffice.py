@@ -40,7 +40,7 @@ def mock_geo_20km():
     """Mock geocoder: 20 km, coerente con override_distance_km=20.0 in BASE_CAR."""
     with patch(
         "app.api.v1.endpoints.deduction.resolve_distance",
-        new=AsyncMock(return_value=(20.0, "swisstopo", (46.004, 8.952), (46.195, 9.015))),
+        new=AsyncMock(return_value=(20.0, "swisstopo", (46.004, 8.952), (46.195, 9.015), None, None)),
     ):
         yield
 
@@ -108,7 +108,7 @@ async def test_tp_warning_stop_within_200m():
     payload = {**BASE_CAR, "override_distance_km": None}
     with patch(
         "app.api.v1.endpoints.deduction.resolve_distance",
-        new=AsyncMock(return_value=(10.0, "swisstopo", (46.004, 8.952), (46.012, 8.960))),
+        new=AsyncMock(return_value=(10.0, "swisstopo", (46.004, 8.952), (46.012, 8.960), None, None)),
     ):
         with patch(
             "app.geo.tp_proximity.find_nearest_stop",
@@ -129,7 +129,7 @@ async def test_tp_warning_no_stop():
     payload = {**BASE_CAR, "override_distance_km": None}
     with patch(
         "app.api.v1.endpoints.deduction.resolve_distance",
-        new=AsyncMock(return_value=(10.0, "swisstopo", (46.004, 8.952), (46.012, 8.960))),
+        new=AsyncMock(return_value=(10.0, "swisstopo", (46.004, 8.952), (46.012, 8.960), None, None)),
     ):
         with patch(
             "app.geo.tp_proximity.find_nearest_stop",
@@ -147,7 +147,7 @@ async def test_tp_warning_stop_beyond_200m():
     payload = {**BASE_CAR, "override_distance_km": None}
     with patch(
         "app.api.v1.endpoints.deduction.resolve_distance",
-        new=AsyncMock(return_value=(10.0, "swisstopo", (46.004, 8.952), (46.012, 8.960))),
+        new=AsyncMock(return_value=(10.0, "swisstopo", (46.004, 8.952), (46.012, 8.960), None, None)),
     ):
         with patch(
             "app.geo.tp_proximity.find_nearest_stop",
