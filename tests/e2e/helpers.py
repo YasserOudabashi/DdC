@@ -11,6 +11,11 @@ from __future__ import annotations
 from playwright.async_api import Page, expect
 
 
+async def select_transport(page: Page, value: str) -> None:
+    """Seleziona il mezzo di trasporto e attende l'aggiornamento della UI condizionale."""
+    await page.select_option("#transport_mode", value)
+
+
 async def set_city(page: Page, field_id: str, city: str) -> None:
     """Imposta una città su un controllo TomSelect (digita + Invio)."""
     control = page.locator(f"#{field_id}-ts-control")

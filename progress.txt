@@ -43,3 +43,33 @@
 
 ## Stato storie
 - US-1101..US-1111: passes=false (US-1101 gia pronta a livello di codice, da confermare in ambiente ralph).
+
+## Fase 11 COMPLETATA (US-1101..US-1111) — tutte passes=true
+- Suite completa: `uv run pytest tests/ -q` = 170 passed (131 backend + 39 E2E), 0 falliti.
+- File E2E aggiunti in tests/e2e/:
+  - test_public_transport.py (US-1102): ARCOBALENO 3/5 zone, anteprima costo, costo manuale.
+  - test_private_car.py (US-1103): campo distanza, blocco <30km (Bell->Giubiasco),
+    override coerente (28km), warning cap IFD (getCapIfdWarning), override incoerente (422).
+  - test_moto_bici.py (US-1104): moto targa bianca (campo distanza), bici forfait 700 senza distanza.
+  - test_mixed.py (US-1105): #mixed-fields, somma quota auto + quota mezzi pubblici.
+  - test_meals_accommodation.py (US-1106): toggle pasti, senza/con mensa (3200/1600),
+    visibilità #accommodation-card (weekly_resident), cap alloggio 800/mese -> totale 10674.
+  - test_lohnausweis_other.py (US-1107): campo D (trasporto datore), campo F (mensa 7.50),
+    auto aziendale (#company-car-group), altre spese effettive (max forfait/effettive), accessoria.
+  - test_spouse.py (US-1108): #spouse-fields, stesso domicilio (campi nascosti),
+    domicilio diverso (campi visibili), colonne risultati "Coniuge".
+  - test_map.py (US-1109): #map-section + 2 marker Leaflet; OSRM tollerante (page.route abort);
+    Azzera nasconde la mappa.
+  - test_pdf_assessment.py (US-1110): download PDF (deduzioni_*.pdf), modalità accertamento
+    (banner+tabella editabile+motivazione), download bloccato senza motivazione, PDF accertato.
+  - test_validation_ux.py (US-1111): indirizzi mancanti, cross-check NPA/paese, sezioni
+    condizionali per mezzo, Azzera ripulisce TomSelect, aria-live + tooltip tabindex.
+- helpers.py: aggiunta select_transport(page, value).
+- LEZIONI E2E nuove:
+  - Asserzioni sugli importi: usare la coda decimale (es. "074.00", "600.00") per essere
+    agnostici al separatore migliaia de-CH (').
+  - Coniuge: l'override distanza deve restare entro 5km dal geocoding (altrimenti 422);
+    nei test si usa il coniuge con mezzi pubblici per evitare il vincolo.
+  - Attività accessoria IFD: richiede il salario, che il form invia solo se "altre spese" è attivo.
+  - Alloggio e accessoria non sono righe visibili in tabella: verificare via #total-can/#total-fed.
+  - Mappa: con mezzi pubblici non c'è chiamata OSRM (solo marker), così il test non dipende da rete esterna.

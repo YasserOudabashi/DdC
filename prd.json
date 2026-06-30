@@ -16,7 +16,7 @@
         "uv run pytest tests/ -v - tutti i test passano (backend esistenti + smoke E2E), nessuna regressione."
       ],
       "priority": 1,
-      "passes": false,
+      "passes": true,
       "notes": "Infrastruttura gia scaffoldata e verificata localmente (smoke + happy-path passano su chromium). Confermare che giri pulita nell'ambiente ralph/Docker, eseguendo 'uv run playwright install chromium' se i browser mancano."
     },
     {
@@ -31,7 +31,7 @@
         "uv run pytest tests/ -v - tutti i test passano, nessuna regressione."
       ],
       "priority": 2,
-      "passes": false,
+      "passes": true,
       "notes": ""
     },
     {
@@ -47,7 +47,7 @@
         "uv run pytest tests/ -v - tutti i test passano, nessuna regressione."
       ],
       "priority": 3,
-      "passes": false,
+      "passes": true,
       "notes": ""
     },
     {
@@ -61,7 +61,7 @@
         "uv run pytest tests/ -v - tutti i test passano, nessuna regressione."
       ],
       "priority": 4,
-      "passes": false,
+      "passes": true,
       "notes": ""
     },
     {
@@ -74,7 +74,7 @@
         "uv run pytest tests/ -v - tutti i test passano, nessuna regressione."
       ],
       "priority": 5,
-      "passes": false,
+      "passes": true,
       "notes": ""
     },
     {
@@ -89,7 +89,7 @@
         "uv run pytest tests/ -v - tutti i test passano, nessuna regressione."
       ],
       "priority": 6,
-      "passes": false,
+      "passes": true,
       "notes": ""
     },
     {
@@ -105,7 +105,7 @@
         "uv run pytest tests/ -v - tutti i test passano, nessuna regressione."
       ],
       "priority": 7,
-      "passes": false,
+      "passes": true,
       "notes": ""
     },
     {
@@ -120,7 +120,7 @@
         "uv run pytest tests/ -v - tutti i test passano, nessuna regressione."
       ],
       "priority": 8,
-      "passes": false,
+      "passes": true,
       "notes": ""
     },
     {
@@ -134,7 +134,7 @@
         "uv run pytest tests/ -v - tutti i test passano, nessuna regressione."
       ],
       "priority": 9,
-      "passes": false,
+      "passes": true,
       "notes": "OSRM (router.project-osrm.org) e esterno: usare page.route per stubbarlo o non asserire sul tracciato."
     },
     {
@@ -149,7 +149,7 @@
         "uv run pytest tests/ -v - tutti i test passano, nessuna regressione."
       ],
       "priority": 10,
-      "passes": false,
+      "passes": true,
       "notes": "jsPDF genera il PDF lato browser: usare page.expect_download per intercettare il file."
     },
     {
@@ -165,7 +165,7 @@
         "uv run pytest tests/ -v - tutti i test passano, nessuna regressione."
       ],
       "priority": 11,
-      "passes": false,
+      "passes": true,
       "notes": ""
     }
   ]
