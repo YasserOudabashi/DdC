@@ -677,13 +677,20 @@
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
       maxZoom: 18,
+      crossOrigin: true, // necessario per rasterizzare la mappa nel PDF (US-1112)
     }).addTo(leafletMap);
 
-    var homeIcon = L.divIcon({ html: '<div style="background:#27ae60;width:12px;height:12px;border-radius:50%;border:2px solid #fff;box-shadow:0 1px 3px rgba(0,0,0,.4);"></div>', iconSize: [12, 12], className: '' });
-    var workIcon = L.divIcon({ html: '<div style="background:#c0392b;width:12px;height:12px;border-radius:50%;border:2px solid #fff;box-shadow:0 1px 3px rgba(0,0,0,.4);"></div>', iconSize: [12, 12], className: '' });
+    // circleMarker (vettoriale, non HTML/divIcon) così leaflet-image può
+    // rasterizzarli correttamente per l'export PDF (US-1112).
+    function dotMarker(latlng, color, radius) {
+      return L.circleMarker(latlng, {
+        radius: radius, color: '#fff', weight: 2, fillColor: color, fillOpacity: 1,
+        className: 'route-marker',
+      });
+    }
 
-    var homeMarker = L.marker([homeC.lat, homeC.lon], { icon: homeIcon }).addTo(leafletMap).bindPopup('Casa');
-    var workMarker = L.marker([workC.lat, workC.lon], { icon: workIcon }).addTo(leafletMap).bindPopup('Lavoro');
+    var homeMarker = dotMarker([homeC.lat, homeC.lon], '#27ae60', 7).addTo(leafletMap).bindPopup('Casa');
+    var workMarker = dotMarker([workC.lat, workC.lon], '#c0392b', 7).addTo(leafletMap).bindPopup('Lavoro');
 
     var bounds = L.latLngBounds([[homeC.lat, homeC.lon], [workC.lat, workC.lon]]);
 
@@ -691,14 +698,13 @@
     if (data.spouse) {
       var spHomeC = data.spouse.home_coordinates;
       var spWorkC = data.spouse.work_coordinates;
-      var spIcon = L.divIcon({ html: '<div style="background:#7f8c8d;width:10px;height:10px;border-radius:50%;border:2px solid #fff;box-shadow:0 1px 3px rgba(0,0,0,.4);"></div>', iconSize: [10, 10], className: '' });
       if (spHomeC) {
-        var m = L.marker([spHomeC.lat, spHomeC.lon], { icon: spIcon }).addTo(leafletMap).bindPopup('Casa coniuge');
+        var m = dotMarker([spHomeC.lat, spHomeC.lon], '#7f8c8d', 5).addTo(leafletMap).bindPopup('Casa coniuge');
         spouseMarkers.push(m);
         bounds.extend([spHomeC.lat, spHomeC.lon]);
       }
       if (spWorkC) {
-        var m2 = L.marker([spWorkC.lat, spWorkC.lon], { icon: spIcon }).addTo(leafletMap).bindPopup('Lavoro coniuge');
+        var m2 = dotMarker([spWorkC.lat, spWorkC.lon], '#7f8c8d', 5).addTo(leafletMap).bindPopup('Lavoro coniuge');
         spouseMarkers.push(m2);
         bounds.extend([spWorkC.lat, spWorkC.lon]);
       }
@@ -774,10 +780,132 @@
       .catch(function () { /* silently ignore OSRM failures */ });
   }
 
-  // ── PDF generation (US-1009/1011) ────────────────────────────────────────
+  // ── PDF generation (US-1009/1011/1112) ───────────────────────────────────
+
+  // Estrae un array piatto di LatLng da un layer Leaflet (polyline o geoJSON/OSRM).
+  function extractLatLngs(layer) {
+    var out = [];
+    if (!layer) return out;
+    function flatten(x) {
+      if (Array.isArray(x)) { x.forEach(flatten); } else if (x) { out.push(x); }
+    }
+    if (typeof layer.eachLayer === 'function') {
+      layer.eachLayer(function (l) { if (typeof l.getLatLngs === 'function') flatten(l.getLatLngs()); });
+    } else if (typeof layer.getLatLngs === 'function') {
+      flatten(layer.getLatLngs());
+    }
+    return out;
+  }
+
+  // Rasterizza la mappa Leaflet corrente (tile + percorso + marker) in un PNG per il
+  // PDF. Disegnato a mano (tile via canvas, marker/linea via leafletMap.latLngToContainerPoint)
+  // perché il plugin leaflet-image (2016) non supporta il renderer SVG di Leaflet 1.9.
+  // Richiama sempre callback(null|{dataUrl, width, height}), mai un'eccezione.
+  function captureMapImage(callback) {
+    var mapSection = document.getElementById('map-section');
+    if (!mapSection || mapSection.classList.contains('hidden') || !leafletMap) { callback(null); return; }
+
+    var scale = 2; // risoluzione doppia per una stampa nitida
+    var size = leafletMap.getSize();
+    var zoom = Math.round(leafletMap.getZoom());
+    var origin = leafletMap.getPixelOrigin();
+    var tileSize = 256;
+    var maxTileIndex = Math.pow(2, zoom) - 1;
+
+    var minTileX = Math.max(0, Math.floor(origin.x / tileSize));
+    var minTileY = Math.max(0, Math.floor(origin.y / tileSize));
+    var maxTileX = Math.min(maxTileIndex, Math.floor((origin.x + size.x) / tileSize));
+    var maxTileY = Math.min(maxTileIndex, Math.floor((origin.y + size.y) / tileSize));
+
+    var canvas = document.createElement('canvas');
+    canvas.width = size.x * scale;
+    canvas.height = size.y * scale;
+    var ctx = canvas.getContext('2d');
+    ctx.scale(scale, scale);
+
+    var subdomains = ['a', 'b', 'c'];
+    var tiles = [];
+    for (var tx = minTileX; tx <= maxTileX; tx++) {
+      for (var ty = minTileY; ty <= maxTileY; ty++) tiles.push({ x: tx, y: ty });
+    }
+
+    var done = false;
+    var safetyTimer = setTimeout(finish, 8000); // non bloccare il PDF se i tile sono lenti/assenti
+
+    var remaining = tiles.length;
+    function tileDone() { remaining--; if (remaining <= 0) finish(); }
+    if (remaining === 0) finish();
+
+    tiles.forEach(function (t) {
+      var img = new Image();
+      img.crossOrigin = 'anonymous';
+      var sub = subdomains[Math.abs(t.x + t.y) % subdomains.length];
+      img.onload = function () {
+        var dx = t.x * tileSize - origin.x;
+        var dy = t.y * tileSize - origin.y;
+        try { ctx.drawImage(img, dx, dy, tileSize, tileSize); } catch (e) { /* tile CORS: pagina rasterizzata senza quel tile */ }
+        tileDone();
+      };
+      img.onerror = tileDone;
+      img.src = 'https://' + sub + '.tile.openstreetmap.org/' + zoom + '/' + t.x + '/' + t.y + '.png';
+    });
+
+    function toXY(latlng) { return leafletMap.latLngToContainerPoint(latlng); }
+
+    function dot(coord, color, radius) {
+      if (!coord) return;
+      var p = toXY([coord.lat, coord.lon]);
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, radius, 0, 2 * Math.PI);
+      ctx.fillStyle = color;
+      ctx.fill();
+      ctx.lineWidth = 2;
+      ctx.strokeStyle = '#fff';
+      ctx.stroke();
+    }
+
+    function finish() {
+      if (done) return;
+      done = true;
+      clearTimeout(safetyTimer);
+
+      var routeLatLngs = extractLatLngs(osrmPolyline);
+      if (routeLatLngs.length >= 2) {
+        ctx.beginPath();
+        routeLatLngs.forEach(function (ll, i) {
+          var p = toXY(ll);
+          if (i === 0) ctx.moveTo(p.x, p.y); else ctx.lineTo(p.x, p.y);
+        });
+        ctx.strokeStyle = '#8e44ad';
+        ctx.lineWidth = 4;
+        ctx.lineJoin = 'round';
+        ctx.lineCap = 'round';
+        ctx.stroke();
+      }
+
+      if (lastResponse) {
+        dot(lastResponse.home_coordinates, '#27ae60', 7);
+        dot(lastResponse.work_coordinates, '#c0392b', 7);
+        if (lastResponse.spouse) {
+          dot(lastResponse.spouse.home_coordinates, '#7f8c8d', 5);
+          dot(lastResponse.spouse.work_coordinates, '#7f8c8d', 5);
+        }
+      }
+
+      try {
+        callback({ dataUrl: canvas.toDataURL('image/png'), width: canvas.width, height: canvas.height });
+      } catch (e) {
+        callback(null); // canvas "tainted" o altro errore di export: il PDF prosegue senza mappa
+      }
+    }
+  }
 
   function generatePdf(assessmentMode) {
     if (!lastResponse) return;
+    captureMapImage(function (mapImg) { buildPdfDocument(assessmentMode, mapImg); });
+  }
+
+  function buildPdfDocument(assessmentMode, mapImg) {
     var jspdf = window.jspdf;
     if (!jspdf) return;
     var doc = new jspdf.jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
@@ -911,6 +1039,22 @@
       yPos += 6;
       addLevelTable(lastResponse.spouse.cantonal_TI, 'IC — Coniuge', 'spcan');
       addLevelTable(lastResponse.spouse.federal_IFD, 'IFD — Coniuge', 'spfed');
+    }
+
+    if (mapImg) {
+      var mapW = 180;
+      var mapH = mapW * (mapImg.height / mapImg.width);
+      if (yPos + 10 + mapH > 280) { doc.addPage(); yPos = 20; }
+      doc.setFontSize(11);
+      doc.setFont(undefined, 'bold');
+      doc.text('Percorso casa-lavoro', 14, yPos);
+      yPos += 4;
+      doc.addImage(mapImg.dataUrl, 'PNG', 14, yPos, mapW, mapH);
+      yPos += mapH + 3;
+      doc.setFontSize(7);
+      doc.setFont(undefined, 'italic');
+      doc.text('Mappa: © OpenStreetMap contributors', 14, yPos);
+      yPos += 6;
     }
 
     if (assessmentMode) {

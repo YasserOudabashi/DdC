@@ -16,7 +16,7 @@ async def test_map_appears_with_markers(live_server, page):
     map_section = page.locator("#map-section")
     await expect(map_section).to_be_visible()
     # Leaflet crea un marker per casa e uno per lavoro.
-    await expect(page.locator("#route-map .leaflet-marker-icon")).to_have_count(2)
+    await expect(page.locator("#route-map path.route-marker")).to_have_count(2)
 
 
 async def test_map_robust_to_osrm(live_server, page):
@@ -30,7 +30,7 @@ async def test_map_robust_to_osrm(live_server, page):
     await calcola(page)
 
     await expect(page.locator("#map-section")).to_be_visible()
-    await expect(page.locator("#route-map .leaflet-marker-icon")).to_have_count(2)
+    await expect(page.locator("#route-map path.route-marker")).to_have_count(2)
 
 
 async def test_reset_hides_map(live_server, page):

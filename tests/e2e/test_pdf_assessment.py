@@ -22,6 +22,26 @@ async def test_download_pdf(live_server, page):
     assert download.suggested_filename.startswith("deduzioni_")
 
 
+async def test_download_pdf_includes_map_image(live_server, page):
+    """Il PDF include la mappa del percorso casa-lavoro rasterizzata (US-1112)."""
+    await page.goto(live_server)
+    await fill_minimal_addresses(page)
+    await calcola(page)
+
+    # Attende che il percorso mezzi pubblici sia stato disegnato (fetch completato)
+    # prima di generare il PDF, così la mappa catturata include già la linea.
+    await expect(page.locator("#map-note")).not_to_contain_text("Caricamento", timeout=10_000)
+
+    async with page.expect_download() as dl_info:
+        await page.click("#btn-download-pdf")
+    download = await dl_info.value
+    path = await download.path()
+
+    import pathlib
+    content = pathlib.Path(path).read_bytes()
+    assert b"/Image" in content, "Il PDF non contiene un'immagine (la mappa non è stata incorporata)"
+
+
 async def test_assessment_mode_opens(live_server, page):
     """'Modalità accertamento' mostra banner, tabella editabile e sezione motivazione."""
     await page.goto(live_server)
