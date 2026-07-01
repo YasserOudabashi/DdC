@@ -18,12 +18,12 @@ _CONNECTIONS_URL = "https://transport.opendata.ch/v1/connections"
 
 
 def _coord(node: dict | None) -> list[float] | None:
-    """Estrae [lat, lon] da una stazione transport.opendata.ch (coordinate y=lat, x=lon)."""
+    """Estrae [lat, lon] da una stazione transport.opendata.ch (coordinate x=lat, y=lon)."""
     if not node:
         return None
     station = node.get("station") or node
     coord = (station or {}).get("coordinate") or {}
-    lat, lon = coord.get("y"), coord.get("x")
+    lat, lon = coord.get("x"), coord.get("y")
     if lat is None or lon is None:
         return None
     return [float(lat), float(lon)]

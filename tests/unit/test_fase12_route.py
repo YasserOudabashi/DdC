@@ -17,14 +17,14 @@ _MOCK_CONN = {
     "connections": [{
         "sections": [
             {
-                "departure": {"station": {"name": "Lugano", "coordinate": {"x": 8.95, "y": 46.0}}},
-                "arrival": {"station": {"name": "Bellinzona", "coordinate": {"x": 9.02, "y": 46.19}}},
+                "departure": {"station": {"name": "Lugano", "coordinate": {"x": 46.0, "y": 8.95}}},
+                "arrival": {"station": {"name": "Bellinzona", "coordinate": {"x": 46.19, "y": 9.02}}},
                 "journey": {
                     "category": "RE",
                     "passList": [
-                        {"station": {"name": "Lugano", "coordinate": {"x": 8.95, "y": 46.0}}},
-                        {"station": {"name": "Cadenazzo", "coordinate": {"x": 8.95, "y": 46.15}}},
-                        {"station": {"name": "Bellinzona", "coordinate": {"x": 9.02, "y": 46.19}}},
+                        {"station": {"name": "Lugano", "coordinate": {"x": 46.0, "y": 8.95}}},
+                        {"station": {"name": "Cadenazzo", "coordinate": {"x": 46.15, "y": 8.95}}},
+                        {"station": {"name": "Bellinzona", "coordinate": {"x": 46.19, "y": 9.02}}},
                     ],
                 },
             }
