@@ -1057,6 +1057,30 @@
       yPos += 6;
     }
 
+    // Note e avvertenze (stesse mostrate a schermo, incl. note coniuge)
+    var pdfWarnings = (lastResponse.warnings || []).slice();
+    (lastResponse.cantonal_TI.notes || []).forEach(function (n) { if (pdfWarnings.indexOf(n) < 0) pdfWarnings.push(n); });
+    (lastResponse.federal_IFD.notes || []).forEach(function (n) { if (pdfWarnings.indexOf(n) < 0) pdfWarnings.push(n); });
+    if (lastResponse.spouse && lastResponse.spouse.warnings) {
+      lastResponse.spouse.warnings.forEach(function (n) { if (pdfWarnings.indexOf(n) < 0) pdfWarnings.push(n); });
+    }
+    if (pdfWarnings.length > 0) {
+      if (yPos > 250) { doc.addPage(); yPos = 20; }
+      doc.setFontSize(10);
+      doc.setFont(undefined, 'bold');
+      doc.text('Note e avvertenze', 14, yPos);
+      yPos += 5;
+      doc.setFontSize(8);
+      doc.setFont(undefined, 'normal');
+      pdfWarnings.forEach(function (w) {
+        var lines = doc.splitTextToSize('• ' + w, 180);
+        if (yPos + lines.length * 4 > 280) { doc.addPage(); yPos = 20; }
+        doc.text(lines, 14, yPos);
+        yPos += lines.length * 4 + 1;
+      });
+      yPos += 4;
+    }
+
     if (assessmentMode) {
       if (yPos > 220) { doc.addPage(); yPos = 20; }
       var reason = document.getElementById('assessment-reason').value.trim();
