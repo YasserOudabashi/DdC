@@ -953,10 +953,16 @@
         return { amount: amount, reason: reason, changed: Math.abs(amount - calcolato) > 0.005 };
       }
 
-      function pushAssessed(label, calcolato, basisFallback) {
+      // La freccia "→" dei testi basis non esiste nei font base di jsPDF
+      // (usciva come "!'" con spaziatura rotta): la nota va a capo nella cella.
+      function pdfBasis(text) {
+        return (text || '').replace(/\s*→\s*/g, '\n');
+      }
+
+      function pushAssessed(label, calcolato, basis) {
         var a = accertatoFor(calcolato);
         if (a.changed) changedRowIdx.push(rows.length);
-        rows.push([label, 'CHF ' + calcolato.toFixed(2), 'CHF ' + a.amount.toFixed(2), a.reason || (a.changed ? '—' : '')]);
+        rows.push([label, pdfBasis(basis), formatChf(calcolato), formatChf(a.amount), a.reason || (a.changed ? '—' : '')]);
       }
 
       var rows = [];
@@ -966,7 +972,7 @@
         if (assessmentMode) {
           pushAssessed(line.label, calcolato, line.basis);
         } else {
-          rows.push([line.label, 'CHF ' + calcolato.toFixed(2), line.basis.slice(0, 60)]);
+          rows.push([line.label, formatChf(calcolato), pdfBasis(line.basis)]);
         }
       });
 
@@ -974,25 +980,30 @@
         if (assessmentMode) {
           pushAssessed('Pasti fuori domicilio', level.meals_deduction_chf, level.meals_basis_text);
         } else {
-          rows.push(['Pasti fuori domicilio', 'CHF ' + level.meals_deduction_chf.toFixed(2), (level.meals_basis_text || '').slice(0, 60)]);
+          rows.push(['Pasti fuori domicilio', formatChf(level.meals_deduction_chf), pdfBasis(level.meals_basis_text)]);
         }
       }
       if (level.other_expenses_deduction_chf != null) {
+        // IC = forfait cantonale, IFD = 3% del salario netto (il backend non
+        // fornisce un basis text per questa voce)
+        var otherBasis = (tableId === 'fed' || tableId === 'spfed')
+          ? "3% del salario netto (min CHF 2'000, max CHF 4'000)"
+          : "Forfait cantonale CHF 3'000 o spese effettive documentate";
         if (assessmentMode) {
-          pushAssessed('Altre spese professionali', level.other_expenses_deduction_chf, '3% salario netto');
+          pushAssessed('Altre spese professionali', level.other_expenses_deduction_chf, otherBasis);
         } else {
-          rows.push(['Altre spese professionali', 'CHF ' + level.other_expenses_deduction_chf.toFixed(2), '3% salario netto']);
+          rows.push(['Altre spese professionali', formatChf(level.other_expenses_deduction_chf), otherBasis]);
         }
       }
       if (assessmentMode) {
-        rows.push(['TOTALE', 'CHF ' + level.total_deduction_chf.toFixed(2), 'CHF ' + accertatoTotal.toFixed(2), '']);
+        rows.push(['TOTALE', '', formatChf(level.total_deduction_chf), formatChf(accertatoTotal), '']);
       } else {
-        rows.push(['TOTALE', 'CHF ' + level.total_deduction_chf.toFixed(2), '']);
+        rows.push(['TOTALE', formatChf(level.total_deduction_chf), '']);
       }
 
-      // In accertamento: Voce | Calcolato (prima) | Accertato (dopo) | Motivazione.
+      // In accertamento: Voce | Base di calcolo | Calcolato (prima) | Accertato (dopo) | Motivazione.
       var head = assessmentMode
-        ? [['Voce', 'Calcolato (prima)', 'Accertato (dopo)', 'Motivazione']]
+        ? [['Voce', 'Base di calcolo', 'Calcolato (prima)', 'Accertato (dopo)', 'Motivazione']]
         : [['Voce', 'Importo CHF', 'Base di calcolo']];
 
       var totalRowIdx = rows.length - 1;
@@ -1002,12 +1013,12 @@
         body: rows,
         startY: yPos,
         margin: { left: 14, right: 14 },
-        styles: { fontSize: 8, cellPadding: 2, valign: 'middle', overflow: 'linebreak' },
+        styles: { fontSize: assessmentMode ? 8 : 9, cellPadding: 2.5, valign: 'middle', overflow: 'linebreak' },
         headStyles: { fillColor: [0, 51, 102], textColor: [255, 255, 255], fontStyle: 'bold' },
         alternateRowStyles: { fillColor: [247, 249, 252] },
         columnStyles: assessmentMode
-          ? { 0: { cellWidth: 56 }, 1: { halign: 'right' }, 2: { halign: 'right' }, 3: { cellWidth: 50 } }
-          : { 1: { halign: 'right', cellWidth: 32 } },
+          ? { 0: { cellWidth: 34 }, 1: { cellWidth: 50, fontSize: 7 }, 2: { halign: 'right', cellWidth: 25 }, 3: { halign: 'right', cellWidth: 25 } }
+          : { 0: { cellWidth: 52 }, 1: { halign: 'right', cellWidth: 30 } },
         didParseCell: function (data) {
           // Solo le celle del corpo tabella: l'header NON deve mai ereditare i colori
           // delle righe rettificate (altrimenti diventa testo bianco su sfondo chiaro).
@@ -1018,7 +1029,7 @@
           } else if (assessmentMode && changedRowIdx.indexOf(data.row.index) >= 0) {
             // Evidenzia le righe effettivamente rettificate (giallo tenue)
             data.cell.styles.fillColor = [255, 243, 205];
-            if (data.column.index === 2) {
+            if (data.column.index === 3) {
               data.cell.styles.fontStyle = 'bold';
               data.cell.styles.textColor = [146, 64, 14];
             }
