@@ -10,3 +10,9 @@ dist/
 uv-cache/
 vendor/
 Claude
+SPVL/
+TUI/
+.claude/worktrees/
+graphify-out/
+archive/
+docs/prove/
